@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  emailVerifiedAt       DateTime?
+  name                  String?
+  password              String?
+  image                 String?
+  role                  String    @default("USER")
+  stripeCustomerId      String?   @unique
+  subscriptionId        String?   @unique
+  subscriptionStatus    String    @default("INACTIVE")
+  subscriptionPlan      String    @default("FREE")
+  subscriptionEnd       DateTime?
+  aiCreditsUsed         Int       @default(0)
+  aiCreditsResetAt      DateTime?
+  twoFactorEnabled      Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  accounts              Account[]
+  vintedAccounts        VintedAccount[]
+  sessions              Session[]
+  conversations         Conversation[]
+  watchlists            Watchlist[]
+  notifications         Notification[]
+  searches              SavedSearch[]
+  automationConfig      AutomationConfig?
+  automationJobs        AutomationJob[]
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model AIUsageEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  credits   Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_events")
+}
+
+model StripeWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@map("stripe_webhook_events")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String    @default("New Conversation")
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([createdAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  query     String
+  category  String?
+  minPrice  Float?
+  maxPrice  Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([createdAt])
+  @@map("watchlists")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  query     String
+  results   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_searches")
+}
+
+// Products scraped from Vinted
+model Product {
+  id              String   @id @default(cuid())
+  vintedId        String   @unique
+  title           String
+  description     String?
+  price           Float
+  currency        String   @default("EUR")
+  category        String
+  subcategory     String?
+  brand           String?
+  size            String?
+  condition       String   // new, like_new, good, fair, poor
+  profitMargin    Float?
+  profitPotential Float?
+  seller          String?
+  location        String?
+  imageUrl        String?
+  url             String?
+  status          String   @default("active") // active, sold, archived
+  
+  // AI Scoring
+  analysisScore   Float?   // 0-100 profitability score
+  riskLevel       String?  // low, medium, high
+  recommendation  String?  // sell, hold, skip
+  
+  // Metadata
+  aiProcessed     Boolean  @default(false)
+  notified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  expiresAt       DateTime? // For data retention
+
+  @@index([category])
+  @@index([subcategory])
+  @@index([brand])
+  @@index([status])
+  @@index([analysisScore])
+  @@index([profitMargin])
+  @@index([createdAt])
+  @@map("products")
+}
+
+// Automation Jobs tracking
+model AutomationJob {
+  id            String   @id @default(cuid())
+  userId        String?
+  jobType       String   // sync, analyze, notify, create-watchlist
+  status        String   @default("pending") // pending, running, completed, failed
+  input         String?  // JSON payload
+  result        String?  // JSON result
+  error         String?
+  retries       Int      @default(0)
+  maxRetries    Int      @default(3)
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jobType])
+  @@index([status])
+  @@index([nextRunAt])
+  @@map("automation_jobs")
+}
+
+// Category Market Data
+model CategoryMarket {
+  id              String   @id @default(cuid())
+  category        String   @unique
+  avgPrice        Float?
+  medianPrice     Float?
+  avgMargin        Float?
+  volumeSold      Int?     // Products sold this week
+  volumeActive    Int?     // Currently listed
+  trendDirection  String?  // up, down, stable
+  trendStrength   String?  // strong, moderate, weak
+  lastAnalyzedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@map("category_markets")
+
+}
+// Vinted integration models
+model VintedAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String   @default("vinted")
+  displayName    String?
+  username       String?
+  profileUrl     String?
+  cookieJar      String?  // serialized cookie jar or session token (encrypted in env recommended)
+  lastSyncAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listings VintedListing[]
+  sales VintedSale[]
+  syncs VintedSync[]
+
+  @@index([userId])
+}
+
+model VintedListing {
+  id            String   @id @default(cuid())
+  accountId     String
+  vintedId      String   @unique
+  title         String
+  price         Float
+  currency      String   @default("EUR")
+  category      String?
+  brand         String?
+  sold          Boolean  @default(false)
+  soldAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([vintedId])
+}
+
+model VintedSale {
+  id          String   @id @default(cuid())
+  accountId   String
+  listingId   String?
+  price       Float
+  currency    String   @default("EUR")
+  soldAt      DateTime
+  createdAt   DateTime @default(now())
+
+  account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model VintedSync {
+  id         String   @id @default(cuid())
+  accountId  String
+  syncedAt   DateTime @default(now())
+  summary    String?  // JSON summary snapshot
+
+  account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+ 
+}
+
+// Automation Settings per User
+model AutomationConfig {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  enabled           Boolean  @default(true)
+  autoCreateWatchlist Boolean @default(true)
+  autoAnalyze       Boolean  @default(true)
+  autoNotify        Boolean  @default(true)
+  minProfitMargin   Float    @default(25.0)
+  maxRiskLevel      String   @default("medium") // low, medium, high
+  checkInterval     Int      @default(3600) // seconds
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("automation_configs")
+}

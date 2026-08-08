@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 215 13% 96%;
+    --card: 0 0% 8.6%;
+    --card-foreground: 215 13% 96%;
+    --popover: 0 0% 8.6%;
+    --popover-foreground: 215 13% 96%;
+    --primary: 166 76% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 11.8%;
+    --secondary-foreground: 215 13% 96%;
+    --muted: 217 33% 27%;
+    --muted-foreground: 215 14% 65%;
+    --accent: 160 84% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16.5%;
+    --input: 0 0% 16.5%;
+    --ring: 160 84% 40%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at top left, rgba(16,185,129,0.08), transparent 24%), linear-gradient(180deg, #020617 0%, #040816 100%);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+    color: white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full;
+  }
+
+  .page-header {
+    @apply mb-6 sm:mb-8;
+  }
+
+  .page-title {
+    @apply text-lg sm:text-xl font-semibold tracking-tight text-foreground;
+  }
+
+  .page-description {
+    @apply text-xs sm:text-sm text-muted-foreground mt-1;
+  }
+
+  .surface {
+    @apply bg-card border border-border rounded-lg;
+  }
+
+  .surface-muted {
+    @apply bg-muted/50 border border-border rounded-lg;
+  }
+
+  .metric-card {
+    @apply surface p-4 sm:p-5;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-2.5 px-2 sm:px-2.5 py-2 rounded-md text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors;
+  }
+
+  .sidebar-item.active {
+    @apply text-foreground bg-muted;
+  }
+
+  .accent-text {
+    @apply text-[hsl(var(--accent))];
+  }
+
+  .accent-bg {
+    @apply bg-[hsl(var(--accent))];
+  }
+
+  .accent-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[hsl(var(--accent))/10] text-[hsl(var(--accent))];
+  }
+
+  .badge-trend-up {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[hsl(var(--accent))/10] text-[hsl(var(--accent))];
+  }
+
+  .badge-trend-down {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-red-500/10 text-red-400;
+  }
+
+  .badge-score-high {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary;
+  }
+
+  .input-field {
+    @apply w-full h-10 px-3 rounded-md bg-background border border-input text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring transition-colors;
+  }
+
+  .data-table-row {
+    @apply flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border last:border-0 hover:bg-muted/30 transition-colors;
+  }
+
+  /* Mobile grid utilities */
+  .grid-mobile {
+    @apply grid grid-cols-1 gap-3 sm:gap-4;
+  }
+
+  .grid-mobile-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4;
+  }
+
+  .grid-mobile-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4;
+  }
+
+  .grid-mobile-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4;
+  }
+
+  /* Mobile button adjustments */
+  .btn-mobile {
+    @apply py-2.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm h-auto sm:h-10;
+  }
+
+  /* Mobile table adjustments */
+  .table-mobile-responsive {
+    @apply text-xs sm:text-sm overflow-x-auto;
+  }
+
+  /* Mobile card stack */
+  .card-stack {
+    @apply flex flex-col gap-3 sm:gap-4;
+  }
+
+  /* Backward compat — old class names map to new design */
+  .glass {
+    @apply surface;
+  }
+
+  .gradient-text {
+    @apply text-foreground;
+  }
+
+  .card-hover {
+    @apply transition-colors hover:border-border/80;
+  }
+
+  .shadow-card {
+    @apply shadow-subtle;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}

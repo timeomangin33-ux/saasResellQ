@@ -1,0 +1,74 @@
+{
+    "enabled": "Abilitato",
+    "disabled": "Disabilitato",
+
+    "error": "Errore",
+    "please-wait": "Attendere prego...",
+    "not-found": "Non trovato.",
+
+    "name": "Nome",
+
+    "url": "URL",
+
+    "invalid-url": "URL non valido.",
+    "invalid-url-with-example": "Si prega di fornire un URL in questo formato: es. https://www.vinted.it/catalog?...",
+    "must-have-query-params": "L'URL deve avere dei parametri di query.",
+
+    "user": "Utente",
+    "channel": "Canale",
+
+    "user-id": "ID utente",
+    "channel-id": "ID del canale",
+    "channel-discord-id": "ID Discord del canale",
+    "discord-id": "ID Discord",
+
+    "max-channels": "Canali massimi",
+    "country-whitelist": "Whitelist dei paesi",
+    "user-mentions": "Menzioni dell'utente",
+
+    "monitoring": "Monitoraggio",
+
+    "type": "Tipo",
+
+    "provide-valid-url": "Si prega di fornire un URL valido.",
+
+    "removing-country": "Rimozione del paese dalla whitelist...",
+    "user-not-found": "Utente non trovato.",
+    "channel-not-found": "Canale non trovato.",
+    "channel-not-found-nor-owned": "Canale non trovato o non hai accesso questo canale.",
+    "channel-name-required": "Il nome del canale è obbligatorio, si prega di fornire un nome di un canale",
+    "country-removed": "Paese rimosso dalla whitelist.",
+    "country-has-been-removed": "Il codice paese {countryCode} è stato rimosso con successo dalla whitelist {type}.",
+
+    "adding-country": "Aggiunta del paese alla whitelist...",
+    "invalid-country-code": "Il codice {countryCode} non è un codice paese valido. Si prega di selezionare uno di questi codici paese: {validCountryCodes}",
+    "country-added": "Paese aggiunto alla whitelist.",
+    "country-has-been-added": "Il codice paese {countryCode} è stato aggiunto con successo alla whitelist {type}.",
+
+    "creating-private-channel": "Creazione del canale privato...",
+    "channel-limit-exceeded": "Limite di canali. Puoi creare solo {limit} canale(i).",
+    "private-channel-created": "Canale privato creato.",
+    "private-channel-created-success": "Il tuo canale privato {channelName} è stato creato con successo.",
+
+    "deleting-private-channel": "Eliminazione del canale privato...",
+    "private-channel-deleted": "Canale privato eliminato.",
+    "private-channel-deleted-success": "Il tuo canale privato è stato eliminato con successo.",
+
+    "updating-mentions": "Aggiornamento delle menzioni...",
+    "mentions-updated": "Menzione aggiornata.",
+    "mentions-has-been-updated": "Le menzioni sono state {status} per il {type}.",
+
+    "starting-monitoring": "Avvio del monitoraggio...",
+    "monitoring-started": "Monitoraggio avviato.",
+    "monitoring-has-been-started": "Il monitoraggio è stato avviato [Ricerca catalogo Vinted]({url}).",
+
+    "stopping-monitoring": "Arresto del monitoraggio...",
+    "monitoring-stopped": "Monitoraggio interrotto.",
+    "monitoring-has-been-stopped": "Il monitoraggio è stato interrotto.",
+
+    "user-info": "Informazioni sull'utente",
+    "channel-info": "Informazioni sul canale",
+
+    "user-info-success": "Trova qui sotto le informazioni sull'utente!",
+    "channel-info-success": "Trova qui sotto le informazioni sul canale!"
+}
