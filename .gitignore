@@ -13,8 +13,13 @@ pnpm-debug.log*
 /.vscode/
 /.idea/
 *.local
+dev.db
 resellq.db
+resselliq.db
+tsconfig.tsbuildinfo
 .DS_Store
 Thumbs.db
 /*.log
 /.turbo
+vinted-discord-bot-main/
+backups/
