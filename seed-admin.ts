@@ -4,9 +4,13 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const adminEmail = 'botvintedscrapping@gmail.com'
-  const adminPassword = '260309Timeo)'
+  const adminEmail = process.env.ADMIN_EMAIL || 'botvintedscrapper@gmail.com'
+  const adminPassword = process.env.ADMIN_PASSWORD
   const adminName = 'Admin Vinted Scrapper'
+
+  if (!adminPassword) {
+    throw new Error('ADMIN_PASSWORD must be set before running the admin seed')
+  }
 
   console.log('🔄 Créating admin account...')
   console.log(`📧 Email: ${adminEmail}`)
@@ -28,6 +32,7 @@ async function main() {
       name: adminName,
       password: hashedPassword,
       role: 'ADMIN',
+      emailVerifiedAt: new Date(),
       subscriptionStatus: 'ACTIVE',
       subscriptionPlan: 'BUSINESS',
       subscriptionEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),

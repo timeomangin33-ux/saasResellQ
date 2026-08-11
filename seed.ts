@@ -40,6 +40,7 @@ async function main() {
     update: {
       password: hashedPassword,
       role: 'ADMIN',
+      emailVerifiedAt: new Date(),
       subscriptionStatus: 'ACTIVE',
       subscriptionPlan: 'BUSINESS',
       subscriptionEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
@@ -49,6 +50,7 @@ async function main() {
       name: 'Admin Vinted Scrapper',
       password: hashedPassword,
       role: 'ADMIN',
+      emailVerifiedAt: new Date(),
       subscriptionStatus: 'ACTIVE',
       subscriptionPlan: 'BUSINESS',
       subscriptionEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
