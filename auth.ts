@@ -46,66 +46,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials: any) {
-        console.info('[auth] authorize() called')
-        console.info('[auth] email present:', !!credentials?.email)
-        console.info('[auth] password present:', !!credentials?.password)
+        const parsed = loginSchema.safeParse(credentials)
+        if (!parsed.success) return null
 
-        try {
-          const parsed = loginSchema.safeParse(credentials)
-          if (!parsed.success) {
-            console.info('[auth] credentials validation failed')
-            return null
-          }
+        const normalizedEmail = parsed.data.email.trim().toLowerCase()
 
-          const normalizedEmail = parsed.data.email.trim().toLowerCase()
+        const user = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        })
 
-          try {
-            await prisma.$queryRaw`SELECT 1`
-            console.info('[auth] prisma ping ok')
-          } catch (error) {
-            console.error('[auth] prisma ping failed:', {
-              name: error instanceof Error ? error.name : 'UnknownError',
-              message: error instanceof Error ? error.message : 'Unknown error',
-            })
-            throw error
-          }
+        if (!user || !user.password) return null
 
-          const user = await prisma.user.findUnique({
-            where: { email: normalizedEmail },
-          })
+        const isValid = await bcrypt.compare(parsed.data.password, user.password)
+        if (!isValid) return null
 
-          console.info('[auth] user found:', !!user)
-          console.info('[auth] user.password present:', !!user?.password)
+        if (!user.emailVerifiedAt) {
+          const token = await createVerificationToken({ userId: user.id, type: 'verify' })
+          await sendVerificationEmail(user.email, token, 'verify')
+          throw new Error('EMAIL_NOT_VERIFIED')
+        }
 
-          if (!user || !user.password) return null
-
-          const passwordMatches = await bcrypt.compare(parsed.data.password, user.password)
-          console.info('[auth] bcrypt.compare result:', passwordMatches)
-          if (!passwordMatches) return null
-
-          if (!user.emailVerifiedAt) {
-            const token = await createVerificationToken({ userId: user.id, type: 'verify' })
-            await sendVerificationEmail(user.email, token, 'verify')
-            throw new Error('EMAIL_NOT_VERIFIED')
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: user.role,
-            subscriptionStatus: user.subscriptionStatus,
-            subscriptionPlan: user.subscriptionPlan,
-            emailVerifiedAt: user.emailVerifiedAt,
-            twoFactorEnabled: user.twoFactorEnabled,
-          }
-        } catch (error) {
-          console.error('[auth] authorize error:', {
-            name: error instanceof Error ? error.name : 'UnknownError',
-            message: error instanceof Error ? error.message : 'Unknown error',
-          })
-          throw error
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          role: user.role,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan,
+          emailVerifiedAt: user.emailVerifiedAt,
+          twoFactorEnabled: user.twoFactorEnabled,
         }
       },
     }),
