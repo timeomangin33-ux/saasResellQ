@@ -57,3 +57,19 @@ Si tu veux, fournis ici:
 - Sortie JSON de `/api/auth/providers`
 - Sortie JSON de `/api/debug/env`
 - Extraits des logs Vercel contenant `NextAuth`
+
+---
+
+**Notes PowerShell / Windows**
+
+- Sur PowerShell, la commande `curl` est un alias vers `Invoke-WebRequest` et peut demander interactivement le paramètre `Uri:`. Utilise `curl.exe` si tu veux appeler l'exécutable natif `curl`, ou préfère `Invoke-RestMethod` qui renvoie directement un objet JSON.
+
+- Helper fourni: `scripts/call_debug.ps1`
+	- Usage:
+		```powershell
+		.\scripts\call_debug.ps1 -Token '<DEBUG_TOKEN>' -Host 'https://resellq.com'
+		```
+	- Le script retourne le JSON renvoyé par `/api/debug/env` ou une erreur lisible.
+
+Ajoute `DEBUG_TOKEN` sur Vercel (Settings → Environment Variables) avec la valeur affichée ci‑dessous, puis appelle le helper ou `Invoke-RestMethod`.
+
