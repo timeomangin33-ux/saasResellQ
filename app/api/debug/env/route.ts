@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { prisma } from '@/prisma'
 
 export async function GET(req: Request) {
   const provided = req.headers.get('x-debug-token') || ''
@@ -19,10 +20,23 @@ export async function GET(req: Request) {
     'OPENAI_API_KEY',
   ]
 
-  const result: Record<string, boolean> = {}
+  const envPresence: Record<string, boolean> = {}
   keys.forEach((k) => {
-    result[k] = !!process.env[k]
+    envPresence[k] = !!process.env[k]
   })
 
-  return NextResponse.json({ ok: true, env: result })
+  // Try a lightweight DB check using Prisma (SELECT 1) and report result.
+  let dbCheck = { ok: false, error: null as string | null }
+  try {
+    // If DATABASE_URL is missing, prisma will already have tried fallbacks in prisma.ts
+    // We run a minimal query to validate connectivity.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // @ts-ignore
+    await prisma.$queryRaw`SELECT 1 as result`
+    dbCheck.ok = true
+  } catch (err: any) {
+    dbCheck.error = err?.message || String(err)
+  }
+
+  return NextResponse.json({ ok: true, env: envPresence, db: dbCheck })
 }
