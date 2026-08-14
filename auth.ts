@@ -46,36 +46,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials: any) {
-        const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        try {
+          const parsed = loginSchema.safeParse(credentials)
+          if (!parsed.success) return null
 
-        const normalizedEmail = parsed.data.email.trim().toLowerCase()
+          const normalizedEmail = parsed.data.email.trim().toLowerCase()
 
-        const user = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
-        })
+          const user = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          })
 
-        if (!user || !user.password) return null
+          if (!user || !user.password) return null
 
-        const isValid = await bcrypt.compare(parsed.data.password, user.password)
-        if (!isValid) return null
+          const isValid = await bcrypt.compare(parsed.data.password, user.password)
+          if (!isValid) return null
 
-        if (!user.emailVerifiedAt) {
-          const token = await createVerificationToken({ userId: user.id, type: 'verify' })
-          await sendVerificationEmail(user.email, token, 'verify')
-          throw new Error('EMAIL_NOT_VERIFIED')
-        }
+          if (!user.emailVerifiedAt) {
+            const token = await createVerificationToken({ userId: user.id, type: 'verify' })
+            await sendVerificationEmail(user.email, token, 'verify')
+            throw new Error('EMAIL_NOT_VERIFIED')
+          }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-          role: user.role,
-          subscriptionStatus: user.subscriptionStatus,
-          subscriptionPlan: user.subscriptionPlan,
-          emailVerifiedAt: user.emailVerifiedAt,
-          twoFactorEnabled: user.twoFactorEnabled,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            role: user.role,
+            subscriptionStatus: user.subscriptionStatus,
+            subscriptionPlan: user.subscriptionPlan,
+            emailVerifiedAt: user.emailVerifiedAt,
+            twoFactorEnabled: user.twoFactorEnabled,
+          }
+        } catch (err: any) {
+          // Log the error server-side to help debugging in Vercel logs
+          console.error('[NextAuth][Credentials][authorize] error:', err?.message || err)
+          // Re-throw known verification flow to be handled by client
+          if (err?.message === 'EMAIL_NOT_VERIFIED') throw err
+          // For other errors, surface a generic server error to the client
+          throw new Error('SERVER_AUTH_ERROR')
         }
       },
     }),

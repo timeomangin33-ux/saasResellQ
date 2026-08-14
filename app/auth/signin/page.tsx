@@ -43,10 +43,13 @@ function SignInPageContent() {
     })
 
     if (result?.error) {
+      // Map known server-side codes to friendly messages
       if (result.error === 'EMAIL_NOT_VERIFIED') {
         throw new Error('Veuillez vérifier votre adresse email. Un nouveau lien vient d’être envoyé.')
       }
-      throw new Error('bad credentials')
+      // For debugging: surface server error message when available
+      const msg = result.error || 'Email ou mot de passe incorrect'
+      throw new Error(msg)
     }
 
     router.replace(callbackUrl)
