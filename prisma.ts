@@ -11,3 +11,10 @@ export const prisma =
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// If using Prisma Data Proxy (DATABASE_URL starts with prisma://) it's
+// safe and beneficial to cache the client even in production so multiple
+// serverless invocations reuse the same PrismaClient instance.
+if (process.env.DATABASE_URL?.startsWith('prisma://')) {
+  globalForPrisma.prisma = prisma
+}

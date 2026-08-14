@@ -46,8 +46,13 @@ export const API_CONFIG = {
 
   // Supabase (pour la DB optionnelle)
   supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    // Client-side (public) keys use NEXT_PUBLIC_ prefix. Server-side code
+    // should use `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` or
+    // `SUPABASE_ANON_KEY` depending on privileges.
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+    key:
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   // PostHog
   posthog: {
