@@ -33,8 +33,8 @@ export async function GET(req: Request) {
     // @ts-ignore
     await prisma.$queryRaw`SELECT 1 as result`
     dbCheck.ok = true
-  } catch (err: any) {
-    dbCheck.error = err?.message || String(err)
+  } catch (err: unknown) {
+    dbCheck.error = err instanceof Error ? err.message : String(err)
   }
 
   return NextResponse.json({ ok: true, env: envPresence, db: dbCheck })
