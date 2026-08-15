@@ -30,7 +30,6 @@ export async function GET(req: Request) {
   try {
     // If DATABASE_URL is missing, prisma will already have tried fallbacks in prisma.ts
     // We run a minimal query to validate connectivity.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     // @ts-ignore
     await prisma.$queryRaw`SELECT 1 as result`
     dbCheck.ok = true
