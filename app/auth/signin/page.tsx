@@ -47,6 +47,9 @@ function SignInPageContent() {
       if (result.error === 'EMAIL_NOT_VERIFIED') {
         throw new Error('Veuillez vérifier votre adresse email. Un nouveau lien vient d’être envoyé.')
       }
+      if (result.error === 'Configuration') {
+        throw new Error('La configuration d’authentification est incomplète. Vérifiez DATABASE_URL et NEXTAUTH_SECRET.')
+      }
       // For debugging: surface server error message when available
       const msg = result.error || 'Email ou mot de passe incorrect'
       throw new Error(msg)
