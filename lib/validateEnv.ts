@@ -4,6 +4,42 @@
  * Fails loudly with helpful error messages if any required vars are missing
  */
 
+function resolveDatabaseEnv(): void {
+  const preferredOrder = [
+    'DATABASE_URL',
+    'NEON_POSTGRES_URL',
+    'NEON_POSTGRES_URL_NO_SSL',
+    'NEON_POSTGRES_URL_NON_POOLING',
+    'POSTGRES_URL',
+    'POSTGRES_URL_NON_POOLING',
+    'POSTGRES_PRISMA_URL',
+    'POSTGRESQL_URL',
+    'PG_CONNECTION_STRING',
+    'SUPABASE_DATABASE_URL',
+  ]
+
+  if (!process.env.DATABASE_URL) {
+    const candidate = preferredOrder.find((key) => Boolean(process.env[key]))
+    if (candidate) {
+      process.env.DATABASE_URL = process.env[candidate]
+    }
+  }
+
+  if (!process.env.DATABASE_URL_UNPOOLED) {
+    const candidate = [
+      'DATABASE_URL_UNPOOLED',
+      'NEON_POSTGRES_URL_NON_POOLING',
+      'NEON_POSTGRES_URL_NO_SSL',
+      'POSTGRES_URL_NON_POOLING',
+      'POSTGRES_URL_NO_SSL',
+    ].find((key) => Boolean(process.env[key]))
+
+    if (candidate) {
+      process.env.DATABASE_URL_UNPOOLED = process.env[candidate]
+    }
+  }
+}
+
 interface EnvConfig {
   required: string[]
   optional: string[]
@@ -28,6 +64,8 @@ const ENV_CONFIG: EnvConfig = {
 }
 
 export function validateEnv(): void {
+  resolveDatabaseEnv()
+
   const errors: string[] = []
   const warnings: string[] = []
 
