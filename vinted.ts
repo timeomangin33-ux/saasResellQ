@@ -608,7 +608,7 @@ const CATEGORY_PLACEHOLDER_TEMPLATES: Record<string, string[]> = {
   jeux: ['Peluche', 'Jeu de société', 'Figurine', 'Puzzle', 'Voiture miniature', 'Doll', 'Jeu éducatif', 'Poupée', 'Casse-tête', 'Kit créatif'],
   jouets: ['Peluche', 'Jeu de société', 'Figurine', 'Puzzle', 'Voiture miniature', 'Doll', 'Jeu éducatif', 'Poupée', 'Casse-tête', 'Kit créatif'],
   montres: ['Montre Casio', 'Montre Swatch', 'Bracelet', 'Collier fin', 'Bague'],
-  bijoux: ['Collier', 'Boucles d';oreilles', 'Montre fine', 'Bracelet', 'Bague'],
+  bijoux: ['Collier', 'Boucles d'oreilles', 'Montre fine', 'Bracelet', 'Bague'],
   accessoires: ['Ceinture', 'Lunettes', 'Chapeau', 'Gants', 'Foulard'],
   vintage: ['Veste vintage', 'Sac rétro', 'Accessoire ancien', 'Jean Levi\'s', 'Chemise rétro']
 }

@@ -19,15 +19,15 @@ const WORKFLOWS: WorkflowItem[] = [
   { id: '6wIPeheYSlA57yR1', name: 'RAG Indexer', published: true, schedule: 'Toutes les 6h', description: 'Génère les embeddings OpenAI et les indexe dans pgvector.', category: 'IA' },
   { id: '1HKzZaiaSzj8U53x', name: 'RAG Search', published: true, endpoint: '/webhook/resellq-rag-search', description: 'Recherche sémantique dans pgvector.', category: 'IA' },
   { id: 'i6fYAcqniM6fSKd1', name: 'Memory Manager', published: true, endpoint: '/webhook/resellq-memory', description: 'Sauvegarde la mémoire à long terme des sessions dans PostgreSQL.', category: 'IA' },
-  { id: 'MrKjgfpRHInHkMbK', name: 'AI Chat Endpoint', published: true, endpoint: '/webhook/resellq-ai-chat', description: 'Point d';entrée principal du chat IA. GPT-4o avec mémoire PostgreSQL.', category: 'IA' },
+  { id: 'MrKjgfpRHInHkMbK', name: 'AI Chat Endpoint', published: true, endpoint: '/webhook/resellq-ai-chat', description: 'Point d'entrée principal du chat IA. GPT-4o avec mémoire PostgreSQL.', category: 'IA' },
   { id: '0ffwRxXCKZL8zj7k', name: 'AI Router', published: true, endpoint: '/webhook/resellq-chat', description: 'Routeur IA avec 7 outils et fallback Groq.', category: 'IA' },
-  { id: 'ZZ2Wa9Rpek9DksM2', name: 'Product Analyzer', published: true, endpoint: '/webhook/resellq-analyze-product', description: 'Analyse détaillée d';un produit : tendance, score de revente.', category: 'Analyse' },
+  { id: 'ZZ2Wa9Rpek9DksM2', name: 'Product Analyzer', published: true, endpoint: '/webhook/resellq-analyze-product', description: 'Analyse détaillée d'un produit : tendance, score de revente.', category: 'Analyse' },
   { id: '0DJZ2ckcXG6qK1AL', name: 'Category Analyzer', published: true, endpoint: '/webhook/resellq-analyze-category', description: 'Analyse une catégorie Vinted : croissance, concurrence, prix moyen.', category: 'Analyse' },
   { id: 'zYPtVhnZPkM5MdlT', name: 'Opportunity Finder', published: true, endpoint: '/webhook/resellq-opportunities', description: 'Détecte les opportunités de revente à forte marge.', category: 'Analyse' },
   { id: 'h6K62ESUniZ4e1qP', name: 'Deal Finder', published: true, endpoint: '/webhook/resellq-deals', description: 'Trouve les meilleures affaires du moment.', category: 'Analyse' },
   { id: '23nv17HoXt5Hpwhu', name: 'Trend Analyzer', published: true, endpoint: '/webhook/resellq-trends', description: 'Analyse les tendances du marché : catégories en hausse, marques populaires.', category: 'Analyse' },
   { id: 'cCr0zHwMpoj24eOi', name: 'Report Generator', published: true, endpoint: '/webhook/resellq-report', description: 'Génère un rapport de marché complet en HTML ou JSON.', category: 'Rapports' },
-  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail et dans l';application pour les opportunités détectées.', category: 'Notifications' },
+  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail et dans l'application pour les opportunités détectées.', category: 'Notifications' },
 ]
 
 const CATEGORIES = ['Tous', 'Collecte', 'Infrastructure', 'IA', 'Analyse', 'Rapports', 'Notifications']

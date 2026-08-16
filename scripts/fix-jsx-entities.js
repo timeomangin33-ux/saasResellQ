@@ -27,8 +27,8 @@ let changed = 0;
 for (const f of files) {
   let content = fs.readFileSync(f, 'utf8');
   const orig = content;
-  // Replace typographic apostrophe '; and left apostrophe '; with ';
-  content = content.replace(/';/g, "';").replace(/';/g, "';");
+  // Replace typographic apostrophe ' and left apostrophe ' with '
+  content = content.replace(/'/g, "'").replace(/'/g, "'");
   // Replace left/right double quotes " " with "
   content = content.replace(/[""]/g, '"');
   // Replace French ellipsis char ... with ... (optional)

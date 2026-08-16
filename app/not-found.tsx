@@ -8,7 +8,7 @@ export default function NotFound() {
         <h1 className="text-3xl font-bold">404 — Page introuvable</h1>
         <p className="mt-3 text-sm text-zinc-400">La page recherchée est introuvable ou a été déplacée.</p>
         <div className="mt-6">
-          <Link href="/" className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-zinc-900 font-semibold">Retour à l';accueil</Link>
+          <Link href="/" className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-zinc-900 font-semibold">Retour à l'accueil</Link>
         </div>
       </div>
     </div>

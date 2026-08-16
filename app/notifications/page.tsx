@@ -85,7 +85,7 @@ export default function NotificationsPage() {
                 Notifications
                 {unread > 0 && <span className="text-xs font-semibold bg-primary text-white px-2 py-0.5 rounded-full">{unread}</span>}
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Alertes et notifications de l';agent IA</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Alertes et notifications de l'agent IA</p>
             </div>
             <button onClick={checkForNew} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition">
               <RefreshCw className="w-3.5 h-3.5" /> Vérifier

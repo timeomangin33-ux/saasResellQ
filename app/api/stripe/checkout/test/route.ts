@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     if (!stripe) {
       console.error('[stripe/checkout/test] Stripe not configured')
-      return NextResponse.json({ error: 'Stripe n';est pas configuré' }, { status: 500 })
+      return NextResponse.json({ error: 'Stripe n'est pas configuré' }, { status: 500 })
     }
 
     const body = await request.json().catch(() => ({}))

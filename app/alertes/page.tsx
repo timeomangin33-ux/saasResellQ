@@ -14,7 +14,7 @@ export default function AlertsPage() {
             <span>Alertes marché</span>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Alertes intelligentes</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-400">Configurez des seuils et recevez des notifications dès qu';un produit répond à vos critères de marge, de marque ou de prix.</p>
+          <p className="mt-3 max-w-2xl text-sm text-slate-400">Configurez des seuils et recevez des notifications dès qu'un produit répond à vos critères de marge, de marque ou de prix.</p>
 
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
@@ -36,13 +36,13 @@ export default function AlertsPage() {
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <h2 className="mt-4 text-lg font-semibold text-white">Alertes critiques</h2>
-              <p className="mt-2 text-sm text-slate-400">Soyez averti dès qu';un produit rare ou très demandé apparaît dans une catégorie prioritaire.</p>
+              <p className="mt-2 text-sm text-slate-400">Soyez averti dès qu'un produit rare ou très demandé apparaît dans une catégorie prioritaire.</p>
             </div>
           </div>
 
           <div className="mt-10 rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
             <p className="text-sm uppercase tracking-[0.32em] text-slate-500">Aucune alerte active</p>
-            <h2 className="mt-4 text-2xl font-semibold text-white">Votre tableau d';alertes est prêt.</h2>
+            <h2 className="mt-4 text-2xl font-semibold text-white">Votre tableau d'alertes est prêt.</h2>
             <p className="mt-2 text-sm text-slate-400">Créez votre première alerte pour suivre les signaux de marge, de prix et de demande.</p>
             <div className="mt-6 inline-flex rounded-full bg-violet-500/10 px-5 py-3 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/20">
               <Link href="/dashboard">Configurer une alerte</Link>

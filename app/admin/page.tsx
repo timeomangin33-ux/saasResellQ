@@ -97,7 +97,7 @@ export default function AdminPanelPage() {
                 Actions rapides
               </h2>
               <div className="space-y-3">
-                <button className="flex w-full items-center gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:bg-muted/50"><Sparkles className="h-4 w-4 text-primary" /> Modifier les plans d';abonnement</button>
+                <button className="flex w-full items-center gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:bg-muted/50"><Sparkles className="h-4 w-4 text-primary" /> Modifier les plans d'abonnement</button>
                 <button className="flex w-full items-center gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:bg-muted/50"><Sparkles className="h-4 w-4 text-primary" /> Paramètres Stripe</button>
                 <button className="flex w-full items-center gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:bg-muted/50"><Sparkles className="h-4 w-4 text-primary" /> Sauvegardes</button>
               </div>

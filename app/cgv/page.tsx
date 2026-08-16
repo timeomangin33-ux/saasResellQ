@@ -68,7 +68,7 @@ export default function CgvPage() {
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Retour à l';accueil
+              Retour à l'accueil
             </Button>
           </Link>
         </div>
@@ -78,11 +78,11 @@ export default function CgvPage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-primary">
                 <FileText className="h-3.5 w-3.5" />
-                Conditions générales d';utilisation
+                Conditions générales d'utilisation
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">CGU et règles d';utilisation du service</h1>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">CGU et règles d'utilisation du service</h1>
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                Les présentes conditions définissent les droits et obligations applicables à  l';utilisation du service ResellQ, ainsi que les règles applicables à  l';accès, aux abonnements et à  l';usage des données et contenus fournis par la plateforme.
+                Les présentes conditions définissent les droits et obligations applicables à  l'utilisation du service ResellQ, ainsi que les règles applicables à  l'accès, aux abonnements et à  l'usage des données et contenus fournis par la plateforme.
               </p>
             </div>
 
@@ -92,7 +92,7 @@ export default function CgvPage() {
                 Paiement et abonnement
               </div>
               <p className="text-sm leading-7 text-muted-foreground">
-                L';accès aux fonctionnalités payantes est soumis à  un abonnement. Les paiements sont sécurisés et traités via Stripe. Tout abonnement est renouvelé automatiquement tant qu';il n';est pas résilié conformément à  la procédure prévue par la plateforme.
+                L'accès aux fonctionnalités payantes est soumis à  un abonnement. Les paiements sont sécurisés et traités via Stripe. Tout abonnement est renouvelé automatiquement tant qu'il n'est pas résilié conformément à  la procédure prévue par la plateforme.
               </p>
             </div>
 
@@ -111,7 +111,7 @@ export default function CgvPage() {
                 Engagements essentiels
               </div>
               <p className="text-sm leading-7 text-muted-foreground">
-                Vous vous engagez à  ne pas partager les données, contenus ou accès du service avec des tiers non autorisés, à  ne pas détourner l';usage du service, et à  respecter les droits de propriété intellectuelle et de confidentialité des autres utilisateurs et partenaires.
+                Vous vous engagez à  ne pas partager les données, contenus ou accès du service avec des tiers non autorisés, à  ne pas détourner l'usage du service, et à  respecter les droits de propriété intellectuelle et de confidentialité des autres utilisateurs et partenaires.
               </p>
             </div>
 

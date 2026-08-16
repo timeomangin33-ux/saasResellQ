@@ -52,7 +52,7 @@ export default function VintedConnectModal({ onClose }: { onClose?: () => void }
         <div className="flex flex-col gap-4">
           <div className="space-y-3">
             <h3 className="text-2xl font-semibold">Connectez votre compte Vinted</h3>
-            <p className="text-sm text-slate-300">Connectez-vous via votre navigateur en toute sécurité. Nous n';enregistrons jamais votre mot de passe : seuls les cookies de session sont capturés et chiffrés.</p>
+            <p className="text-sm text-slate-300">Connectez-vous via votre navigateur en toute sécurité. Nous n'enregistrons jamais votre mot de passe : seuls les cookies de session sont capturés et chiffrés.</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -71,7 +71,7 @@ export default function VintedConnectModal({ onClose }: { onClose?: () => void }
               {browserLoading ? 'Ouverture du navigateur...' : 'Connexion via navigateur'}
             </Button>
             <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="w-full sm:w-auto">
-              {showAdvanced ? 'Masquer l';option avancée' : 'Connexion avancée'}
+              {showAdvanced ? 'Masquer l'option avancée' : 'Connexion avancée'}
             </Button>
           </div>
 

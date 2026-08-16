@@ -68,7 +68,7 @@ export default function TopProductsPage() {
           <div className="grid gap-4 border-b border-white/10 bg-[#0e1320] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
               <p className="text-sm font-medium text-white">Top 20 des produits</p>
-              <p className="mt-1 text-sm text-slate-500">Vue priorisée de l';inventaire le plus utile à revendre.</p>
+              <p className="mt-1 text-sm text-slate-500">Vue priorisée de l'inventaire le plus utile à revendre.</p>
             </div>
             <Link href="/opportunities" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-violet-400/25 hover:bg-white/10">
               Voir les opportunités

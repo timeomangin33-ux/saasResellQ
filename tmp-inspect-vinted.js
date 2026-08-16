@@ -5,7 +5,7 @@ https.get('https://www.vinted.fr/catalog?search_text=nike', {
     Accept: 'text/html,application/xhtml+xml'
   }
 }, res => {
-  let data = '';
+  let data = ''
   res.on('data', c => data += c);
   res.on('end', () => {
     const hrefs = [...data.matchAll(/href="(\/items\/[^"]+)"/g)].slice(0, 20).map(m => m[1]);
