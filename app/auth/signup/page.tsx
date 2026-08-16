@@ -43,7 +43,8 @@ export default function SignUpPage() {
       if (!res.ok) {
         setError(data.error || 'Une erreur est survenue')
       } else {
-        router.push('/auth/signin?verified=0')
+        // Account is auto-verified in the backend; redirect with success flag
+        router.push('/auth/signin?verified=1')
       }
     } catch {
       setError('Une erreur est survenue')

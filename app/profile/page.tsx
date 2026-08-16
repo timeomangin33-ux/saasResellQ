@@ -18,8 +18,10 @@ export default function ProfilePage() {
   const [twoFactorError, setTwoFactorError] = useState('')
   const planLabel = session?.user?.subscriptionPlan ? session.user.subscriptionPlan.toLowerCase() : 'standard'
   const isActive = session?.user?.subscriptionStatus === 'ACTIVE'
-  const emailVerified = Boolean((session?.user as any)?.emailVerifiedAt)
-  const twoFactorEnabled = Boolean((session?.user as any)?.twoFactorEnabled)
+  // Email verification and 2FA flows are temporarily disabled.
+  // Treat email as verified in the UI and hide 2FA enable controls.
+  const emailVerified = true
+  const twoFactorEnabled = false
 
   const handleEnable2FA = async () => {
     setTwoFactorLoading(true)
@@ -109,13 +111,13 @@ export default function ProfilePage() {
                 <p className="text-sm text-zinc-400">Chargement du profil…</p>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
-                    Votre compte est <span className="font-semibold text-white">{isActive ? 'actif' : 'en attente d’activation'}</span> sur ResellQ.
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
+                    Votre compte est <span className="font-semibold text-white">{isActive ? 'actif' : 'en attente d&#39;activation'}</span> sur ResellQ.
                   </div>
 
-                  <div className={`rounded-2xl border px-4 py-3 text-sm ${emailVerified ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/20 bg-amber-500/10 text-amber-300'}`}>
-                    <p className="font-medium">{emailVerified ? 'Adresse email vérifiée' : 'Vérification email requise'}</p>
-                    <p className="mt-1 text-xs">{emailVerified ? 'Votre email est validé pour l’accès au tableau de bord.' : 'Un email de vérification a été envoyé lors de votre inscription. Utilisez le lien envoyé pour confirmer votre compte.'}</p>
+                  <div className="rounded-2xl border px-4 py-3 text-sm border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                    <p className="font-medium">Adresse email vérifiée</p>
+                    <p className="mt-1 text-xs">Votre adresse email est considérée comme vérifiée pour l&#39;accès au tableau de bord.</p>
                   </div>
                 </>
               )}
@@ -141,26 +143,8 @@ export default function ProfilePage() {
                   <Badge variant={twoFactorEnabled ? 'success' : 'default'}>{twoFactorEnabled ? 'Activée' : 'Désactivée'}</Badge>
                 </div>
 
-                {!twoFactorEnabled ? (
-                  <>
-                    <Button variant="outline" className="w-full justify-start" onClick={handleEnable2FA} disabled={twoFactorLoading}>
-                      {twoFactorLoading ? 'Envoi du code…' : 'Envoyer un code de validation'}
-                    </Button>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={twoFactorCode}
-                      onChange={(event) => setTwoFactorCode(event.target.value)}
-                      placeholder="Code à 6 chiffres"
-                      className="w-full"
-                    />
-                    <Button variant="default" className="w-full" onClick={handleConfirm2FA} disabled={twoFactorLoading}>
-                      {twoFactorLoading ? 'Vérification…' : 'Valider l’activation'}
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-sm text-emerald-300">La sécurité renforcée est déjà active sur votre compte.</p>
-                )}
+                {/* 2FA disabled: do not show enable controls */}
+                <p className="text-sm text-zinc-400">La vérification à deux facteurs est temporairement désactivée.</p>
 
                 {twoFactorMessage && <p className="text-sm text-emerald-300">{twoFactorMessage}</p>}
                 {twoFactorError && <p className="text-sm text-red-400">{twoFactorError}</p>}
