@@ -8,8 +8,7 @@ import { normalizePlan } from '@/lib/plans'
 
 interface Message {
   id: string
-  role: 'user' | 'assistant'
-  content: string
+  role: 'user' | 'assistant', content: string
   timestamp: Date
 }
 

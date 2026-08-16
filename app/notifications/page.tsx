@@ -8,8 +8,7 @@ interface Notification {
   id: string
   title: string
   message: string
-  type: 'opportunity' | 'trend' | 'alert' | 'report'
-  read: boolean
+  type: 'opportunity' | 'trend' | 'alert' | 'report', read: boolean
   createdAt: string
 }
 

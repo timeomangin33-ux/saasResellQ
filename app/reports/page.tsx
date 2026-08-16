@@ -10,8 +10,7 @@ import { useState } from 'react'
 interface Report {
   id: string
   title: string
-  type: 'daily' | 'weekly' | 'monthly'
-  summary: string
+  type: 'daily' | 'weekly' | 'monthly', summary: string
   insights: string[]
   topOpportunities: string[]
   createdAt: string

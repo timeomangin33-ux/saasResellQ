@@ -16,8 +16,7 @@ interface BotItem {
 
 interface BotResult {
   success: boolean
-  source: 'live' | 'fallback'
-  query: string
+  source: 'live' | 'fallback', query: string
   items: BotItem[]
   message: string
 }

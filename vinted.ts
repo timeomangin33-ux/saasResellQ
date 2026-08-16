@@ -45,8 +45,7 @@ export interface TrendingItem {
   url?: string
   seller?: string
   sales: number
-  trend: 'up' | 'down' | 'stable'
-  trendPercent: number
+  trend: 'up' | 'down' | 'stable', trendPercent: number
   profitMargin: number
   demandScore: number
   timesSold: number

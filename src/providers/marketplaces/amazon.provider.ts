@@ -3,8 +3,7 @@ export interface MarketplaceProduct {
   title: string
   price: number
   image: string
-  platform: 'amazon'
-  rating: number
+  platform: 'amazon', rating: number
   reviews: number
   availability: string
   link: string

@@ -13,8 +13,7 @@ export interface VintedBotItem {
 
 export interface VintedBotScanResult {
   success: boolean
-  source: 'live' | 'fallback'
-  query: string
+  source: 'live' | 'fallback', query: string
   items: VintedBotItem[]
   message: string
 }
