@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '../../../../../auth'
 import { prisma } from '../../../../../prisma'
-import { createVerificationToken, sendVerificationEmailToUser } from '@/lib/email'
+// 2FA via email is temporarily disabled
 
 export async function POST() {
   const session = await auth()
@@ -19,8 +19,6 @@ export async function POST() {
     return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
   }
 
-  const token = await createVerificationToken({ userId: session.user.id, type: '2fa' })
-  await sendVerificationEmailToUser(user.email, token, '2fa')
-
-  return NextResponse.json({ success: true, message: 'Un code de validation a été envoyé à votre adresse email.' })
+  // 2FA email flow disabled: return a neutral success message
+  return NextResponse.json({ success: true, message: 'La vérification à deux facteurs est temporairement désactivée.' })
 }

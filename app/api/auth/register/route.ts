@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { prisma } from '../../../../prisma'
 import { nextMonthlyReset } from '@/lib/plans'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { createVerificationToken, sendVerificationEmail } from '@/lib/email'
+// Email verification temporarily disabled: do not send emails
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -46,13 +46,11 @@ export async function POST(request: Request) {
         subscriptionStatus: 'INACTIVE',
         subscriptionPlan: 'FREE',
         aiCreditsResetAt: nextMonthlyReset(),
+        // mark as verified until email flow is re-enabled
+        emailVerifiedAt: new Date(),
       },
     })
-
-    const verificationToken = await createVerificationToken({ userId: user.id, type: 'verify' })
-    await sendVerificationEmail(normalizedEmail, verificationToken, 'verify')
-
-    return NextResponse.json({ success: true, message: 'Compte créé. Un email de vérification a été envoyé.' }, { status: 201 })
+    return NextResponse.json({ success: true, message: 'Compte créé.' }, { status: 201 })
   } catch (error) {
     console.error('[auth/register] failed:', error)
     return NextResponse.json({

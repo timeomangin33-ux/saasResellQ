@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 import { z } from 'zod'
-import { createVerificationToken, sendVerificationEmail } from '@/lib/email'
+// Email/2FA flows temporarily disabled: do not send verification emails
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -62,9 +62,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!isValid) return null
 
           if (!user.emailVerifiedAt) {
-            const token = await createVerificationToken({ userId: user.id, type: 'verify' })
-            await sendVerificationEmail(user.email, token, 'verify')
-            throw new Error('EMAIL_NOT_VERIFIED')
+            // Mark user as verified until email flow is re-enabled
+            try {
+              await prisma.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date() } })
+              user.emailVerifiedAt = new Date()
+            } catch (e) {
+              // ignore failures here; allow login to proceed
+              console.warn('[auth] failed to mark email as verified:', e)
+            }
           }
 
           return {
