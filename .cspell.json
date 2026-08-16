@@ -1,0 +1,38 @@
+{
+  "version": "0.2",
+  "language": "fr,en",
+  "ignorePaths": [
+    "node_modules",
+    "vinted-discord-bot-main",
+    ".next",
+    "dist"
+  ],
+  "words": [
+    "Vinted",
+    "vinted",
+    "resellq",
+    "reselliq",
+    "ResellQ",
+    "Timeo",
+    "Neverfull",
+    "Watchlist",
+    "watchlists",
+    "Carhartt",
+    "Nuptse",
+    "Clickjacking",
+    "papaparse",
+    "neondatabase",
+    "NEXTAUTH",
+    "SUPABASE",
+    "UNPOOLED",
+    "resend",
+    "Resend",
+    "whsec",
+    "autocop",
+    "autobuy",
+    "tabler",
+    "jspdf"
+  ],
+  "dictionaryDefinitions": [],
+  "ignoreRegExpList": ["/https?:\\/\\/\\S+/"]
+}
