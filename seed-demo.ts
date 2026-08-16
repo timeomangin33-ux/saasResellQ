@@ -76,7 +76,7 @@ async function main() {
     console.log(`✅ ${demo.subscriptionPlan} créé : ${user.email}`)
   }
 
-  console.log('✅ Les comptes de démonstration sont prêts à l'usage.')
+  console.log('✅ Les comptes de démonstration sont prêts à l\'usage.')
 }
 
 main()

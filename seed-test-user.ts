@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Vérifier si l'utilisateur existe déjà
+  // Vérifier si l\'utilisateur existe déjà
   const existing = await prisma.user.findUnique({
     where: { email: 'test@example.com' },
   })
@@ -22,7 +22,7 @@ async function main() {
     console.log('📝 For security, set TEST_USER_PASSWORD in .env.local')
   }
 
-  // Créer l'utilisateur de test
+  // Créer l\'utilisateur de test
   const hashedPassword = await bcrypt.hash(testPassword, 10)
 
   const user = await prisma.user.create({

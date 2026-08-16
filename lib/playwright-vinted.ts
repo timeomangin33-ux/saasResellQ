@@ -82,7 +82,7 @@ export async function scrapeWithCookieJar(serializedCookieJar: string) {
       throw new Error('Invalid or expired Vinted session')
     }
 
-    // Scrape listings from user's profile page
+    // Scrape listings from user\'s profile page
     // This is intentionally conservative: extract elements that are stable, fall back to empty arrays
     const listings = await page.evaluate(() => {
       const out: any[] = []

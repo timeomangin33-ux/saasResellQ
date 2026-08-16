@@ -88,7 +88,7 @@ export default function DealFinderPage() {
         const data = await res.json()
         setResults(data.opportunities || [])
       } catch {
-        setError('Impossible de charger les résultats. Vérifiez la connexion au service d'analyse.')
+        setError('Impossible de charger les résultats. Vérifiez la connexion au service d\'analyse.')
       }
     } finally {
       setLoading(false)

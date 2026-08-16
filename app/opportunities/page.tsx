@@ -132,7 +132,7 @@ export default function OpportunitiesPage() {
         <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
             <p className="text-sm font-medium">{sorted.length} opportunité{pluralS}</p>
-            <p className="text-xs text-muted-foreground">Cliquez sur une ligne pour voir l'analyse</p>
+            <p className="text-xs text-muted-foreground">Cliquez sur une ligne pour voir l\'analyse</p>
           </div>
           {loading ? (
             <div className="divide-y divide-border">

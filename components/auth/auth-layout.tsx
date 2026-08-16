@@ -21,7 +21,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
                 Premium access
               </div>
               <blockquote className="max-w-md text-lg leading-8 text-slate-200">
-                "ResellQ m'a permis d'augmenter mes marges de 27% en un mois. Je trouve les bons produits beaucoup plus vite."
+                "ResellQ m\'a permis d\'augmenter mes marges de 27% en un mois. Je trouve les bons produits beaucoup plus vite."
               </blockquote>
               <div>
                 <p className="text-sm font-semibold text-white">Marie L.</p>
@@ -46,7 +46,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
                   href="/"
                   className="mb-6 inline-flex items-center text-xs font-medium text-slate-400 transition hover:text-white"
                 >
-                  ← Retour à l'accueil
+                  ← Retour à l\'accueil
                 </Link>
                 <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
                 <p className="mt-1.5 text-sm text-slate-400">{subtitle}</p>

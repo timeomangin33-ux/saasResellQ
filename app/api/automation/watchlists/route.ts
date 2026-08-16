@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       take: 5,
     })
 
-    // Get user's automation config
+    // Get user\'s automation config
     const config = await prisma.automationConfig.findUnique({
       where: { userId: user.id },
     })

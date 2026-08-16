@@ -13,7 +13,7 @@ const blocks = [
   },
   {
     title: 'Hébergeur',
-    body: 'Le site est hébergé par un prestataire technique spécialisé dans l'hébergement de services web et applications. Les informations d'hébergement peuvent être mises à jour selon la configuration technique retenue.',
+    body: 'Le site est hébergé par un prestataire technique spécialisé dans l\'hébergement de services web et applications. Les informations d\'hébergement peuvent être mises à jour selon la configuration technique retenue.',
   },
   {
     title: 'Responsable de publication',
@@ -25,7 +25,7 @@ const blocks = [
   },
   {
     title: 'Propriété intellectuelle',
-    body: 'L'ensemble des contenus, visuels, éléments graphiques, textes, logos, interfaces et fonctionnalités du site est protégé par les droits de propriété intellectuelle applicables.',
+    body: 'L\'ensemble des contenus, visuels, éléments graphiques, textes, logos, interfaces et fonctionnalités du site est protégé par les droits de propriété intellectuelle applicables.',
   },
   {
     title: 'Droit applicable',
@@ -42,7 +42,7 @@ export default function MentionsLegalesPage() {
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Retour à l'accueil
+              Retour à l\'accueil
             </Button>
           </Link>
         </div>
@@ -56,7 +56,7 @@ export default function MentionsLegalesPage() {
               </div>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Informations légales et identité du service</h1>
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                Les mentions ci-dessous donnent les informations essentielles relatives à l'éditeur du site, à l'hébergement, aux coordonnées de contact et au cadre juridique d'utilisation du service.
+                Les mentions ci-dessous donnent les informations essentielles relatives à l\'éditeur du site, à l\'hébergement, aux coordonnées de contact et au cadre juridique d\'utilisation du service.
               </p>
             </div>
 

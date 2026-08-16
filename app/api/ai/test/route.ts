@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Payload de test simple selon l'agent
+    // Payload de test simple selon l\'agent
     const testPayloads: Record<string, object> = {
       chat: { message: 'Test du chat agent', session_id: 'test_session' },
       ragSearch: { query: 'test', limit: 5 },

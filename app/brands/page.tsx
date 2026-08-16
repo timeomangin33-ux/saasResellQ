@@ -161,7 +161,7 @@ export default function BrandsPage() {
                     </div>
 
                     <button className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition font-medium text-sm group-hover:gap-2.5 gap-1.5 w-full">
-                      <span>Voir l'analyse</span>
+                      <span>Voir l\'analyse</span>
                       <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                     </button>
                   </CardContent>

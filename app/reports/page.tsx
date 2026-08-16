@@ -87,7 +87,7 @@ export default function ReportsPage() {
 
           <div>
             <h1 className="text-xl font-semibold">Rapports</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Analyses générées par l'agent IA</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Analyses générées par l\'agent IA</p>
           </div>
 
           <div className="rounded-3xl border border-border/60 bg-[#0f172a] p-4 text-sm text-zinc-300">

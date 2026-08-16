@@ -1,5 +1,5 @@
 // Service Vinted - Données de marché en temps réel
-// En production: connecter à l'API Vinted ou un scraper
+// En production: connecter à l\'API Vinted ou un scraper
 
 export interface VintedItem {
   id: string
@@ -554,7 +554,7 @@ export function getTopProducts(limit = 20): ScoredTrendingItem[] {
   // Build a candidate pool starting with trending items
   const pool: TrendingItem[] = [...TRENDING_ITEMS]
 
-  // If we don't have enough real trending items, generate placeholders across all categories
+  // If we don\'t have enough real trending items, generate placeholders across all categories
   if (pool.length < limit) {
     const perCategory = Math.max(1, Math.ceil((limit - pool.length) / Math.max(1, VINTED_CATEGORIES.length)))
     for (const cat of VINTED_CATEGORIES) {
@@ -608,7 +608,7 @@ const CATEGORY_PLACEHOLDER_TEMPLATES: Record<string, string[]> = {
   jeux: ['Peluche', 'Jeu de société', 'Figurine', 'Puzzle', 'Voiture miniature', 'Doll', 'Jeu éducatif', 'Poupée', 'Casse-tête', 'Kit créatif'],
   jouets: ['Peluche', 'Jeu de société', 'Figurine', 'Puzzle', 'Voiture miniature', 'Doll', 'Jeu éducatif', 'Poupée', 'Casse-tête', 'Kit créatif'],
   montres: ['Montre Casio', 'Montre Swatch', 'Bracelet', 'Collier fin', 'Bague'],
-  bijoux: ['Collier', 'Boucles d'oreilles', 'Montre fine', 'Bracelet', 'Bague'],
+  bijoux: ['Collier', 'Boucles d\'oreilles', 'Montre fine', 'Bracelet', 'Bague'],
   accessoires: ['Ceinture', 'Lunettes', 'Chapeau', 'Gants', 'Foulard'],
   vintage: ['Veste vintage', 'Sac rétro', 'Accessoire ancien', 'Jean Levi\'s', 'Chemise rétro']
 }

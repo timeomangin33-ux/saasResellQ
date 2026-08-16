@@ -13,7 +13,7 @@ export default function HistoryPage() {
             <span>Historique</span>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Suivi des analyses</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-400">Retrouvez l'historique de vos analyses, exportations et décisions prises dans ResellQ.</p>
+          <p className="mt-3 max-w-2xl text-sm text-slate-400">Retrouvez l\'historique de vos analyses, exportations et décisions prises dans ResellQ.</p>
 
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {['Analyse produit', 'Veille catégorie', 'Rapport exporté'].map((item, index) => (

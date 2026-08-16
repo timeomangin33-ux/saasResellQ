@@ -17,7 +17,7 @@ const plans = [
     features: [
       '250 crédits IA par mois',
       'Analyses de marché essentielles',
-      'Alertes de prix jusqu'à 5',
+      'Alertes de prix jusqu\'à 5',
       'Rapports hebdomadaires',
       'Support par email',
     ],
@@ -49,7 +49,7 @@ const plans = [
     name: 'Business',
     price: 149,
     description: 'Pour piloter une activité structurée.',
-    tagline: 'L'espace complet pour automatiser, analyser et administrer vos environnements de test.',
+    tagline: 'L\'espace complet pour automatiser, analyser et administrer vos environnements de test.',
     image: '/pricing-images/plan-149.png',
     features: [
       '6 000 crédits IA par mois',
@@ -165,11 +165,11 @@ export default function PricingPage() {
             </div>
 
             <div className="rounded-[28px] border border-white/10 bg-[#0B1220] p-6">
-              <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Pourquoi c'est utile</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Pourquoi c\'est utile</p>
               <div className="mt-6 space-y-4">
                 {[
                   'Identifier les opportunités les plus pertinentes.',
-                  'Gagner du temps sur l'analyse de marché.',
+                  'Gagner du temps sur l\'analyse de marché.',
                   'Prendre des décisions plus sûres.',
                 ].map((item) => (
                   <div key={item} className="rounded-2xl border border-white/10 bg-[#08101f] p-4 text-sm leading-6 text-slate-300">
@@ -255,7 +255,7 @@ export default function PricingPage() {
                 a: 'Oui, vous pouvez évoluer à tout moment depuis votre espace billing.',
               },
               {
-                q: 'Y a-t-il une période d'essai ?',
+                q: 'Y a-t-il une période d\'essai ?',
                 a: 'Oui, les nouveaux comptes peuvent tester les fonctionnalités principales rapidement.',
               },
               {
@@ -276,7 +276,7 @@ export default function PricingPage() {
         </section>
 
         <div className="mt-8 text-center text-sm text-slate-400">
-          Besoin d'un accompagnement ?{' '}
+          Besoin d\'un accompagnement ?{' '}
           <Link href="/dashboard" className="font-semibold text-violet-300 hover:text-violet-200">
             Ouvrez votre tableau de bord
           </Link>

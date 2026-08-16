@@ -222,7 +222,7 @@ export default function BotPage() {
               </div>
             ) : (
               <p className="mt-6 rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Aucun résultat n'a encore été retourné par le bot.
+                Aucun résultat n\'a encore été retourné par le bot.
               </p>
             )}
           </div>

@@ -28,13 +28,13 @@ const FALLBACK_ITEMS: VintedBotItem[] = [
     category: 'Chaussures',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
     url: 'https://www.vinted.fr',
-    description: 'Exemple de scan Vinted pour valider l'intégration SaaS.',
+    description: 'Exemple de scan Vinted pour valider l\'intégration SaaS.',
   },
   {
     id: 'fallback-2',
-    title: 'Veste Levi's 501 vintage',
+    title: 'Veste Levi\'s 501 vintage',
     price: 42,
-    brand: 'Levi's',
+    brand: 'Levi\'s',
     category: 'Femmes',
     image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600',
     url: 'https://www.vinted.fr',
@@ -134,7 +134,7 @@ export async function runVintedBotScan({
     const items = buildVintedItemsFromHtml(html, normalizedQuery, normalizedPerPage)
 
     if (items.length === 0) {
-      throw new Error('Aucune annonce n'a été extraite de la page Vinted')
+      throw new Error('Aucune annonce n\'a été extraite de la page Vinted')
     }
 
     return {

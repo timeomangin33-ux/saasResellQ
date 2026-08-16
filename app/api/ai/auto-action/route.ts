@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const access = await authorizeAIFeature('automation_action', 2, 'PRO')
     if ('response' in access) return access.response
     const parsed = actionSchema.safeParse(await request.json().catch(() => ({})))
-    if (!parsed.success) return NextResponse.json({ error: 'Paramètres d'automatisation invalides.' }, { status: 400 })
+    if (!parsed.success) return NextResponse.json({ error: 'Paramètres d\'automatisation invalides.' }, { status: 400 })
     const { action, query, filters } = parsed.data
 
     // Parse AI action and create corresponding job

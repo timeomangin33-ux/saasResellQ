@@ -47,7 +47,7 @@ export default function MarketResearchPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-violet-300">Explorateur de marché</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Un moteur de recherche premium, pensé pour l'action.</h1>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Un moteur de recherche premium, pensé pour l\'action.</h1>
               <p className="mt-3 text-sm leading-6 text-zinc-400">Recherchez par catégorie, marque, potentiel de marge et demande. Chaque résultat est présenté comme une opportunité exploitable.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-400">
@@ -55,7 +55,7 @@ export default function MarketResearchPage() {
                 <Sparkles className="h-4 w-4 text-violet-300" />
                 Recherche instantanée
               </div>
-              <p className="mt-2 max-w-xs text-sm leading-5">Aucune donnée inventée. Les résultats s'affichent uniquement quand les signaux sont disponibles.</p>
+              <p className="mt-2 max-w-xs text-sm leading-5">Aucune donnée inventée. Les résultats s\'affichent uniquement quand les signaux sont disponibles.</p>
             </div>
           </div>
         </section>

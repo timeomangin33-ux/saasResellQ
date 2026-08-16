@@ -213,7 +213,7 @@ async function createWatchlistJob(userId: string | undefined, payload: any) {
   }
 
   try {
-    // Get user's automation config
+    // Get user\'s automation config
     const config = await prisma.automationConfig.findUnique({
       where: { userId },
     })

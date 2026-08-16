@@ -35,7 +35,7 @@ const WORKFLOWS: WorkflowItem[] = [
   { id: 'h6K62ESUniZ4e1qP', name: 'Deal Finder', published: true, endpoint: '/webhook/resellq-deals', description: 'Trouve les meilleures affaires du moment — articles sous-cotés avec fort potentiel.', category: 'Analyse' },
   { id: '23nv17HoXt5Hpwhu', name: 'Trend Analyzer', published: true, endpoint: '/webhook/resellq-trends', description: 'Analyse les tendances marché : catégories en hausse, marques populaires, saisonnalité.', category: 'Analyse' },
   { id: 'cCr0zHwMpoj24eOi', name: 'Report Generator', published: true, endpoint: '/webhook/resellq-report', description: 'Génère un rapport marché complet en HTML ou JSON avec résumé GPT-4o-mini.', category: 'Rapports' },
-  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail (Gmail) et dans l'application pour les opportunités et les deals détectés.', category: 'Notifications' },
+  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail (Gmail) et dans l\'application pour les opportunités et les deals détectés.', category: 'Notifications' },
 ]
 
 const CATEGORIES = ['Tous', 'Collecte', 'Infrastructure', 'IA', 'Analyse', 'Rapports', 'Notifications']

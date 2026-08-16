@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    // Create default config if doesn't exist
+    // Create default config if doesn\'t exist
     if (!config) {
       config = await prisma.automationConfig.create({
         data: {
