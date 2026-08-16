@@ -73,9 +73,32 @@ function PaymentPageContent() {
 
   useEffect(() => {
     if (status !== 'authenticated' || !session || !selectedPlan || checkoutLoading) return
-    const id = window.setTimeout(() => { void openCheckout(selectedPlan) }, 0)
-    return () => window.clearTimeout(id)
-  }, [status, session, selectedPlan, checkoutLoading, openCheckout])
+
+    let didCancel = false
+    let timeoutId: number | undefined
+    const tryOpen = async () => {
+      try {
+        const res = await fetch('/api/subscription/info')
+        if (res.ok) {
+          const info = await res.json()
+          if (!didCancel && info?.subscriptionStatus === 'ACTIVE') {
+            router.replace('/dashboard')
+            return
+          }
+        }
+      } catch (e) {
+        // ignore and proceed to checkout
+      }
+
+      if (didCancel) return
+      timeoutId = window.setTimeout(() => { void openCheckout(selectedPlan) }, 0)
+    }
+    void tryOpen()
+    return () => {
+      didCancel = true
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [status, session, selectedPlan, checkoutLoading, openCheckout, router])
 
   return (
     <main className="min-h-screen bg-[#020617] text-slate-100">
@@ -155,7 +178,7 @@ function PaymentPageContent() {
                       </div>
                       <div className="mt-4 flex items-center gap-2 text-sm text-slate-300">
                         <Clock3 className="h-4 w-4 text-emerald-300" />
-                        Mise à jour toutes les 48h avec des signaux d&apos;achat
+                        Mise à jour toutes les 48h avec des signaux d';achat
                       </div>
                     </div>
                   </div>
@@ -177,9 +200,9 @@ function PaymentPageContent() {
                 <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-white">Ce que vous recevez dès l&apos;activation</p>
+                      <p className="text-sm font-semibold text-white">Ce que vous recevez dès l';activation</p>
                       <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-400">
-                        Analyse premium, opportunités triées par valeur, recommandations IA et un support réactif, pour transformer l&apos;information en décisions concrètes et en marge.
+                        Analyse premium, opportunités triées par valeur, recommandations IA et un support réactif, pour transformer l';information en décisions concrètes et en marge.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -199,7 +222,7 @@ function PaymentPageContent() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.34em] text-slate-500">Sécurisé</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">Choisissez votre mode d&apos;accès</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">Choisissez votre mode d';accès</p>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/[0.04] p-3">
                     <ShieldCheck className="h-5 w-5 text-emerald-300" />

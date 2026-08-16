@@ -100,7 +100,7 @@ export default function DashboardAccountsPage() {
             ))
           ) : (
             <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-zinc-400">
-              <p className="text-sm font-medium text-white">Aucun compte connecté pour l&apos;instant</p>
+              <p className="text-sm font-medium text-white">Aucun compte connecté pour l';instant</p>
               <p className="mt-2 text-sm">Connectez vos comptes Vinted depuis la page de synchronisation pour alimenter votre dashboard multi-comptes.</p>
             </div>
           )}

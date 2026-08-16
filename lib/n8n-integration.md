@@ -1,9 +1,9 @@
 ﻿# N8N Agents Integration Guide
 
 ## Overview
-Tous les agents n8n sont maintenant centralisÃ©s et fonctionnels via `lib/n8n-agents.ts`.
+Tous les agents n8n sont maintenant centralisés et fonctionnels via `lib/n8n-agents.ts`.
 
-## Configuration CentralisÃ©e
+## Configuration Centralisée
 
 **Base URL:** `https://botscrapping.app.n8n.cloud/webhook`
 
@@ -12,14 +12,14 @@ Tous les agents n8n sont maintenant centralisÃ©s et fonctionnels via `lib/n8n-
 | Agent | Webhook | Description |
 |-------|---------|-------------|
 | `chat` | `/ResellQ-ai-chat` | Chat conversationnel GPT-4o |
-| `ragSearch` | `/ResellQ-rag-search` | Recherche RAG dans la base de donnÃ©es |
-| `memory` | `/ResellQ-memory` | Gestion de la mÃ©moire de session |
-| `productAnalyzer` | `/ResellQ-analyze-product` | Analyse dÃ©taillÃ©e d'un produit |
-| `categoryAnalyzer` | `/ResellQ-analyze-category` | Analyse des catÃ©gories de marchÃ© |
-| `opportunityFinder` | `/ResellQ-opportunities` | DÃ©tection des opportunitÃ©s de revente |
+| `ragSearch` | `/ResellQ-rag-search` | Recherche RAG dans la base de données |
+| `memory` | `/ResellQ-memory` | Gestion de la mémoire de session |
+| `productAnalyzer` | `/ResellQ-analyze-product` | Analyse détaillée d'un produit |
+| `categoryAnalyzer` | `/ResellQ-analyze-category` | Analyse des catégories de marché |
+| `opportunityFinder` | `/ResellQ-opportunities` | Détection des opportunités de revente |
 | `dealFinder` | `/ResellQ-deals` | Finder des meilleurs deals |
 | `trendAnalyzer` | `/ResellQ-trends` | Analyse des tendances Vinted |
-| `reportGenerator` | `/ResellQ-report` | GÃ©nÃ©ration de rapports |
+| `reportGenerator` | `/ResellQ-report` | Génération de rapports |
 | `notificationAgent` | `/ResellQ-notifications` | Gestion des notifications |
 
 ## Utilisation
@@ -71,7 +71,7 @@ export default function MyPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       
-      console.log('Analyse complÃ¨te:', data)
+      console.log('Analyse complète:', data)
     } catch (error) {
       console.error('Erreur:', error)
     } finally {
@@ -91,46 +91,46 @@ export default function MyPage() {
 
 - `POST /api/ai/chat` - Conversation avec l'assistant IA
 - `POST /api/ai/deal-finder` - Finder des deals
-- `POST /api/ai/opportunities` - Trouver des opportunitÃ©s
+- `POST /api/ai/opportunities` - Trouver des opportunités
 - `POST /api/ai/trends` - Analyser les tendances
 - `POST /api/ai/product-analyzer` - Analyser un produit
-- `POST /api/ai/categories` - Analyser les catÃ©gories
-- `POST /api/ai/reports` - GÃ©nÃ©rer un rapport
-- `POST /api/ai/memory` - GÃ©rer la mÃ©moire de session
+- `POST /api/ai/categories` - Analyser les catégories
+- `POST /api/ai/reports` - Générer un rapport
+- `POST /api/ai/memory` - Gérer la mémoire de session
 - `POST /api/ai/rag-search` - Recherche RAG
 
 ## Gestion des Erreurs
 
-Le systÃ¨me gÃ¨re automatiquement :
-- âœ… Timeout 30 secondes par dÃ©faut
+Le système gère automatiquement :
+- âœ… Timeout 30 secondes par défaut
 - âœ… Parsing JSON robuste
 - âœ… Messages d'erreur clairs
-- âœ… Fallback sur rÃ©ponse texte si n8n retourne du non-JSON
+- âœ… Fallback sur réponse texte si n8n retourne du non-JSON
 
-## Ã‰tat des Agents
+## à‰tat des Agents
 
 **Fonctionnels :**
 - âœ… Chat conversationnel
 - âœ… Deal Finder
-- âœ… OpportunitÃ©s
+- âœ… Opportunités
 - âœ… Tendances
-- âœ… Analyseurs produit/catÃ©gorie
+- âœ… Analyseurs produit/catégorie
 - âœ… Rapports
-- âœ… MÃ©moire de session
+- âœ… Mémoire de session
 
-## IntÃ©gration Pages
+## Intégration Pages
 
 ### Dashboard `/dashboard`
-Utilise les donnÃ©es des agents pour afficher trends et top produits
+Utilise les données des agents pour afficher trends et top produits
 
 ### AI Agent `/ai-agent`
-Interface conversationnelle complÃ¨te avec l'assistant
+Interface conversationnelle complète avec l'assistant
 
 ### Deal Finder `/deal-finder`
-RÃ©sultats en temps rÃ©el du Deal Finder agent
+Résultats en temps réel du Deal Finder agent
 
 ### Reports `/reports`
-Rapports gÃ©nÃ©rÃ©s par l'agent reportGenerator
+Rapports générés par l'agent reportGenerator
 
 ## Maintenance
 
@@ -149,7 +149,7 @@ Tous les agents utiliseront automatiquement la nouvelle URL.
    newAgent: `${N8N_BASE}/ResellQ-new-agent`,
    ```
 
-2. CrÃ©er la route API: `/app/api/ai/new-agent/route.ts`
+2. Créer la route API: `/app/api/ai/new-agent/route.ts`
    ```typescript
    import { AGENTS, callAgent } from '@/lib/n8n-agents'
    

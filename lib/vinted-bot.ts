@@ -28,13 +28,13 @@ const FALLBACK_ITEMS: VintedBotItem[] = [
     category: 'Chaussures',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
     url: 'https://www.vinted.fr',
-    description: 'Exemple de scan Vinted pour valider l&apos;intégration SaaS.',
+    description: 'Exemple de scan Vinted pour valider l';intégration SaaS.',
   },
   {
     id: 'fallback-2',
-    title: 'Veste Levi&apos;s 501 vintage',
+    title: 'Veste Levi';s 501 vintage',
     price: 42,
-    brand: 'Levi&apos;s',
+    brand: 'Levi';s',
     category: 'Femmes',
     image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600',
     url: 'https://www.vinted.fr',
@@ -45,9 +45,9 @@ const FALLBACK_ITEMS: VintedBotItem[] = [
 function decodeHtmlEntities(input: string) {
   return input
     .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
+    .replace(/"/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
+    .replace(/ /g, ' ')
 }
 
 function extractPrice(text: string) {
@@ -134,7 +134,7 @@ export async function runVintedBotScan({
     const items = buildVintedItemsFromHtml(html, normalizedQuery, normalizedPerPage)
 
     if (items.length === 0) {
-      throw new Error('Aucune annonce n&apos;a été extraite de la page Vinted')
+      throw new Error('Aucune annonce n';a été extraite de la page Vinted')
     }
 
     return {
@@ -142,7 +142,7 @@ export async function runVintedBotScan({
       source: 'live',
       query: normalizedQuery,
       items,
-      message: `Les dernières annonces Vinted pour &quot;${normalizedQuery}&quot; ont été chargées.`,
+      message: `Les dernières annonces Vinted pour "${normalizedQuery}" ont été chargées.`,
     }
   } catch (error) {
     const fallbackItems = FALLBACK_ITEMS.map((item) => ({

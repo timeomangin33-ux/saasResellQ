@@ -132,7 +132,7 @@ export default function OpportunitiesPage() {
         <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
             <p className="text-sm font-medium">{sorted.length} opportunité{pluralS}</p>
-            <p className="text-xs text-muted-foreground">Cliquez sur une ligne pour voir l&apos;analyse</p>
+            <p className="text-xs text-muted-foreground">Cliquez sur une ligne pour voir l';analyse</p>
           </div>
           {loading ? (
             <div className="divide-y divide-border">
@@ -205,7 +205,7 @@ export default function OpportunitiesPage() {
                           {opp.reason && <p className="text-xs text-muted-foreground"><span className="text-foreground font-medium">Raison :</span> {opp.reason}</p>}
                           {analysis[opp.id] && <p className="text-xs text-muted-foreground"><span className="text-foreground font-medium">Analyse IA :</span> {analysis[opp.id]}</p>}
                           {!opp.prediction && !opp.reason && !analysis[opp.id] && (
-                            <p className="text-xs text-muted-foreground">Cliquez sur &quot;Analyser&quot; pour obtenir une analyse IA détaillée.</p>
+                            <p className="text-xs text-muted-foreground">Cliquez sur "Analyser" pour obtenir une analyse IA détaillée.</p>
                           )}
                         </td>
                       </tr>

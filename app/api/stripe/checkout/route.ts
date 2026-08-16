@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     if (!stripe) {
       console.error('[stripe/checkout] Stripe not configured')
-      return NextResponse.json({ error: 'Stripe n&apos;est pas configuré' }, { status: 500 })
+      return NextResponse.json({ error: 'Stripe n';est pas configuré' }, { status: 500 })
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'

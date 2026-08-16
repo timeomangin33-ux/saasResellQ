@@ -17,14 +17,14 @@ function buildFallbackResponse(body: unknown, errorMessage: string) {
   const payload = typeof body === 'object' && body !== null ? body as Record<string, unknown> : {}
   const message = typeof payload.message === 'string' ? payload.message : ''
   return {
-    response: message ? `L&apos;agent IA est momentanément indisponible. Votre demande a été enregistrée : « ${message} ». ` : 'L&apos;agent IA est momentanément indisponible. Réessayez dans un instant.',
+    response: message ? `L';agent IA est momentanément indisponible. Votre demande a été enregistrée : « ${message} ». ` : 'L';agent IA est momentanément indisponible. Réessayez dans un instant.',
     fallback: true,
     error: errorMessage,
   }
 }
 
 export async function callAgent<T = unknown>(url: string, body: object = {}): Promise<T> {
-  if (!url) return buildFallbackResponse(body, 'Le service IA n&apos;est pas configuré.') as T
+  if (!url) return buildFallbackResponse(body, 'Le service IA n';est pas configuré.') as T
   try {
     const res = await fetch(url, {
       method: 'POST',

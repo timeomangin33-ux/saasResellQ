@@ -76,7 +76,7 @@ export default function ProductAnalyzerPage() {
               <Zap className="w-8 h-8 text-primary" />
               Product Analyzer
             </h1>
-            <p className="text-muted-foreground">Analyse approfondie d&apos;un produit — rentabilité, demande, prédictions futures</p>
+            <p className="text-muted-foreground">Analyse approfondie d';un produit — rentabilité, demande, prédictions futures</p>
           </div>
 
           <form onSubmit={handleAnalyze} className="rounded-3xl border border-border/50 bg-card p-8 shadow-card mb-8">
@@ -101,7 +101,7 @@ export default function ProductAnalyzerPage() {
                   className="w-full px-4 py-3 rounded-xl bg-muted border border-border/50 focus:border-primary/50 outline-none" />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Prix d&apos;achat (€) *</label>
+                <label className="block text-sm font-semibold mb-2">Prix d';achat (€) *</label>
                 <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required
                   placeholder="Ex: 85"
                   className="w-full px-4 py-3 rounded-xl bg-muted border border-border/50 focus:border-primary/50 outline-none" />

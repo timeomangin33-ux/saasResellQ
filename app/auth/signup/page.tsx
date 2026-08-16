@@ -60,8 +60,8 @@ export default function SignUpPage() {
     >
       <div className="space-y-5 mb-6">
         <div className="rounded-3xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Créez votre compte gratuit aujourd&apos;hui et explorez l&apos;interface ResellQ.</p>
-          <p className="mt-2">Le plan reste inactif jusqu&apos;à l&apos;activation d&apos;un abonnement validé via Stripe.</p>
+          <p className="font-medium text-foreground">Créez votre compte gratuit aujourd';hui et explorez l';interface ResellQ.</p>
+          <p className="mt-2">Le plan reste inactif jusqu';à l';activation d';un abonnement validé via Stripe.</p>
         </div>
 
         <div className="space-y-1.5">

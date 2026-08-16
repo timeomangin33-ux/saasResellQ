@@ -16,7 +16,7 @@ const chartData = [
 ]
 
 const TABS = [
-  { id: 'overview', label: "Vue d&apos;ensemble" },
+  { id: 'overview', label: "Vue d';ensemble" },
   { id: 'products', label: 'Produits' },
   { id: 'categories', label: 'Catégories' },
   { id: 'brands', label: 'Marques' },
@@ -54,7 +54,7 @@ export default function DemoDashboardPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-xl font-semibold">Tableau de bord</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Bonjour, Prospect — voir ci-dessous l&apos;interface complète.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Bonjour, Prospect — voir ci-dessous l';interface complète.</p>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-xs font-medium bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full">
@@ -75,7 +75,7 @@ export default function DemoDashboardPage() {
           <div className="rounded-2xl bg-[#08131F] px-4 py-2 text-right">
             <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Potentiel</p>
             <p className="text-xl font-semibold text-accent">+410€</p>
-            <p className="text-[11px] text-muted-foreground">valeur estimée aujourd&apos;hui</p>
+            <p className="text-[11px] text-muted-foreground">valeur estimée aujourd';hui</p>
           </div>
         </div>
 
@@ -243,7 +243,7 @@ export default function DemoDashboardPage() {
         <div className="mt-12 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20 rounded-2xl p-8 text-center space-y-4">
           <h3 className="text-xl font-semibold">Prêt à démarrer ?</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Accédez à l&apos;analyse complète des marchés, aux top 20 des catégories rentables, et à l&apos;assistant IA en temps réel.
+            Accédez à l';analyse complète des marchés, aux top 20 des catégories rentables, et à l';assistant IA en temps réel.
           </p>
           <div className="flex flex-col gap-3 justify-center pt-2 text-left sm:flex-row sm:text-center">
             <Link href="/auth/signup" className="px-6 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">

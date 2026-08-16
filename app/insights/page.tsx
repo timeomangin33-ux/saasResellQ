@@ -203,7 +203,7 @@ export default function InsightsPage() {
               </div>
             </div>
           ) : (
-            <p className="px-5 py-6 text-sm text-muted-foreground">Cliquez sur &quot;Générer&quot; pour obtenir une synthèse IA du marché actuel.</p>
+            <p className="px-5 py-6 text-sm text-muted-foreground">Cliquez sur "Générer" pour obtenir une synthèse IA du marché actuel.</p>
           )}
         </div>
       </div>

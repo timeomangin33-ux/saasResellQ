@@ -208,7 +208,7 @@ export default function CategoriesPage() {
             <div className="max-w-2xl">
               <PageHeader
                 title="Catégories & Top 20"
-                description="Une vue d&apos;ensemble pro, claire et exploitable pour suivre chaque marché, ses meilleures opportunités et son potentiel de marge."
+                description="Une vue d';ensemble pro, claire et exploitable pour suivre chaque marché, ses meilleures opportunités et son potentiel de marge."
               />
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-400">
                 <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Live sync</span>

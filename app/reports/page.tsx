@@ -87,7 +87,7 @@ export default function ReportsPage() {
 
           <div>
             <h1 className="text-xl font-semibold">Rapports</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Analyses générées par l&apos;agent IA</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Analyses générées par l';agent IA</p>
           </div>
 
           <div className="rounded-3xl border border-border/60 bg-[#0f172a] p-4 text-sm text-zinc-300">
@@ -131,7 +131,7 @@ export default function ReportsPage() {
                   <Download className="w-3.5 h-3.5" /> Exporter
                 </button>
               </div>
-                      <p className="text-sm text-muted-foreground">Rapports générés automatiquement. Cliquez sur &apos;Générer&apos; pour lancer la création.</p>
+                      <p className="text-sm text-muted-foreground">Rapports générés automatiquement. Cliquez sur ';Générer'; pour lancer la création.</p>
               <div className="px-6 py-5 border-b border-border">
                 <p className="text-sm text-muted-foreground leading-relaxed">{current.summary}</p>
               </div>

@@ -31,8 +31,8 @@ export function CookieConsent() {
             <Cookie className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Ce site utilise des cookies pour la session et l&apos;am&eacute;lioration du produit.</p>
-            <p className="mt-1 text-sm text-slate-400">Nous n&apos;utilisons pas vos donn&eacute;es pour la publicit&eacute;. Vous pouvez accepter ou refuser le stockage de cookies non essentiels.</p>
+            <p className="text-sm font-semibold text-white">Ce site utilise des cookies pour la session et l';am&eacute;lioration du produit.</p>
+            <p className="mt-1 text-sm text-slate-400">Nous n';utilisons pas vos donn&eacute;es pour la publicit&eacute;. Vous pouvez accepter ou refuser le stockage de cookies non essentiels.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

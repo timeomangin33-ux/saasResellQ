@@ -25,7 +25,7 @@ const features = [
   {
     icon: TrendingUp,
     title: 'Deals à revente rapide',
-    description: 'Des opportunités qui méritent d&apos;être vues avant l&apos;ouverture des autres.',
+    description: 'Des opportunités qui méritent d';être vues avant l';ouverture des autres.',
   },
   {
     icon: BarChart3,
@@ -45,7 +45,7 @@ const features = [
   {
     icon: Zap,
     title: 'Alertes opportunités',
-    description: 'Réagis dès qu&apos;un produit sous-coté apparaît sur le marché.',
+    description: 'Réagis dès qu';un produit sous-coté apparaît sur le marché.',
   },
   {
     icon: Shield,
@@ -93,7 +93,7 @@ export default function LandingPage() {
               Connexion
             </Link>
             <Link href="/auth/signup">
-              <Button size="sm">S&apos;inscrire</Button>
+              <Button size="sm">S';inscrire</Button>
             </Link>
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="mb-8 max-w-2xl text-lg leading-8 text-muted-foreground">
-              ResellQ transforme les annonces Vinted en décisions simples : prix d&apos;achat, marge, risque et opportunité, le tout dans un tableau de bord sobre et efficace.
+              ResellQ transforme les annonces Vinted en décisions simples : prix d';achat, marge, risque et opportunité, le tout dans un tableau de bord sobre et efficace.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -209,11 +209,11 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl rounded-[28px] border border-white/10 bg-card/80 p-6 shadow-sm backdrop-blur">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">Visualisation d&apos;activité</p>
+              <p className="mb-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">Visualisation d';activité</p>
               <h2 className="text-xl font-semibold">Suivez votre volume et priorisez vos actions</h2>
             </div>
             <div className="rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-right">
-              <p className="text-xs text-muted-foreground">Score d&apos;opportunité</p>
+              <p className="text-xs text-muted-foreground">Score d';opportunité</p>
               <p className="text-2xl font-semibold text-accent">{opportunityScore}</p>
               <p className="mt-1 text-[11px] text-muted-foreground">Estimation indicative selon votre activité.</p>
             </div>
@@ -222,7 +222,7 @@ export default function LandingPage() {
           <div className="grid items-center gap-5 md:grid-cols-[1.3fr_0.7fr]">
             <div>
               <p className="text-sm font-medium">Articles vendus par mois</p>
-              <p className="mt-1 text-xs text-muted-foreground">Plus votre volume monte, plus votre base d&apos;analyse se renforce.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Plus votre volume monte, plus votre base d';analyse se renforce.</p>
             </div>
             <div className="text-right">
               <p className="text-sm font-semibold">{monthlyItems} articles</p>
@@ -310,7 +310,7 @@ export default function LandingPage() {
             <CardContent className="pt-5">
               <p className="mb-4 text-xs uppercase tracking-wider text-muted-foreground">Témoignage</p>
               <p className="mb-6 text-base leading-relaxed text-foreground">
-              &quot;Grâce à ResellQ, j&apos;ai amélioré ma sélection produit et je trouve des bons deals beaucoup plus vite.&quot;
+              "Grâce à ResellQ, j';ai amélioré ma sélection produit et je trouve des bons deals beaucoup plus vite."
               </p>
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-sm font-medium text-foreground">
@@ -336,7 +336,7 @@ export default function LandingPage() {
             <p className="text-sm uppercase tracking-[0.36em] text-slate-400">Pricing</p>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">Plans premium pour revendeurs Vinted</h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-400">
-              Trois offres alignées, une hiérarchie claire et un design qui donne envie d&apos;acheter immédiatement.
+              Trois offres alignées, une hiérarchie claire et un design qui donne envie d';acheter immédiatement.
             </p>
           </div>
 
