@@ -1,13 +1,13 @@
-﻿# ðŸ“Š ResellQ - Ã‰tat du projet & Checklist Lancement
+﻿ # 📌 ResellQ - État du projet & Checklist Lancement
 
-## ðŸŽ¯ RÃ©sumÃ© exÃ©cutif
+ ## 🎯 Résumé exécutif
 
-**ResellQ** est maintenant **100% prÃªt pour le lancement ce soir** avec :
-- âœ… **Build production rÃ©ussie** (59 pages, 99.5KB JS partagÃ©)
-- âœ… **Branding unifiÃ©** (ResellQ partout, cohÃ©rent)
-- âœ… **UI/UX professionnelle** (pages harmonisÃ©es, tarifs cohÃ©rents, footer clean)
-- âœ… **SÃ©curitÃ© en place** (headers, HTTPS, cookie consent)
-- âœ… **Infrastructure dÃ©ployable** (Docker, CI/CD, health check)
+ **ResellQ** est maintenant **100% prêt pour le lancement ce soir** avec :
+ - ✓ **Build production réussie** (59 pages, 99.5KB JS partagé)
+ - ✓ **Branding unifié** (ResellQ partout, cohérent)
+ - ✓ **UI/UX professionnelle** (pages harmonisées, tarifs cohérents, footer clean)
+ - ✓ **Sécurité en place** (headers, HTTPS, cookie consent)
+ - ✓ **Infrastructure déployable** (Docker, CI/CD, health check)
 
 ---
 

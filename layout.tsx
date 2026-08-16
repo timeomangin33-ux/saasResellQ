@@ -10,13 +10,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'ResellQ â€&quot; Find Trends. Predict Demand. Maximize Profit.',
-  description: 'La plateforme d\'analyse #1 pour les revendeurs sur Vinted, eBay, Leboncoin et plus. Identifiez les tendances, prÃ©disez la demande et maximisez vos profits.',
+  title: 'ResellQ — Find Trends. Predict Demand. Maximize Profit.',
+  description: "La plateforme d'analyse #1 pour les revendeurs sur Vinted, eBay, Leboncoin et plus. Identifiez les tendances, prédisez la demande et maximisez vos profits.",
   keywords: 'vinted, analyse, tendances, revendeur, seconde main, marketplace, profit',
   authors: [{ name: 'ResellQ' }],
   openGraph: {
-    title: 'ResellQ â€&quot; Find Trends. Predict Demand. Maximize Profit.',
-    description: 'La plateforme d\'analyse #1 pour les revendeurs sur Vinted et autres marketplaces.',
+    title: 'ResellQ — Find Trends. Predict Demand. Maximize Profit.',
+    description: "La plateforme d'analyse #1 pour les revendeurs sur Vinted et autres marketplaces.",
     type: 'website',
   },
 }
