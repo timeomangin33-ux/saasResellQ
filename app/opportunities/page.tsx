@@ -30,7 +30,7 @@ function normalizeOpportunities(value: unknown): Opportunity[] {
 
 const CATEGORIES = ['Toutes', 'Femmes', 'Hommes', 'Chaussures', 'Electronique', 'Sacs & Accessoires', 'Sport', 'Maison']
 
-const SortIcon = ({ k, sortKey, sortDir }: { k: 'profitMargin' | 'price' | 'demandScore' sortKey: 'profitMargin' | 'price' | 'demandScore' sortDir: 'asc' | 'desc' }) =>
+const SortIcon = ({ k, sortKey, sortDir }: { k: 'profitMargin' | 'price' | 'demandScore', sortKey: 'profitMargin' | 'price' | 'demandScore', sortDir: 'asc' | 'desc' }) =>
   sortKey === k ? (sortDir === 'desc' ? <ChevronDown className="w-3 h-3 inline ml-0.5" /> : <ChevronUp className="w-3 h-3 inline ml-0.5" />) : null
 
 export default function OpportunitiesPage() {
