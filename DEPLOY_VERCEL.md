@@ -14,7 +14,7 @@ Ce fichier décrit pas à pas les actions pour déployer cette application Next.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = (optionnel côté client)
 - `SUPABASE_SERVICE_ROLE_KEY` = (server-only, si tu en as besoin)
 - `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `OPENAI_API_KEY`, `RESEND_API_KEY`, etc.
+- `OPENAI_API_KEY`, etc.
 
 3) Stratégie Prisma recommandée
 - Si tu dois servir depuis lambdas (Vercel), utilise Prisma Data Proxy (`prisma://...`) pour éviter les erreurs de connexions simultanées.
