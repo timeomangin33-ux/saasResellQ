@@ -3,8 +3,9 @@
 import DashboardLayout from '@/app/dashboard-layout'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { Sliders, Eye, CheckCircle2, Loader2, AlertCircle, User, Lock, BellRing, ShieldAlert, Trash2 } from 'lucide-react'
+import { Sliders, Eye, CheckCircle2, Loader2, AlertCircle, User, Lock, BellRing, ShieldAlert, Trash2, Link2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -56,6 +57,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<SaveState>('idle')
 
+  const [showVintedModal, setShowVintedModal] = useState(false)
   const [showDeleteForm, setShowDeleteForm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -214,13 +216,21 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <VintedConnectModal />
+                  <Magnetic strength={0.15}>
+                    <Button className="btn-shine w-full sm:w-auto" onClick={() => setShowVintedModal(true)}>
+                      <Link2 className="mr-1.5 h-4 w-4" /> Connecter mon compte Vinted
+                    </Button>
+                  </Magnetic>
                   <Magnetic strength={0.15}>
                     <Button variant="outline" size="sm" className="text-white border-white/30 hover:border-white hover:bg-white/10" onClick={() => window.location.href = '/vinted-dashboard'}>Accéder au tableau de bord</Button>
                   </Magnetic>
                 </div>
               </CardContent>
             </Card>
+
+            <AnimatePresence>
+              {showVintedModal && <VintedConnectModal onClose={() => setShowVintedModal(false)} redirectTo="/settings" />}
+            </AnimatePresence>
 
             {/* Préférences IA */}
             <SpotlightCard spotlightColor="rgba(16,185,129,0.1)">
