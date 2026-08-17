@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { auth } from '@/auth'
-import { automationQueue } from '@/lib/queues'
 import { authorizeFeature } from '@/lib/access-control'
+import { runCreateWatchlists } from '@/lib/automation-actions'
 import { z } from 'zod'
 
 const createWatchlistsSchema = z.object({
@@ -19,15 +18,10 @@ export async function GET(request: NextRequest) {
     if ('response' in access) return access.response
     const user = access.user
 
-    // Get trending categories
+    // Get trending categories (based on real data from the daily market scan)
     const trendingCategories = await prisma.categoryMarket.findMany({
-      where: {
-        trendDirection: 'up',
-        trendStrength: { in: ['strong', 'moderate'] },
-      },
-      orderBy: {
-        avgMargin: 'desc',
-      },
+      where: { trendDirection: 'up' },
+      orderBy: [{ priceChangePercent: 'desc' }],
       take: 5,
     })
 
@@ -38,8 +32,7 @@ export async function GET(request: NextRequest) {
 
     const recommendations = trendingCategories.map((cat) => ({
       category: cat.category,
-      reason: `Trending ${cat.trendDirection} with ${cat.trendStrength} momentum`,
-      avgMargin: cat.avgMargin,
+      reason: `Prix en hausse de ${cat.priceChangePercent?.toFixed(1) ?? '?'}% depuis le dernier scan`,
       volumeActive: cat.volumeActive,
       suggestion: {
         name: `📈 ${cat.category} (${new Date().toLocaleDateString()})`,
@@ -68,29 +61,11 @@ export async function POST(request: NextRequest) {
     const user = access.user
     const parsed = createWatchlistsSchema.safeParse(await request.json().catch(() => ({})))
     if (!parsed.success) return NextResponse.json({ error: 'Paramètres invalides.' }, { status: 400 })
-    const { autoCreate = true, categories = [] } = parsed.data
+    const { categories = [] } = parsed.data
 
-    // Add job to queue
-    await automationQueue.add(
-      {
-        type: 'create-watchlist',
-        userId: user.id,
-        payload: {
-          autoCreate,
-          categories,
-        },
-      },
-      {
-        attempts: 2,
-        removeOnComplete: true,
-      }
-    )
+    const result = await runCreateWatchlists(user.id, { categories })
 
-    return NextResponse.json({
-      status: 'job-queued',
-      message: 'Watchlist creation job has been queued',
-      userId: user.id,
-    })
+    return NextResponse.json({ status: 'completed', ...result })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Server error' },

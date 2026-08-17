@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { auth } from '@/auth'
-import { automationQueue } from '@/lib/queues'
 import { authorizeFeature } from '@/lib/access-control'
 import { z } from 'zod'
 
@@ -73,27 +71,6 @@ export async function POST(request: NextRequest) {
         ...body,
       },
     })
-
-    // If automation is enabled, schedule initial jobs
-    if (updated.enabled) {
-      await automationQueue.add(
-        {
-          type: 'sync-products',
-          userId: user.id,
-          payload: { limit: 100 },
-        },
-        { jobId: `automation-sync-${user.id}`, repeat: { every: updated.checkInterval * 1000 } }
-      )
-      // Schedule Vinted account sync as well
-      await automationQueue.add(
-        {
-          type: 'sync-vinted',
-          userId: user.id,
-          payload: {},
-        },
-        { jobId: `automation-vinted-sync-${user.id}`, repeat: { every: updated.checkInterval * 1000 } }
-      )
-    }
 
     return NextResponse.json(updated)
   } catch (error) {

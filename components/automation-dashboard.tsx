@@ -4,16 +4,11 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Zap, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Zap, RefreshCw, CheckCircle2, XCircle } from 'lucide-react'
 
 interface AutomationStatus {
   automationEnabled: boolean
-  queues: {
-    automation: number
-    productSync: number
-    analysis: number
-    watchlist: number
-  }
+  lastRunByType: Record<string, string | null>
   config: {
     enabled: boolean
     autoCreateWatchlist: boolean
@@ -21,20 +16,36 @@ interface AutomationStatus {
     autoNotify: boolean
     minProfitMargin: number
     maxRiskLevel: string
-    checkInterval: number
   }
   recentJobs: any[]
+}
+
+const JOB_LABELS: Record<string, string> = {
+  'sync-products': 'Scan des annonces',
+  'analyze-products': 'Scoring IA',
+  'create-watchlist': 'Watchlists auto',
+  'notify-user': 'Notification',
+}
+
+function timeAgo(iso: string | null) {
+  if (!iso) return 'Jamais exécuté'
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diffMs / 60000)
+  if (min < 1) return "à l'instant"
+  if (min < 60) return `il y a ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `il y a ${h} h`
+  return `il y a ${Math.floor(h / 24)} j`
 }
 
 export function AutomationDashboard() {
   const [status, setStatus] = useState<AutomationStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [triggering, setTriggering] = useState(false)
+  const [triggering, setTriggering] = useState<string | null>(null)
+  const [lastMessage, setLastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
     fetchStatus()
-    const interval = setInterval(fetchStatus, 5000) // Refresh every 5s
-    return () => clearInterval(interval)
   }, [])
 
   async function fetchStatus() {
@@ -51,29 +62,35 @@ export function AutomationDashboard() {
   }
 
   async function triggerJob(jobType: string) {
-    setTriggering(true)
+    setTriggering(jobType)
+    setLastMessage(null)
     try {
       const res = await fetch('/api/automation/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobType,
-          payload: { limit: 100 },
-        }),
+        body: JSON.stringify({ jobType, payload: {} }),
       })
 
+      const data = await res.json()
       if (res.ok) {
-        const result = await res.json()
-        alert(`✅ ${result.type} job queued: ${result.jobId}`)
+        setLastMessage({ type: 'success', text: summarizeResult(jobType, data.result) })
         fetchStatus()
       } else {
-        alert('❌ Failed to trigger job')
+        setLastMessage({ type: 'error', text: data.error || "Échec de l'exécution." })
       }
     } catch (error) {
-      console.error('Failed to trigger job:', error)
+      setLastMessage({ type: 'error', text: 'Erreur réseau.' })
     } finally {
-      setTriggering(false)
+      setTriggering(null)
     }
+  }
+
+  function summarizeResult(jobType: string, result: any) {
+    if (!result) return `${JOB_LABELS[jobType]} : terminé.`
+    if (jobType === 'sync-products') return `${result.synced} annonce(s) scannée(s) sur ${result.categoriesScanned} catégorie(s).`
+    if (jobType === 'analyze-products') return result.analyzed > 0 ? `${result.analyzed} produit(s) analysé(s).` : (result.message || 'Rien à analyser.')
+    if (jobType === 'create-watchlist') return result.created > 0 ? `${result.created} watchlist(s) créée(s).` : (result.message || 'Aucune nouvelle watchlist.')
+    return 'Terminé.'
   }
 
   async function toggleAutomation() {
@@ -99,122 +116,59 @@ export function AutomationDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Main Status */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-500" />
-              Automation Hub
+              Automation
             </CardTitle>
-            <CardDescription>Gestion des jobs d'automation et synchronisation</CardDescription>
+            <CardDescription>Scan de marché automatique et actions manuelles</CardDescription>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Activé</span>
-              <Switch checked={status?.config.enabled ?? false} onCheckedChange={toggleAutomation} />
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Scan quotidien activé</span>
+            <Switch checked={status?.config.enabled ?? false} onCheckedChange={toggleAutomation} />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Queue Status */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400 mb-1">Automation</div>
-              <div className="text-2xl font-bold">{status?.queues.automation || 0}</div>
-              <div className="text-xs text-slate-500 mt-1">jobs en attente</div>
-            </div>
-
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400 mb-1">Sync Produits</div>
-              <div className="text-2xl font-bold">{status?.queues.productSync || 0}</div>
-              <div className="text-xs text-slate-500 mt-1">syncs planifiés</div>
-            </div>
-
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400 mb-1">Analyses</div>
-              <div className="text-2xl font-bold">{status?.queues.analysis || 0}</div>
-              <div className="text-xs text-slate-500 mt-1">produits à analyser</div>
-            </div>
-
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400 mb-1">Watchlists</div>
-              <div className="text-2xl font-bold">{status?.queues.watchlist || 0}</div>
-              <div className="text-xs text-slate-500 mt-1">à créer</div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold">Actions rapides</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => triggerJob('sync-products')}
-                disabled={triggering}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Sync Produits
+            <h3 className="text-sm font-semibold">Actions manuelles</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Button size="sm" variant="outline" onClick={() => triggerJob('sync-products')} disabled={triggering !== null}>
+                {triggering === 'sync-products' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                Scanner Vinted maintenant
               </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => triggerJob('analyze-products')}
-                disabled={triggering}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Analyser
+              <Button size="sm" variant="outline" onClick={() => triggerJob('analyze-products')} disabled={triggering !== null}>
+                {triggering === 'analyze-products' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                Analyser les produits
               </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => triggerJob('create-watchlist')}
-                disabled={triggering}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Watchlist Auto
-              </Button>
-
-              <Button size="sm" variant="outline" onClick={fetchStatus} disabled={triggering}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Actualiser
+              <Button size="sm" variant="outline" onClick={() => triggerJob('create-watchlist')} disabled={triggering !== null}>
+                {triggering === 'create-watchlist' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                Créer des watchlists tendance
               </Button>
             </div>
+            {lastMessage && (
+              <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${lastMessage.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
+                {lastMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> : <XCircle className="h-4 w-4 flex-shrink-0" />}
+                {lastMessage.text}
+              </div>
+            )}
           </div>
 
-          {/* Configuration */}
           <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-2">
-            <h3 className="text-sm font-semibold">Configuration</h3>
+            <h3 className="text-sm font-semibold">Dernière exécution</h3>
             <div className="space-y-1 text-sm text-slate-400">
-              <div>
-                ✓ Marge min profit:{' '}
-                <span className="text-white font-semibold">{status?.config.minProfitMargin}%</span>
-              </div>
-              <div>
-                ✓ Niveau risque max:{' '}
-                <span className="text-white font-semibold">{status?.config.maxRiskLevel}</span>
-              </div>
-              <div>
-                ✓ Intervalle check:{' '}
-                <span className="text-white font-semibold">
-                  {status?.config.checkInterval ? Math.round(status.config.checkInterval / 60) + ' min' : 'N/A'}
-                </span>
-              </div>
-              <div>
-                ✓ Auto-watchlist:{' '}
-                <span className="text-white font-semibold">
-                  {status?.config.autoCreateWatchlist ? '✅' : '❌'}
-                </span>
-              </div>
+              {Object.entries(JOB_LABELS).filter(([type]) => type !== 'notify-user').map(([type, label]) => (
+                <div key={type} className="flex items-center justify-between">
+                  <span>{label}</span>
+                  <span className="text-white font-medium">{timeAgo(status?.lastRunByType[type] ?? null)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Recent Jobs */}
       {status?.recentJobs && status.recentJobs.length > 0 && (
         <Card>
           <CardHeader>
@@ -226,7 +180,7 @@ export function AutomationDashboard() {
               {status.recentJobs.map((job) => (
                 <div key={job.id} className="flex items-center justify-between text-sm p-2 bg-slate-900 rounded border border-slate-800">
                   <div>
-                    <div className="font-medium">{job.jobType}</div>
+                    <div className="font-medium">{JOB_LABELS[job.jobType] || job.jobType}</div>
                     <div className="text-xs text-slate-500">{new Date(job.createdAt).toLocaleString()}</div>
                   </div>
                   <div className="flex items-center gap-2">
