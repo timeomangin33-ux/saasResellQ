@@ -34,7 +34,7 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
       update: {
         title: item.title,
         price: item.price,
-        category: item.category,
+        category,
         brand: item.brand,
         condition: normalizeCondition(state || ''),
         imageUrl: item.image,
@@ -46,7 +46,7 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
         vintedId: item.id,
         title: item.title,
         price: item.price,
-        category: item.category,
+        category,
         brand: item.brand,
         condition: normalizeCondition(state || ''),
         imageUrl: item.image,
