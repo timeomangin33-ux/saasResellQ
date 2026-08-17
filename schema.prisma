@@ -173,6 +173,7 @@ model Alert {
   condition  String   // profit_margin, price_drop, demand_spike
   threshold  Float
   active     Boolean  @default(true)
+  lastTriggeredAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -274,6 +275,8 @@ model CategoryMarket {
   volumeActive    Int?     // Currently listed
   trendDirection  String?  // up, down, stable
   trendStrength   String?  // strong, moderate, weak
+  priceChangePercent  Float? // % change in avgPrice since the previous refresh
+  volumeChangePercent Float? // % change in volumeActive since the previous refresh
   lastAnalyzedAt  DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
