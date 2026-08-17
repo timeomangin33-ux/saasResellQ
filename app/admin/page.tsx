@@ -62,7 +62,17 @@ export default function AdminPanelPage() {
             kicker="Administration"
             icon={ShieldAlert}
             description="Gestion de la plateforme et santé métier — données en temps réel"
-            actions={<div className="chip border-emerald-500/20 bg-emerald-500/10 text-emerald-200">Plateforme stable</div>}
+            actions={
+              stats ? (
+                stats.failedJobsLast24h > 0 ? (
+                  <div className="chip border-red-500/20 bg-red-500/10 text-red-300">
+                    {stats.failedJobsLast24h} échec{stats.failedJobsLast24h !== 1 ? 's' : ''} (24h)
+                  </div>
+                ) : (
+                  <div className="chip border-emerald-500/20 bg-emerald-500/10 text-emerald-200">Aucun échec (24h)</div>
+                )
+              ) : null
+            }
           />
 
           {loading && (

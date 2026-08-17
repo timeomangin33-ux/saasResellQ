@@ -52,6 +52,28 @@ export default function ReportsPage() {
     )
   }
 
+  function exportReport(report: Report) {
+    const lines = [
+      report.title,
+      `${TYPE_LABELS[report.type]} — ${new Date(report.createdAt).toLocaleString('fr-FR')}`,
+      '',
+      report.summary,
+      '',
+      'Points clés',
+      ...report.insights.map((i) => `- ${i}`),
+      '',
+      'Top opportunités',
+      ...report.topOpportunities.map((o, i) => `${i + 1}. ${o}`),
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `resellq-rapport-${report.type}-${new Date(report.createdAt).toISOString().slice(0, 10)}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   async function generate() {
     setGenerating(true)
     setGenerationError(null)
@@ -131,9 +153,11 @@ export default function ReportsPage() {
                     {new Date(current.createdAt).toLocaleString('fr-FR')}
                   </p>
                 </div>
-                <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition">
-                  <Download className="w-3.5 h-3.5" /> Exporter
-                </button>
+                <Magnetic strength={0.15} className="inline-block">
+                  <button onClick={() => exportReport(current)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition">
+                    <Download className="w-3.5 h-3.5" /> Exporter
+                  </button>
+                </Magnetic>
               </div>
               <div className="px-6 py-5 border-b border-border">
                 <p className="text-sm text-muted-foreground leading-relaxed">{current.summary}</p>

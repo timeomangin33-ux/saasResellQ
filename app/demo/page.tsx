@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { TrendingUp, BarChart2, ArrowUpRight, Zap, ShoppingBag, Lock } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Reveal, StaggerGroup, staggerItem } from '@/components/ui/reveal'
+import { Magnetic } from '@/components/ui/magnetic'
 
 const chartData = [
   { day: 'Lun', value: 34 },
@@ -36,7 +37,7 @@ export default function DemoDashboardPage() {
       <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-[#0a0a0e]/85 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold">ResellQ Dashboard Preview</h1>
+            <h1 className="text-lg font-semibold">Aperçu du tableau de bord ResellQ</h1>
             <p className="text-xs text-muted-foreground mt-0.5">Démo interactive • Données sensibles masquées</p>
           </div>
           <div className="flex items-center gap-3">
@@ -44,9 +45,11 @@ export default function DemoDashboardPage() {
               <Lock className="w-3 h-3" />
               Mode Démo
             </div>
-            <Link href="/auth/signin" className="btn-shine rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90">
-              Se connecter
-            </Link>
+            <Magnetic strength={0.2}>
+              <Link href="/auth/signin" className="btn-shine rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90">
+                Se connecter
+              </Link>
+            </Magnetic>
           </div>
         </div>
       </div>
@@ -60,11 +63,13 @@ export default function DemoDashboardPage() {
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-xs font-medium bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full">
-              Accès complet
+              Aperçu limité
             </span>
-            <button className="btn-shine rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90">
-              Passer Pro
-            </button>
+            <Magnetic strength={0.2}>
+              <Link href="/pricing" className="btn-shine inline-block rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90">
+                Voir les forfaits
+              </Link>
+            </Magnetic>
           </div>
         </motion.div>
 
@@ -248,20 +253,16 @@ export default function DemoDashboardPage() {
             Accédez à l'analyse complète des marchés, aux top 20 des catégories rentables, et à l'assistant IA en temps réel.
           </p>
           <div className="flex flex-col gap-3 justify-center pt-2 text-left sm:flex-row sm:text-center">
-            <Link href="/auth/signup" className="btn-shine rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90">
-              Créer un compte
-            </Link>
-            <Link href="/auth/signin" className="rounded-lg border border-border px-6 py-2.5 text-sm font-semibold transition hover:bg-muted/50">
-              Se connecter
-            </Link>
-          </div>
-          <div className="mt-4 rounded-2xl border border-border bg-slate-950/40 p-4 text-xs text-slate-300">
-            <p className="font-semibold text-white">Pour tester immédiatement :</p>
-            <ul className="mt-2 space-y-2">
-              <li>Starter : demo-starter@resellq.com / StarterDemo123!</li>
-              <li>Pro : demo-pro@resellq.com / ProDemo123!</li>
-              <li>Business : demo-business@resellq.com / BusinessDemo123!</li>
-            </ul>
+            <Magnetic strength={0.2}>
+              <Link href="/auth/signup" className="btn-shine inline-block rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90">
+                Créer un compte
+              </Link>
+            </Magnetic>
+            <Magnetic strength={0.2}>
+              <Link href="/auth/signin" className="inline-block rounded-lg border border-border px-6 py-2.5 text-sm font-semibold transition hover:bg-muted/50">
+                Se connecter
+              </Link>
+            </Magnetic>
           </div>
         </Reveal>
       </div>

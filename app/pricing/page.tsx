@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { Check, ShieldCheck, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Reveal } from '@/components/ui/reveal'
+import { Magnetic } from '@/components/ui/magnetic'
 import Link from 'next/link'
 
 const plans = [
@@ -155,23 +156,27 @@ export default function PricingPage() {
                 Abonnements
               </p>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">Plans premium pour revendeurs Vinted</h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">Un style sombre, clair et professionnel, aligné sur le dashboard, pour souscrire sans rupture visuelle.</p>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">Choisissez la profondeur d'analyse dont vous avez besoin. Changez de forfait ou annulez à tout moment, sans engagement.</p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button
-                  onClick={() => handleSubscribe('75')}
-                  disabled={loading !== null}
-                  className="btn-shine rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 px-6 py-4 text-sm font-semibold text-slate-950 shadow-[0_20px_80px_rgba(16,185,129,0.2)] hover:from-emerald-300 hover:to-cyan-200"
-                >
-                  {loading === '75' ? 'Redirection...' : 'Activer Pro'}
-                </Button>
-                <a href="#plans">
+                <Magnetic strength={0.2}>
                   <Button
-                    variant="outline"
-                    className="rounded-full border-white/10 bg-white/5 px-6 py-4 text-sm font-semibold text-white hover:bg-white/10"
+                    onClick={() => handleSubscribe('75')}
+                    disabled={loading !== null}
+                    className="btn-shine rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 px-6 py-4 text-sm font-semibold text-slate-950 shadow-[0_20px_80px_rgba(16,185,129,0.2)] hover:from-emerald-300 hover:to-cyan-200"
                   >
-                    Comparer les offres
+                    {loading === '75' ? 'Redirection...' : 'Activer Pro'}
                   </Button>
-                </a>
+                </Magnetic>
+                <Magnetic strength={0.2}>
+                  <a href="#plans">
+                    <Button
+                      variant="outline"
+                      className="rounded-full border-white/10 bg-white/5 px-6 py-4 text-sm font-semibold text-white hover:bg-white/10"
+                    >
+                      Comparer les offres
+                    </Button>
+                  </a>
+                </Magnetic>
               </div>
               <div className="mt-8 flex flex-wrap gap-2">
                 {proofPoints.map((point) => (
@@ -225,7 +230,7 @@ export default function PricingPage() {
               className={`relative overflow-hidden rounded-[28px] border p-6 shadow-[0_25px_80px_rgba(0,0,0,0.35)] transition-all duration-300 ${
                 plan.highlighted
                   ? 'border-emerald-400/20 bg-[#08181F] text-white'
-                  : 'border-white/10 bg-[#08101f] text-slate-200 hover:border-violet-500/20'
+                  : 'border-white/10 bg-[#08101f] text-slate-200 hover:border-emerald-400/20'
               }`}
             >
               {plan.highlighted && (
@@ -256,17 +261,19 @@ export default function PricingPage() {
                 <span className="pb-1 text-sm text-slate-400">/mois</span>
               </div>
 
-              <Button
-                onClick={() => handleSubscribe(plan.level)}
-                disabled={loading !== null}
-                className={`btn-shine relative mt-6 w-full rounded-full px-5 py-4 text-base font-semibold transition-all ${
-                  plan.highlighted
-                    ? 'bg-gradient-to-r from-emerald-400 to-cyan-300 text-slate-950 shadow-[0_16px_40px_rgba(16,185,129,0.18)] hover:from-emerald-300 hover:to-cyan-200'
-                    : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_16px_40px_rgba(124,58,237,0.2)] hover:from-violet-400 hover:to-fuchsia-400'
-                }`}
-              >
-                {loading === plan.level ? 'Redirection...' : plan.cta}
-              </Button>
+              <Magnetic strength={0.2} className="mt-6 block w-full">
+                <Button
+                  onClick={() => handleSubscribe(plan.level)}
+                  disabled={loading !== null}
+                  className={`btn-shine relative w-full rounded-full px-5 py-4 text-base font-semibold transition-all ${
+                    plan.highlighted
+                      ? 'bg-gradient-to-r from-emerald-400 to-cyan-300 text-slate-950 shadow-[0_16px_40px_rgba(16,185,129,0.18)] hover:from-emerald-300 hover:to-cyan-200'
+                      : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'
+                  }`}
+                >
+                  {loading === plan.level ? 'Redirection...' : plan.cta}
+                </Button>
+              </Magnetic>
 
               <ul className="relative mt-6 space-y-3">
                 {plan.features.map((feature) => (
@@ -311,7 +318,7 @@ export default function PricingPage() {
 
         <div className="mt-8 text-center text-sm text-slate-400">
           Besoin d'un accompagnement ?{' '}
-          <Link href="/dashboard" className="font-semibold text-violet-300 hover:text-violet-200">
+          <Link href="/dashboard" className="font-semibold text-emerald-300 hover:text-emerald-200">
             Ouvrez votre tableau de bord
           </Link>
         </div>
