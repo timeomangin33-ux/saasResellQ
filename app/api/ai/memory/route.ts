@@ -4,7 +4,7 @@ import { authorizeAIFeature } from '@/lib/access-control'
 
 export async function POST(request: Request) {
   try {
-    const access = await authorizeAIFeature('memory_operation')
+    const access = await authorizeAIFeature(request, 'memory_operation')
     if ('response' in access) return access.response
     const { sessionId, action, content } = await request.json()
     const data = await callAgent(AGENTS.memory, { sessionId, action, content })

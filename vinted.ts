@@ -206,7 +206,7 @@ export const VINTED_CATEGORIES: CategoryStats[] = [
     averagePrice: 42.7,
     totalRevenue: 218624,
     growthRate: 34.1,
-    topBrands: ['Levi\'s', 'The North Face', 'Arc\'teryx', 'MCM', 'Gucci'],
+    topBrands: ["Levi's", 'The North Face', "Arc'teryx", 'MCM', 'Gucci'],
     demandScore: 93,
   },
   {

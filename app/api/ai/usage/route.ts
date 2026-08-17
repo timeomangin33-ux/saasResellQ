@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/prisma'
 import { getPlanConfig } from '@/lib/plans'
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Connexion requise' }, { status: 401 })
   const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { subscriptionPlan: true, subscriptionStatus: true, aiCreditsUsed: true, aiCreditsResetAt: true } })

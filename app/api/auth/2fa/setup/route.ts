@@ -3,7 +3,7 @@ import { auth } from '../../../../../auth'
 import { prisma } from '../../../../../prisma'
 // 2FA via email is temporarily disabled
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await auth()
 
   if (!session?.user?.id) {

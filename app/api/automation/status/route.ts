@@ -9,7 +9,7 @@ import { authorizeFeature } from '@/lib/access-control'
  */
 export async function GET(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = await prisma.user.findUnique({ where: { id: access.user.id }, include: { automationConfig: true } })
     if (!user) return NextResponse.json({ error: 'Utilisateur introuvable.' }, { status: 404 })
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = access.user
 

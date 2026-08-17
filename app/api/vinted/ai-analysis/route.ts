@@ -3,8 +3,8 @@ import { authorizeAIFeature } from '@/lib/access-control'
 import { prisma } from '@/prisma'
 import { callAgent, AGENTS } from '@/lib/n8n-agents'
 
-export async function GET() {
-  const access = await authorizeAIFeature('vinted_analysis', 2, 'PRO')
+export async function GET(request: Request) {
+  const access = await authorizeAIFeature(request, 'vinted_analysis', 2, 'PRO')
   if ('response' in access) return access.response
 
   const user = access.user

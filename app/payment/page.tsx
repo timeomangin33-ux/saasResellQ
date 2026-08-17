@@ -1,15 +1,22 @@
-﻿'use client'
+'use client'
 
 import { Suspense, useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
-import { ArrowRight, BadgeCheck, BarChart3, Clock3, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react'
+import { ArrowRight, BadgeCheck, BarChart3, Clock3, ShieldCheck, Sparkles, TrendingUp, Lock, RefreshCcw, Headset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
+import { Reveal } from '@/components/ui/reveal'
 import { PRICING_PLANS } from '@/lib/constants'
 import { getCheckoutPlan, checkoutCallbackUrl } from './helpers'
+
+const trustPoints = [
+  { icon: Lock, label: 'Paiement sécurisé Stripe' },
+  { icon: RefreshCcw, label: 'Résiliation en 1 clic' },
+  { icon: Headset, label: 'Support réactif' },
+]
 
 function PaymentPageContent() {
   const router = useRouter()
@@ -25,8 +32,6 @@ function PaymentPageContent() {
   const shouldShowAuthPrompt = !isAuthenticating && !isAuthenticated
 
   // helper functions moved to app/payment/helpers.ts
-  
-  
 
   useEffect(() => {
     if (status !== 'authenticated') return
@@ -105,9 +110,24 @@ function PaymentPageContent() {
       <div className="relative isolate overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_32%),radial-gradient(circle_at_80%_0%,_rgba(56,189,248,0.14),_transparent_24%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(255,255,255,0.03)_0%,_transparent_30%,_rgba(255,255,255,0.02)_100%)]" />
-        <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-6 sm:px-6 lg:px-8">
+        <motion.div
+          className="pointer-events-none absolute -right-24 top-1/3 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl"
+          animate={{ y: [0, -24, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mb-6 flex items-center justify-between">
+            <Logo size="md" href="/" />
+            <Link href="/" className="text-xs text-slate-400 transition hover:text-white">← Retour à l'accueil</Link>
+          </div>
+
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:gap-8">
-            <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#08101f]/95 p-6 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-8 lg:p-10">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#08101f]/95 p-6 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-8 lg:p-10"
+            >
               <div className="absolute -right-8 top-6 h-40 w-40 rounded-full bg-emerald-400/12 blur-3xl" />
               <div className="absolute left-10 top-20 h-24 w-24 rounded-full border border-emerald-400/20" />
               <div className="relative space-y-8">
@@ -137,13 +157,21 @@ function PaymentPageContent() {
                       Découvrez les deals les plus rentables, priorisez les produits à fort potentiel et recevez des alertes avant que la concurrence ne réagisse.
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      <Button onClick={() => void openCheckout('75')} disabled={checkoutLoading} className="rounded-[16px] bg-gradient-to-r from-emerald-400 to-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_16px_40px_rgba(16,185,129,0.18)] hover:from-emerald-300 hover:to-cyan-200">
+                      <Button onClick={() => void openCheckout('75')} disabled={checkoutLoading} className="btn-shine rounded-[16px] bg-gradient-to-r from-emerald-400 to-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_16px_40px_rgba(16,185,129,0.18)] hover:from-emerald-300 hover:to-cyan-200">
                         {checkoutLoading ? 'Préparation...' : 'Activer le mode Pro'}
                       </Button>
                       <Link href="/auth/signup" className="inline-flex items-center gap-2 rounded-[16px] border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
                         Voir ce qui est inclus
                         <ArrowRight className="h-4 w-4" />
                       </Link>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+                      {trustPoints.map(point => (
+                        <div key={point.label} className="flex items-center gap-1.5 text-xs text-slate-400">
+                          <point.icon className="h-3.5 w-3.5 text-emerald-300/80" />
+                          {point.label}
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -164,7 +192,12 @@ function PaymentPageContent() {
                         <span className="text-slate-200">14</span>
                       </div>
                       <div className="mt-3 h-2 rounded-full bg-slate-800">
-                        <div className="h-2 w-[78%] rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-cyan-300" />
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: '78%' }}
+                          transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          className="h-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-cyan-300"
+                        />
                       </div>
                       <div className="mt-4 grid gap-2 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
@@ -178,7 +211,7 @@ function PaymentPageContent() {
                       </div>
                       <div className="mt-4 flex items-center gap-2 text-sm text-slate-300">
                         <Clock3 className="h-4 w-4 text-emerald-300" />
-                        Mise à jour toutes les 48h avec des signaux d\'achat
+                        Mise à jour toutes les 48h avec des signaux d'achat
                       </div>
                     </div>
                   </div>
@@ -190,7 +223,7 @@ function PaymentPageContent() {
                     { value: '48h', label: 'Rafraîchissement' },
                     { value: '4.9/5', label: 'Temps de détection' },
                   ].map(item => (
-                    <div key={item.label} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                    <div key={item.label} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-emerald-400/20">
                       <p className="text-2xl font-semibold text-white">{item.value}</p>
                       <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-slate-500">{item.label}</p>
                     </div>
@@ -200,9 +233,9 @@ function PaymentPageContent() {
                 <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-white">Ce que vous recevez dès l\'activation</p>
+                      <p className="text-sm font-semibold text-white">Ce que vous recevez dès l'activation</p>
                       <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-400">
-                        Analyse premium, opportunités triées par valeur, recommandations IA et un support réactif, pour transformer l\'information en décisions concrètes et en marge.
+                        Analyse premium, opportunités triées par valeur, recommandations IA et un support réactif, pour transformer l'information en décisions concrètes et en marge.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -214,15 +247,28 @@ function PaymentPageContent() {
                     </div>
                   </div>
                 </div>
+
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.02] p-5">
+                  <p className="mb-4 text-sm font-medium text-white">Ils utilisent ResellQ au quotidien</p>
+                  <p className="text-sm leading-7 text-slate-400">
+                    "Le temps que je passais à comparer les annonces à la main, je le passe maintenant à négocier et à vendre. Le dashboard va droit à l'essentiel."
+                  </p>
+                  <p className="mt-3 text-xs text-slate-500">— Utilisateur ResellQ Pro</p>
+                </div>
               </div>
-            </section>
+            </motion.section>
 
             <section className="space-y-5">
-              <div className="rounded-[32px] border border-white/10 bg-slate-950/95 p-6 shadow-[0_20px_70px_rgba(3,7,18,0.45)] sm:p-7">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="rounded-[32px] border border-white/10 bg-slate-950/95 p-6 shadow-[0_20px_70px_rgba(3,7,18,0.45)] sm:p-7"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.34em] text-slate-500">Sécurisé</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">Choisissez votre mode d\'accès</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">Choisissez votre mode d'accès</p>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/[0.04] p-3">
                     <ShieldCheck className="h-5 w-5 text-emerald-300" />
@@ -255,20 +301,23 @@ function PaymentPageContent() {
                   {checkoutError ? (
                     <p className="text-sm text-rose-300">{checkoutError}</p>
                   ) : (
-                    <div className="rounded-[20px] border border-white/10 bg-slate-900/80 p-4 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 rounded-[20px] border border-white/10 bg-slate-900/80 p-4 text-sm text-slate-400">
+                      <Lock className="h-4 w-4 flex-shrink-0 text-emerald-300" />
                       Paiement Stripe sécurisé. La redirection vers le checkout est entièrement contrôlée.
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
               <div className="grid gap-3">
-                {PRICING_PLANS.map(plan => (
+                {PRICING_PLANS.map((plan, index) => (
                   <motion.article
                     key={plan.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.15 + index * 0.06 }}
                     whileHover={{ y: -2, scale: 1.01 }}
-                    transition={{ duration: 0.2 }}
-                    className={`relative overflow-hidden rounded-[24px] border p-5 shadow-[0_16px_50px_rgba(3,7,18,0.28)] ${
+                    className={`relative overflow-hidden rounded-[24px] border p-5 shadow-[0_16px_50px_rgba(3,7,18,0.28)] transition-colors ${
                       plan.highlight
                         ? 'border-emerald-400/25 bg-emerald-500/10'
                         : plan.id === 'business'
@@ -334,6 +383,12 @@ function PaymentPageContent() {
                   </motion.article>
                 ))}
               </div>
+
+              <Reveal className="rounded-[24px] border border-white/10 bg-white/[0.02] p-5 text-center">
+                <p className="text-xs text-slate-500">
+                  Prix TTC, sans engagement. Vous pouvez changer de plan ou résilier à tout moment depuis votre facturation.
+                </p>
+              </Reveal>
             </section>
           </div>
         </div>

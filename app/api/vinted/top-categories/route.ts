@@ -33,7 +33,7 @@ function buildCategoryPayload(item: any) {
 }
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   try {

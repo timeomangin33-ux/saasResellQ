@@ -3,7 +3,7 @@ import { runVintedBotScan } from '@/lib/vinted-bot'
 import { authorizeFeature } from '@/lib/access-control'
 
 export async function POST(request: Request) {
-  const access = await authorizeFeature('PRO')
+  const access = await authorizeFeature(request, 'PRO')
   if ('response' in access) return access.response
 
   const body = await request.json().catch(() => ({})) as {
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
   return NextResponse.json(result)
 }
 
-export async function GET() {
-  const access = await authorizeFeature('PRO')
+export async function GET(request: Request) {
+  const access = await authorizeFeature(request, 'PRO')
   if ('response' in access) return access.response
 
   return NextResponse.json({

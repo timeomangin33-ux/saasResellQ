@@ -50,9 +50,11 @@ function SignInPageContent() {
       if (result.error === 'Configuration') {
         throw new Error('La configuration d’authentification est incomplète. Vérifiez DATABASE_URL et NEXTAUTH_SECRET.')
       }
-      // For debugging: surface server error message when available
-      const msg = result.error || 'Email ou mot de passe incorrect'
-      throw new Error(msg)
+      if (result.error === 'CredentialsSignin') {
+        throw new Error('Email ou mot de passe incorrect.')
+      }
+      // For unrecognized codes, still show a friendly message rather than the raw code
+      throw new Error('Email ou mot de passe incorrect.')
     }
 
     router.replace(callbackUrl)

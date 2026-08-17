@@ -4,7 +4,7 @@ import { VINTED_CATEGORIES } from '@/vinted'
 import { authorizeAIFeature } from '@/lib/access-control'
 
 export async function POST(request: Request) {
-  const access = await authorizeAIFeature('category_analysis', 2, 'PRO')
+  const access = await authorizeAIFeature(request, 'category_analysis', 2, 'PRO')
   if ('response' in access) return access.response
   const body = await request.json().catch(() => ({}))
   const category = typeof body.category === 'string' ? body.category : ''

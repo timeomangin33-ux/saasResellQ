@@ -6,7 +6,7 @@ import '../lib/initEnv' // Validate environment variables on startup
 import { Providers } from '../providers'
 import { Toaster } from '../components/ui/toaster'
 import { CookieConsent } from '../components/cookie-consent'
-import { SiteFooter } from '../components/site-footer'
+import { ConditionalSiteFooter } from '../components/conditional-site-footer'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="absolute inset-0 -z-10 h-full w-full bg-zinc-950 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-[0.03]" />
             <div className="flex min-h-screen flex-col">
               <div className="flex-1">{children}</div>
-              <SiteFooter />
+              <ConditionalSiteFooter />
             </div>
             <Toaster />
             <CookieConsent />

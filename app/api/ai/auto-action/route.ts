@@ -30,7 +30,7 @@ const actionSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const access = await authorizeAIFeature('automation_action', 2, 'PRO')
+    const access = await authorizeAIFeature(request, 'automation_action', 2, 'PRO')
     if ('response' in access) return access.response
     const parsed = actionSchema.safeParse(await request.json().catch(() => ({})))
     if (!parsed.success) return NextResponse.json({ error: 'Paramètres d\'automatisation invalides.' }, { status: 400 })

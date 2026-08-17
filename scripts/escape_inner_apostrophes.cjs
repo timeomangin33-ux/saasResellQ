@@ -15,7 +15,8 @@ function walk(dir){
       let s = fs.readFileSync(fp,'utf8');
       const orig = s;
       // Escape apostrophes that are between letters (e.g., d'historique -> d\'historique)
-      s = s.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])'([A-Za-zÀ-ÖØ-öø-ÿ])/g, "$1\\'$2");
+      // Handle ASCII and typographic apostrophes (', ’, ‘)
+      s = s.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])[\u0027\u2018\u2019]([A-Za-zÀ-ÖØ-öø-ÿ])/g, "$1\\'$2");
       if(s !== orig){
         fs.writeFileSync(fp,s,'utf8');
         changed++;

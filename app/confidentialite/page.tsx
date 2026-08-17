@@ -53,7 +53,7 @@ export default function ConfidentialitePage() {
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Retour à l\'accueil
+              Retour à l'accueil
             </Button>
           </Link>
         </div>
@@ -96,7 +96,7 @@ export default function ConfidentialitePage() {
                 Contact et exercice de vos droits
               </div>
               <p className="text-sm leading-7 text-muted-foreground">
-                Pour toute question relative à cette politique, à vos données personnelles ou pour exercer vos droits, vous pouvez nous contacter à l\'adresse suivante : <span className="font-medium text-foreground">contact@resellq.com</span>.
+                Pour toute question relative à cette politique, à vos données personnelles ou pour exercer vos droits, vous pouvez nous contacter à l'adresse suivante : <span className="font-medium text-foreground">contact@resellq.com</span>.
               </p>
             </div>
 

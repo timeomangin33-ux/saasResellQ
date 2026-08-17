@@ -15,7 +15,7 @@ const createWatchlistsSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = access.user
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = access.user
     const parsed = createWatchlistsSchema.safeParse(await request.json().catch(() => ({})))

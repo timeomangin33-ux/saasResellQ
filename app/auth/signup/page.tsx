@@ -59,9 +59,9 @@ export default function SignUpPage() {
       subtitle="Inscription gratuite et accès aux essentiels. Activez un plan Starter, Pro ou Business plus tard."
     >
       <div className="space-y-5 mb-6">
-        <div className="rounded-3xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Créez votre compte gratuit aujourd\'hui et explorez l\'interface ResellQ.</p>
-          <p className="mt-2">Le plan reste inactif jusqu\'à l\'activation d\'un abonnement validé via Stripe.</p>
+        <div className="panel p-4 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">Créez votre compte gratuit aujourd'hui et explorez l'interface ResellQ.</p>
+          <p className="mt-2">Le plan reste inactif jusqu'à l'activation d'un abonnement validé via Stripe.</p>
         </div>
 
         <div className="space-y-1.5">

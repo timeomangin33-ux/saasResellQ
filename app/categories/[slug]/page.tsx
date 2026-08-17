@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { ArrowLeft, TrendingUp, Star } from 'lucide-react'
 import { VINTED_CATEGORIES } from '@/vinted'
+import { StaggerGroup, staggerItem } from '@/components/ui/reveal'
 
 interface Product {
   id: string
@@ -90,7 +92,7 @@ export default function CategoryPage() {
           Retour aux catégories
         </Link>
 
-        <div className="mb-12 rounded-3xl border border-border/50 bg-card p-8 shadow-card">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mb-12 panel-strong p-8">
           <div className="flex items-start gap-6">
             <div className="text-6xl">{category.icon}</div>
             <div className="flex-1">
@@ -120,7 +122,7 @@ export default function CategoryPage() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {error ? (
           <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 p-6 text-rose-100">
@@ -131,11 +133,12 @@ export default function CategoryPage() {
             <p className="text-muted-foreground">Aucun produit trouvé pour cette catégorie</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product, index) => (
-              <div
+              <motion.div
                 key={product.id}
-                className="rounded-3xl border border-border/50 bg-card p-5 shadow-card hover:shadow-glow-blue transition overflow-hidden group"
+                variants={staggerItem}
+                className="panel panel-hover p-5 overflow-hidden group"
               >
                 <div className="mb-4 rounded-3xl bg-muted/50 p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -177,9 +180,9 @@ export default function CategoryPage() {
                     {product.timesSold} vendu{product.timesSold > 1 ? 's' : ''}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </StaggerGroup>
         )}
       </div>
     </main>

@@ -181,12 +181,86 @@
   .shadow-card {
     @apply shadow-subtle;
   }
+
+  /* Premium panel system — used across dashboard + marketing pages */
+  .panel {
+    @apply relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#0e0e13] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition-all duration-300;
+  }
+
+  .panel-hover {
+    @apply hover:-translate-y-0.5 hover:border-white/[0.16] hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.5)];
+  }
+
+  .panel-strong {
+    @apply relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent bg-[#0c0c11] shadow-[0_0_0_1px_rgba(255,255,255,0.03)];
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 via-emerald-200 to-cyan-300;
+  }
+
+  .text-gradient-violet {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-fuchsia-200 to-violet-300;
+  }
+
+  .glow-ring {
+    @apply ring-1 ring-inset ring-white/[0.06];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-zinc-300 backdrop-blur;
+  }
+
+  .divider-fade {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
+  .btn-shine {
+    background-size: 200% auto;
+    @apply transition-[background-position] duration-500 hover:bg-[position:right_center];
+  }
+
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  .shimmer-text {
+    background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.4) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 2.4s linear infinite;
+  }
+
+  .stat-value {
+    @apply text-2xl font-semibold tracking-tight text-white tabular-nums sm:text-3xl;
+  }
+
+  .kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-300/90;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
 }
 
 select {
