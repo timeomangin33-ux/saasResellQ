@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import { SpotlightCard } from '@/components/ui/spotlight-card'
+import { Magnetic } from '@/components/ui/magnetic'
 
 interface BotItem {
   id: string
@@ -107,17 +109,18 @@ export default function BotPage() {
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
+        <SpotlightCard spotlightColor="rgba(16,185,129,0.14)">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="panel-strong p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.3em] text-emerald-500">Bot Vinted</p>
               <h1 className="mt-2 text-3xl font-semibold text-foreground">Les dernières annonces Vinted défilent ici</h1>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-                Ce module récupère désormais les annonces Vinted visibles sur la page de recherche et les affiche dans un flux défilant dans le SaaS.
+                Ce module scanne les annonces Vinted en direct et alimente vos top produits et catégories avec ce qu'il trouve.
               </p>
             </div>
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-              État : flux live
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${result ? (result.source === 'live' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/20 bg-amber-500/10 text-amber-500') : 'border-border/70 bg-muted/60 text-muted-foreground'}`}>
+              {result ? (result.source === 'live' ? 'État : flux live' : 'État : secours (Vinted indisponible)') : 'État : en attente du premier scan'}
             </div>
           </div>
 
@@ -128,17 +131,19 @@ export default function BotPage() {
               placeholder="Ex : nike, louis vuitton, iphone"
               className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-0"
             />
-            <button
-              onClick={() => {
-                setAutoRotate(false)
-                setActiveCategoryIndex(0)
-                void runScan(query)
-              }}
-              disabled={loading}
-              className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? 'Scan en cours...' : 'Lancer le scan'}
-            </button>
+            <Magnetic strength={0.2}>
+              <button
+                onClick={() => {
+                  setAutoRotate(false)
+                  setActiveCategoryIndex(0)
+                  void runScan(query)
+                }}
+                disabled={loading}
+                className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Scan en cours...' : 'Lancer le scan'}
+              </button>
+            </Magnetic>
           </div>
           {topCategories.length > 0 && (
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,8 +180,10 @@ export default function BotPage() {
             </div>
           )}
         </motion.div>
+        </SpotlightCard>
 
         {result && (
+          <SpotlightCard spotlightColor="rgba(16,185,129,0.1)">
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="panel p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -226,6 +233,7 @@ export default function BotPage() {
               </p>
             )}
           </motion.div>
+          </SpotlightCard>
         )}
       </div>
       <style jsx global>{`
