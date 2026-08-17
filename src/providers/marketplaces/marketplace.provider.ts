@@ -1,8 +1,7 @@
 export interface MarketplaceResult {
   id: string
   title: string
-  platform: 'amazon' | 'ebay'
-  price: number
+  platform: 'amazon' | 'ebay', price: number
   listingUrl: string
   score: number
   available: boolean

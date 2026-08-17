@@ -6,7 +6,7 @@ import { authorizeFeature } from '@/lib/access-control'
  * GET /api/products - List products with filters
  */
 export async function GET(request: NextRequest) {
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   try {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
  * POST /api/products - Create/update product
  */
 export async function POST(request: NextRequest) {
-  const access = await authorizeFeature('PRO')
+  const access = await authorizeFeature(request, 'PRO')
   if ('response' in access) return access.response
 
   try {

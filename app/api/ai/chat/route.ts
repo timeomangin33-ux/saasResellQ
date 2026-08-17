@@ -4,7 +4,7 @@ import { authorizeAIFeature } from '@/lib/access-control'
 
 export async function POST(request: Request) {
   try {
-    const access = await authorizeAIFeature('chat_message')
+    const access = await authorizeAIFeature(request, 'chat_message')
     if ('response' in access) return access.response
     const body = await request.json().catch(() => ({}))
     const messages: Array<{ role?: string; content?: string }> = Array.isArray(body.messages)

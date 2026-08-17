@@ -10,6 +10,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "check:spell": "npx -y cspell --config .cspell.json \"**/*.{md,ts,tsx,js,jsx,json,html,txt,yml,yaml}\" --no-progress --no-must-find-files --exclude node_modules --exclude vinted-discord-bot-main",
+    "check:ci": "npm run lint && npm run build && npm run check:spell",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
@@ -19,6 +21,7 @@
     "clean:prisma-client": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/cleanup-prisma.ps1",
     "rebuild": "npm run clean:prisma-client && npm run build"
   },
+  "postinstall": "git config core.hooksPath .githooks || true",
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.2",
     "@headlessui/react": "^2.1.2",

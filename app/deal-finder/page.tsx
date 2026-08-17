@@ -4,7 +4,11 @@ import DashboardLayout from '@/app/dashboard-layout'
 import { useSession } from 'next-auth/react'
 import { normalizePlan } from '@/lib/plans'
 import { PlanGate } from '@/components/plan-gate'
-import { Search, SlidersHorizontal, ExternalLink } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
+import { SpotlightCard } from '@/components/ui/spotlight-card'
+import { Magnetic } from '@/components/ui/magnetic'
+import { motion } from 'framer-motion'
+import { Search, SlidersHorizontal, ExternalLink, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 interface Deal {
@@ -53,7 +57,7 @@ export default function DealFinderPage() {
   }, [])
 
   if (status === 'loading') {
-    return <div className="grid min-h-screen place-items-center bg-[#09090b]"><div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-300 border-t-transparent" /></div>
+    return <div className="grid min-h-screen place-items-center bg-[#08080b]"><div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" /></div>
   }
 
   if (planKey === 'STARTER') {
@@ -78,7 +82,7 @@ export default function DealFinderPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setResults(data.deals || data.opportunities || data || [])
+      setResults(data.deals || data.opportunities || [])
     } catch {
       try {
         const params = new URLSearchParams()
@@ -88,7 +92,7 @@ export default function DealFinderPage() {
         const data = await res.json()
         setResults(data.opportunities || [])
       } catch {
-        setError('Impossible de charger les résultats. Vérifiez la connexion au service d&apos;analyse.')
+        setError('Impossible de charger les résultats. Vérifiez la connexion au service d\'analyse.')
       }
     } finally {
       setLoading(false)
@@ -99,117 +103,124 @@ export default function DealFinderPage() {
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-        <div>
-          <h1 className="text-base font-semibold">Deal Finder</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Détection des meilleures opportunités selon vos critères</p>
-          {topCategories.length > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">Top catégories détectées : {topCategories.slice(0, 8).map((category) => category.name).join(', ')}</p>
-          )}
-        </div>
+        <PageHeader
+          title="Deal Finder"
+          kicker="Opportunités"
+          icon={Search}
+          description={topCategories.length > 0
+            ? `Top catégories détectées : ${topCategories.slice(0, 8).map((category) => category.name).join(', ')}`
+            : 'Détection des meilleures opportunités selon vos critères'}
+        />
 
         {/* Filtres */}
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Critères</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Budget min — {filters.minBudget}€</label>
-              <input type="range" min="5" max="500" value={filters.minBudget}
-                onChange={e => setFilters({ ...filters, minBudget: Number(e.target.value) })}
-                className="w-full accent-primary h-1" />
+        <SpotlightCard spotlightColor="rgba(16,185,129,0.12)">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="panel p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-300" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Critères</p>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Budget max — {filters.maxBudget}€</label>
-              <input type="range" min="10" max="1000" value={filters.maxBudget}
-                onChange={e => setFilters({ ...filters, maxBudget: Number(e.target.value) })}
-                className="w-full accent-primary h-1" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Budget min — {filters.minBudget}€</label>
+                <input type="range" min="5" max="500" value={filters.minBudget}
+                  onChange={e => setFilters({ ...filters, minBudget: Number(e.target.value) })}
+                  className="w-full accent-emerald-400 h-1" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Budget max — {filters.maxBudget}€</label>
+                <input type="range" min="10" max="1000" value={filters.maxBudget}
+                  onChange={e => setFilters({ ...filters, maxBudget: Number(e.target.value) })}
+                  className="w-full accent-emerald-400 h-1" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Catégorie</label>
+                <select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-emerald-400/50 outline-none transition-colors">
+                  <option value="">Toutes les catégories</option>
+                  {topCategories.map((c) => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Marge min (%)</label>
+                <input type="number" value={filters.minProfit} min="0" max="100"
+                  onChange={e => setFilters({ ...filters, minProfit: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-emerald-400/50 outline-none transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1.5">Risque</label>
+                <select value={filters.riskLevel} onChange={e => setFilters({ ...filters, riskLevel: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-emerald-400/50 outline-none transition-colors">
+                  <option value="low">Faible</option>
+                  <option value="medium">Modéré</option>
+                  <option value="high">Élevé</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Catégorie</label>
-              <select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}
-                className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-primary/50 outline-none">
-                <option value="">Toutes les catégories</option>
-                {topCategories.map((c) => (
-                  <option key={c.name} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+            <div className="mt-4 pt-4 border-t border-border">
+              <Magnetic strength={0.15} className="inline-block">
+                <button onClick={handleSearch} disabled={loading}
+                  className="btn-shine flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50">
+                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  {loading ? 'Analyse en cours...' : 'Lancer l\'analyse'}
+                </button>
+              </Magnetic>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Marge min (%)</label>
-              <input type="number" value={filters.minProfit} min="0" max="100"
-                onChange={e => setFilters({ ...filters, minProfit: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-primary/50 outline-none" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Risque</label>
-              <select value={filters.riskLevel} onChange={e => setFilters({ ...filters, riskLevel: e.target.value })}
-                className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-primary/50 outline-none">
-                <option value="low">Faible</option>
-                <option value="medium">Modéré</option>
-                <option value="high">Élevé</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-border">
-            <button onClick={handleSearch} disabled={loading}
-              className="flex items-center gap-2 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary/90 transition disabled:opacity-50">
-              <Search className="w-3.5 h-3.5" />
-              {loading ? 'Analyse en cours...' : 'Lancer l\'analyse'}
-            </button>
-          </div>
-        </div>
+          </motion.div>
+        </SpotlightCard>
 
         {error && <div className="text-sm text-rose-400 border border-rose-500/20 bg-rose-500/5 px-4 py-2.5 rounded-lg">{error}</div>}
 
         {/* Résultats */}
         {searched && !loading && (
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-border">
-              <p className="text-sm font-medium">{results.length} résultat{results.length !== 1 ? 's' : ''}</p>
-            </div>
-            {results.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-muted-foreground text-center">Aucun résultat. Élargissez vos critères.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/20">
-                    <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Produit</th>
-                    <th className="text-left px-3 py-2.5 text-xs font-medium text-muted-foreground">Marque</th>
-                    <th className="text-left px-3 py-2.5 text-xs font-medium text-muted-foreground">Catégorie</th>
-                    <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Prix</th>
-                    <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Marge</th>
-                    <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Taux de rotation</th>
-                    <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Lien</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {results.map((deal, i) => (
-                    <tr key={deal.id ?? i} className="hover:bg-muted/20 transition">
-                      <td className="px-5 py-3">
-                        <p className="font-medium truncate max-w-[220px]">{deal.title}</p>
-                        {deal.whyNow && <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{deal.whyNow}</p>}
-                      </td>
-                      <td className="px-3 py-3"><span className="text-muted-foreground hover:text-primary transition cursor-pointer font-medium">{deal.brand}</span></td>
-                      <td className="px-3 py-3 text-muted-foreground">{deal.category}</td>
-                      <td className="px-3 py-3 text-right tabular-nums font-medium">{deal.price}€</td>
-                      <td className="px-3 py-3 text-right tabular-nums text-accent font-medium">{deal.profitMargin}%</td>
-                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{deal.demandScore}%</td>
-                      <td className="px-5 py-3 text-right">
-                        {deal.url ? (
-                          <a href={deal.url} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border hover:bg-muted/50 transition text-muted-foreground hover:text-foreground">
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : <span className="text-muted-foreground/30">—</span>}
-                      </td>
+          <SpotlightCard spotlightColor="rgba(16,185,129,0.12)">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="panel overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-border">
+                <p className="text-sm font-medium">{results.length} résultat{results.length !== 1 ? 's' : ''}</p>
+              </div>
+              {results.length === 0 ? (
+                <p className="px-5 py-8 text-sm text-muted-foreground text-center">Aucun résultat. Élargissez vos critères.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/20">
+                      <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Produit</th>
+                      <th className="text-left px-3 py-2.5 text-xs font-medium text-muted-foreground">Marque</th>
+                      <th className="text-left px-3 py-2.5 text-xs font-medium text-muted-foreground">Catégorie</th>
+                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Prix</th>
+                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Marge</th>
+                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Taux de rotation</th>
+                      <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Lien</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {results.map((deal, i) => (
+                      <motion.tr key={deal.id ?? i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.5) }} whileHover={{ backgroundColor: 'rgba(16,185,129,0.05)' }} className="transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="font-medium truncate max-w-[220px]">{deal.title}</p>
+                          {deal.whyNow && <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{deal.whyNow}</p>}
+                        </td>
+                        <td className="px-3 py-3"><span className="text-muted-foreground font-medium">{deal.brand}</span></td>
+                        <td className="px-3 py-3 text-muted-foreground">{deal.category}</td>
+                        <td className="px-3 py-3 text-right tabular-nums font-medium">{deal.price}€</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-emerald-400 font-medium">{deal.profitMargin}%</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{deal.demandScore}%</td>
+                        <td className="px-5 py-3 text-right">
+                          {deal.url ? (
+                            <a href={deal.url} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border hover:bg-muted/50 transition text-muted-foreground hover:text-foreground">
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : <span className="text-muted-foreground/30">—</span>}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </motion.div>
+          </SpotlightCard>
         )}
       </div>
     </DashboardLayout>

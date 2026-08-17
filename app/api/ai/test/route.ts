@@ -4,7 +4,7 @@ import { getCurrentUser, errorResponse } from '@/lib/access-control'
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser(request)
     if (!user) return errorResponse('Connexion requise.', 401)
     if (user.role !== 'ADMIN') return errorResponse('Accès administrateur requis.')
     const body = await request.json().catch(() => ({}))
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Payload de test simple selon l'agent
+    // Payload de test simple selon l\'agent
     const testPayloads: Record<string, object> = {
       chat: { message: 'Test du chat agent', session_id: 'test_session' },
       ragSearch: { query: 'test', limit: 5 },
@@ -76,8 +76,8 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
-  const user = await getCurrentUser()
+export async function GET(request: Request) {
+  const user = await getCurrentUser(request)
   if (!user) return errorResponse('Connexion requise.', 401)
   if (user.role !== 'ADMIN') return errorResponse('Accès administrateur requis.')
   return NextResponse.json({

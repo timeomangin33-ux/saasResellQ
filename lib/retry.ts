@@ -71,7 +71,7 @@ export async function retryWithBackoff<T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      // Don't retry on last attempt
+      // Don\'t retry on last attempt
       if (attempt === config.maxRetries) {
         break
       }

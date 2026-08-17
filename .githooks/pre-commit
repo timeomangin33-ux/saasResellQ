@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+const { execSync } = require('child_process')
+const { existsSync } = require('fs')
+
+function run(cmd) {
+  return execSync(cmd, { stdio: 'pipe' }).toString()
+}
+
+try {
+  console.log('Running text sweep (safe replacements)...')
+  const out = run('node scripts/text_sweep.cjs')
+  if (out.includes('Updated:')) {
+    console.log('\ntext_sweep modified files. Staging changes...')
+    execSync('git add -A')
+    console.log('Staged text_sweep changes.')
+  }
+} catch (e) {
+  console.error('Error running text_sweep:', e.message)
+  process.exit(1)
+}
+
+// Get staged files
+let staged = []
+try {
+  const raw = run('git diff --cached --name-only --diff-filter=ACM')
+  staged = raw.split('\n').map(s => s.trim()).filter(Boolean)
+} catch (e) {
+  // ignore
+}
+
+const fileList = (exts) => staged.filter(f => exts.includes(f.split('.').pop()))
+const spellExts = ['md','ts','tsx','js','jsx','json','html','txt','yml','yaml']
+const lintExts = ['ts','tsx','js','jsx']
+
+try {
+  if (staged.length === 0) {
+    console.log('No staged files to check. Skipping cspell/eslint.')
+    process.exit(0)
+  }
+
+  const spellFiles = fileList(spellExts)
+  if (spellFiles.length) {
+    console.log('Running cspell on staged files...')
+    execSync('npx -y cspell --config .cspell.json ' + spellFiles.map(f => '"' + f + '"').join(' '), { stdio: 'inherit' })
+  }
+
+  const lintFiles = fileList(lintExts)
+  if (lintFiles.length) {
+    console.log('Running eslint --fix on staged files...')
+    try {
+      execSync('npx eslint --fix ' + lintFiles.map(f => '"' + f + '"').join(' '), { stdio: 'inherit' })
+      // restage any fixes
+      execSync('git add ' + lintFiles.map(f => '"' + f + '"').join(' '))
+    } catch (e) {
+      console.error('\nESLint reported errors. Fix them before committing.')
+      process.exit(1)
+    }
+  }
+
+  console.log('Pre-commit checks passed for staged files.')
+  process.exit(0)
+} catch (e) {
+  console.error('Pre-commit hook failed:', e.message)
+  process.exit(1)
+}

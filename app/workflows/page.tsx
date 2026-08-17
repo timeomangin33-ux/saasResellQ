@@ -6,9 +6,14 @@ import { useSession } from 'next-auth/react'
 import { normalizePlan } from '@/lib/plans'
 import { PlanGate } from '@/components/plan-gate'
 import { PageHeader } from '@/components/ui/page-header'
+import { Reveal, StaggerGroup, staggerItem } from '@/components/ui/reveal'
+import { SpotlightCard } from '@/components/ui/spotlight-card'
+import { Magnetic } from '@/components/ui/magnetic'
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Workflow } from 'lucide-react'
 
 interface WorkflowItem {
   id: string
@@ -35,7 +40,7 @@ const WORKFLOWS: WorkflowItem[] = [
   { id: 'h6K62ESUniZ4e1qP', name: 'Deal Finder', published: true, endpoint: '/webhook/resellq-deals', description: 'Trouve les meilleures affaires du moment — articles sous-cotés avec fort potentiel.', category: 'Analyse' },
   { id: '23nv17HoXt5Hpwhu', name: 'Trend Analyzer', published: true, endpoint: '/webhook/resellq-trends', description: 'Analyse les tendances marché : catégories en hausse, marques populaires, saisonnalité.', category: 'Analyse' },
   { id: 'cCr0zHwMpoj24eOi', name: 'Report Generator', published: true, endpoint: '/webhook/resellq-report', description: 'Génère un rapport marché complet en HTML ou JSON avec résumé GPT-4o-mini.', category: 'Rapports' },
-  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail (Gmail) et dans l&apos;application pour les opportunités et les deals détectés.', category: 'Notifications' },
+  { id: 'y5gCuIPzcoTELrtX', name: 'Notification Agent', published: true, endpoint: '/webhook/resellq-notify', description: 'Envoie des alertes par e-mail (Gmail) et dans l\'application pour les opportunités et les deals détectés.', category: 'Notifications' },
 ]
 
 const CATEGORIES = ['Tous', 'Collecte', 'Infrastructure', 'IA', 'Analyse', 'Rapports', 'Notifications']
@@ -56,7 +61,7 @@ export default function WorkflowsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   if (status === 'loading') {
-    return <div className="grid min-h-screen place-items-center bg-[#09090b]"><div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-300 border-t-transparent" /></div>
+    return <div className="grid min-h-screen place-items-center bg-[#08080b]"><div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" /></div>
   }
 
   if (planKey === 'STARTER') {
@@ -82,17 +87,21 @@ export default function WorkflowsPage() {
       <div className="page-container space-y-6">
         <PageHeader
           title="Workflows"
+          kicker="Automatisations"
+          icon={Workflow}
           description={`${WORKFLOWS.filter(w => w.published).length}/${WORKFLOWS.length} workflows actifs`}
         />
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {['Collecte', 'Infrastructure', 'IA', 'Analyse', 'Rapports'].map(cat => (
-            <Card key={cat}>
-              <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-xl font-semibold tabular-nums">{WORKFLOWS.filter(w => w.category === cat).length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{cat}</p>
-              </CardContent>
-            </Card>
+          {['Collecte', 'Infrastructure', 'IA', 'Analyse', 'Rapports'].map((cat, index) => (
+            <Reveal key={cat} delay={index * 0.05}>
+              <Card>
+                <CardContent className="pt-4 pb-4 text-center">
+                  <p className="text-xl font-semibold tabular-nums">{WORKFLOWS.filter(w => w.category === cat).length}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{cat}</p>
+                </CardContent>
+              </Card>
+            </Reveal>
           ))}
         </div>
 
@@ -103,7 +112,7 @@ export default function WorkflowsPage() {
               onClick={() => setActiveCategory(cat)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 activeCategory === cat
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-emerald-500 text-white'
                   : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -112,40 +121,46 @@ export default function WorkflowsPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <StaggerGroup className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(w => (
-            <Card key={w.id} className="flex flex-col">
-              <CardContent className="pt-5 flex flex-col gap-3 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium truncate">{w.name}</h3>
-                    <span className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-md font-medium ${CAT_COLORS[w.category]}`}>
-                      {w.category}
-                    </span>
-                  </div>
-                  <Badge variant={w.published ? 'success' : 'default'}>
-                    {w.published ? 'Actif' : 'Brouillon'}
-                  </Badge>
-                </div>
+            <motion.div key={w.id} variants={staggerItem}>
+              <SpotlightCard spotlightColor="rgba(16,185,129,0.12)" className="h-full">
+                <Card className="flex h-full flex-col transition-colors hover:border-emerald-400/25">
+                  <CardContent className="pt-5 flex flex-col gap-3 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium truncate">{w.name}</h3>
+                        <span className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-md font-medium ${CAT_COLORS[w.category]}`}>
+                          {w.category}
+                        </span>
+                      </div>
+                      <Badge variant={w.published ? 'success' : 'default'}>
+                        {w.published ? 'Actif' : 'Brouillon'}
+                      </Badge>
+                    </div>
 
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{w.description}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed flex-1">{w.description}</p>
 
-                <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
-                  <div className="flex-1 min-w-0">
-                    {w.schedule && <span className="text-xs text-muted-foreground">{w.schedule}</span>}
-                    {w.endpoint && <span className="text-xs text-muted-foreground font-mono truncate block">{w.endpoint}</span>}
-                    {!w.schedule && !w.endpoint && <span className="text-xs text-muted-foreground">Déclenchement manuel</span>}
-                  </div>
-                  {w.endpoint && (
-                    <Button variant="outline" size="sm" onClick={() => copy(w.endpoint!, w.id)}>
-                      {copiedId === w.id ? 'Copié' : 'Copier'}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
+                      <div className="flex-1 min-w-0">
+                        {w.schedule && <span className="text-xs text-muted-foreground">{w.schedule}</span>}
+                        {w.endpoint && <span className="text-xs text-muted-foreground font-mono truncate block">{w.endpoint}</span>}
+                        {!w.schedule && !w.endpoint && <span className="text-xs text-muted-foreground">Déclenchement manuel</span>}
+                      </div>
+                      {w.endpoint && (
+                        <Magnetic strength={0.15}>
+                          <Button variant="outline" size="sm" onClick={() => copy(w.endpoint!, w.id)}>
+                            {copiedId === w.id ? 'Copié' : 'Copier'}
+                          </Button>
+                        </Magnetic>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </SpotlightCard>
+            </motion.div>
           ))}
-        </div>
+        </StaggerGroup>
 
         <Card className="overflow-hidden">
           <CardHeader>

@@ -1,5 +1,4 @@
-import { useEffect, useRef, type ComponentPropsWithoutRef } from "react"
-import { useInView, useMotionValue, useSpring } from "motion/react"
+import { useEffect, useRef, useState, type ComponentPropsWithoutRef } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -9,7 +8,14 @@ interface NumberTickerProps extends ComponentPropsWithoutRef<"span"> {
   direction?: "up" | "down"
   delay?: number
   decimalPlaces?: number
+  prefix?: string
+  suffix?: string
+  locale?: string
 }
+
+const DURATION_MS = 900
+// cubic ease-out
+const ease = (t: number) => 1 - Math.pow(1 - t, 3)
 
 export function NumberTicker({
   value,
@@ -18,55 +24,54 @@ export function NumberTicker({
   delay = 0,
   className,
   decimalPlaces = 0,
+  prefix = "",
+  suffix = "",
+  locale = "fr-FR",
   ...props
 }: NumberTickerProps) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const motionValue = useMotionValue(direction === "down" ? value : startValue)
-  const springValue = useSpring(motionValue, {
-    damping: 60,
-    stiffness: 100,
-  })
-  const isInView = useInView(ref, { once: true, margin: "0px" })
+  const from = direction === "down" ? value : startValue
+  const to = direction === "down" ? startValue : value
+  const [display, setDisplay] = useState(from)
+  const frameRef = useRef<number | null>(null)
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null
+    let cancelled = false
 
-    if (isInView) {
-      timer = setTimeout(() => {
-        motionValue.set(direction === "down" ? startValue : value)
-      }, delay * 1000)
-    }
+    const timer = setTimeout(() => {
+      const start = performance.now()
+      function tick(now: number) {
+        if (cancelled) return
+        const elapsed = now - start
+        const t = Math.min(1, elapsed / DURATION_MS)
+        setDisplay(from + (to - from) * ease(t))
+        if (t < 1) {
+          frameRef.current = requestAnimationFrame(tick)
+        }
+      }
+      frameRef.current = requestAnimationFrame(tick)
+    }, delay * 1000)
 
     return () => {
-      if (timer !== null) {
-        clearTimeout(timer)
-      }
+      cancelled = true
+      clearTimeout(timer)
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
     }
-  }, [motionValue, isInView, delay, value, direction, startValue])
+  }, [from, to, delay])
 
-  useEffect(
-    () =>
-      springValue.on("change", (latest) => {
-        if (ref.current) {
-          ref.current.textContent = Intl.NumberFormat("en-US", {
-            minimumFractionDigits: decimalPlaces,
-            maximumFractionDigits: decimalPlaces,
-          }).format(Number(latest.toFixed(decimalPlaces)))
-        }
-      }),
-    [springValue, decimalPlaces]
-  )
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  }).format(Number(display.toFixed(decimalPlaces)))
 
   return (
     <span
-      ref={ref}
       className={cn(
-        "inline-block tracking-wider text-black tabular-nums dark:text-white",
+        "inline-block tracking-wider tabular-nums text-white",
         className
       )}
       {...props}
     >
-      {startValue}
+      {prefix}{formatted}{suffix}
     </span>
   )
 }

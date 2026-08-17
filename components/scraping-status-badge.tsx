@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useScrapingStatus } from '@/hooks/useScrapingStatus';
-import { useEffect, useState } from 'react';
+import { useScrapingStatus } from '@/hooks/useScrapingStatus'
+import { useEffect, useState } from 'react'
 
 export function ScrapingStatusBadge() {
   const { status, lastRun, categoriesCount } = useScrapingStatus();

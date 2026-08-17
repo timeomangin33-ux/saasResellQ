@@ -10,37 +10,37 @@ const sections = [
   {
     title: '1. Données collectées',
     body:
-      'Nous collectons les informations nécessaires à la création et au fonctionnement du compte, notamment votre adresse e-mail, votre nom, votre mot de passe (hashé), votre statut d&apos;abonnement et les données de paiement traitées via Stripe. Nous pouvons également collecter des données techniques de navigation, des logs d&apos;accès, des informations relatives à l&apos;utilisation du service et des données de scraping ou d&apos;analyse nécessaires à la fourniture du service.',
+      'Nous collectons les informations nécessaires à la création et au fonctionnement du compte, notamment votre adresse e-mail, votre nom, votre mot de passe (hashé), votre statut d\'abonnement et les données de paiement traitées via Stripe. Nous pouvons également collecter des données techniques de navigation, des logs d\'accès, des informations relatives à l\'utilisation du service et des données de scraping ou d\'analyse nécessaires à la fourniture du service.',
   },
   {
     title: '2. Finalités du traitement',
     body:
-      'Vos données sont utilisées pour créer et gérer votre compte, vous permettre d&apos;accéder au service, traiter les paiements et abonnements, sécuriser l&apos;environnement, analyser l&apos;utilisation du service, améliorer la qualité du produit et répondre à nos obligations légales.',
+      'Vos données sont utilisées pour créer et gérer votre compte, vous permettre d\'accéder au service, traiter les paiements et abonnements, sécuriser l\'environnement, analyser l\'utilisation du service, améliorer la qualité du produit et répondre à nos obligations légales.',
   },
   {
     title: '3. Partage des données',
     body:
-      'Nous ne vendons pas vos données personnelles. Nous ne les diffusons pas à des tiers à des fins commerciales, sauf lorsqu&apos;elles sont strictement nécessaires à l&apos;exécution du service : prestataires techniques, hébergeur, fournisseur de paiement, services d&apos;authentification et d&apos;analytique. Nous veillons à ce que ces prestataires respectent des obligations de confidentialité et de sécurité.',
+      'Nous ne vendons pas vos données personnelles. Nous ne les diffusons pas à des tiers à des fins commerciales, sauf lorsqu\'elles sont strictement nécessaires à l\'exécution du service : prestataires techniques, hébergeur, fournisseur de paiement, services d\'authentification et d\'analytique. Nous veillons à ce que ces prestataires respectent des obligations de confidentialité et de sécurité.',
   },
   {
     title: '4. Conservation',
     body:
-      'Vos données sont conservées aussi longtemps que nécessaire pour la gestion de votre compte, l&apos;exécution du contrat, le respect de nos obligations légales, la prévention de la fraude et l&apos;amélioration du service. Les données de paiement sont conservées selon les obligations fiscales et comptables applicables.',
+      'Vos données sont conservées aussi longtemps que nécessaire pour la gestion de votre compte, l\'exécution du contrat, le respect de nos obligations légales, la prévention de la fraude et l\'amélioration du service. Les données de paiement sont conservées selon les obligations fiscales et comptables applicables.',
   },
   {
     title: '5. Vos droits',
     body:
-      'Conformément au règlement général sur la protection des données, vous disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement, d&apos;opposition, de limitation et de portabilité sur vos données personnelles. Vous pouvez également retirer votre consentement à tout moment lorsque le traitement repose sur celui-ci. Pour exercer vos droits, vous pouvez nous contacter à l&apos;adresse indiquée ci-dessous.',
+      'Conformément au règlement général sur la protection des données, vous disposez d\'un droit d\'accès, de rectification, d\'effacement, d\'opposition, de limitation et de portabilité sur vos données personnelles. Vous pouvez également retirer votre consentement à tout moment lorsque le traitement repose sur celui-ci. Pour exercer vos droits, vous pouvez nous contacter à l\'adresse indiquée ci-dessous.',
   },
   {
     title: '6. Sécurité',
     body:
-      'Nous mettons en œuvre des mesures techniques et organisationnelles raisonnables pour protéger vos données contre la perte, l&apos;accès non autorisé, la divulgation ou la modification illicites. Toutefois, aucun système n&apos;est entièrement infalsifiable, et vous reconnaissez que la transmission de données sur Internet comporte des risques.',
+      'Nous mettons en œuvre des mesures techniques et organisationnelles raisonnables pour protéger vos données contre la perte, l\'accès non autorisé, la divulgation ou la modification illicites. Toutefois, aucun système n\'est entièrement infalsifiable, et vous reconnaissez que la transmission de données sur Internet comporte des risques.',
   },
   {
     title: '7. Cookies et technologies similaires',
     body:
-      'Le site peut utiliser des cookies ou technologies similaires pour mémoriser vos préférences, maintenir votre session, mesurer l&apos;audience et améliorer la qualité du service. Vous pouvez gérer vos préférences de cookies depuis votre navigateur.',
+      'Le site peut utiliser des cookies ou technologies similaires pour mémoriser vos préférences, maintenir votre session, mesurer l\'audience et améliorer la qualité du service. Vous pouvez gérer vos préférences de cookies depuis votre navigateur.',
   },
 ]
 
@@ -53,7 +53,7 @@ export default function ConfidentialitePage() {
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Retour à l&apos;accueil
+              Retour à l'accueil
             </Button>
           </Link>
         </div>
@@ -96,7 +96,7 @@ export default function ConfidentialitePage() {
                 Contact et exercice de vos droits
               </div>
               <p className="text-sm leading-7 text-muted-foreground">
-                Pour toute question relative à cette politique, à vos données personnelles ou pour exercer vos droits, vous pouvez nous contacter à l&apos;adresse suivante : <span className="font-medium text-foreground">contact@resellq.com</span>.
+                Pour toute question relative à cette politique, à vos données personnelles ou pour exercer vos droits, vous pouvez nous contacter à l'adresse suivante : <span className="font-medium text-foreground">contact@resellq.com</span>.
               </p>
             </div>
 

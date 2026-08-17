@@ -3,8 +3,7 @@ export interface EbayListing {
   title: string
   price: number
   image: string
-  platform: 'ebay'
-  condition: string
+  platform: 'ebay', condition: string
   bids?: number
   link: string
 }

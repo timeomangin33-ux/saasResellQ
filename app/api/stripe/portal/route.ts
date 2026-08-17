@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     if (!stripe) {
       console.error('[stripe/portal] Stripe not configured')
-      return NextResponse.json({ error: 'Stripe n&apos;est pas configuré' }, { status: 500 })
+      return NextResponse.json({ error: 'Stripe n\'est pas configuré' }, { status: 500 })
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Trop de tentatives, réessayez plus tard.' }, { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } })
     }
 
-    const session = await auth(request)
+    const session = await auth()
     if (!session?.user?.email) {
       console.warn('[stripe/portal] Unauthenticated request')
       return NextResponse.json({ error: 'Utilisateur non authentifié' }, { status: 401 })

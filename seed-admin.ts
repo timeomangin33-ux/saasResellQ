@@ -41,7 +41,6 @@ async function main() {
 
   console.log('✅ Admin account ready')
   console.log('📧 Email:', admin.email)
-  console.log('🔐 Password: 260309Timeo)')
   console.log('👤 Role:', admin.role)
   console.log('💳 Subscription:', admin.subscriptionStatus)
 }

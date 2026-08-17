@@ -1,8 +1,7 @@
 import OpenAI from 'openai'
 
 type OpenAIMessage = {
-  role: 'system' | 'user' | 'assistant'
-  content: string
+  role: 'system' | 'user' | 'assistant', content: string
   name?: string
 }
 

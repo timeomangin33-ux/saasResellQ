@@ -4,7 +4,7 @@ import { getTopProducts } from '@/vinted'
 import { authorizeFeature } from '@/lib/access-control'
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   const products = await prisma.product.findMany({

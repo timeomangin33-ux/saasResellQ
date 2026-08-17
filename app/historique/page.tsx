@@ -1,38 +1,85 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import DashboardLayout from '@/app/dashboard-layout'
-import { Clock3, Archive, History } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Reveal } from '@/components/ui/reveal'
+import { Clock3, Search, History, Loader2 } from 'lucide-react'
+
+interface SavedSearchItem {
+  id: string
+  query: string
+  createdAt: string
+}
 
 export default function HistoryPage() {
+  const [searches, setSearches] = useState<SavedSearchItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/searches')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Impossible de charger votre historique.')
+        return res.json()
+      })
+      .then((data) => setSearches(data.searches ?? []))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Erreur inconnue.'))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <DashboardLayout>
       <div className="page-container py-8">
-        <div className="rounded-[32px] border border-white/10 bg-[#111116] p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[32px] border border-white/10 bg-[#111116] p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
+        >
           <div className="flex items-center gap-3 text-sm text-violet-300">
             <Clock3 className="h-5 w-5" />
             <span>Historique</span>
           </div>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Suivi des analyses</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-400">Retrouvez l&apos;historique de vos analyses, exportations et décisions prises dans ResellQ.</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Vos recherches</h1>
+          <p className="mt-3 max-w-2xl text-sm text-slate-400">Retrouvez l'historique de vos recherches passées sur ResellQ.</p>
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {['Analyse produit', 'Veille catégorie', 'Rapport exporté'].map((item, index) => (
-              <div key={item} className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-700 text-slate-200">
-                  <Archive className="h-5 w-5" />
-                </div>
-                <h2 className="mt-4 text-lg font-semibold text-white">{item}</h2>
-                <p className="mt-2 text-sm text-slate-400">Consultation rapide des actions passées et des opportunités déjà évaluées.</p>
-              </div>
-            ))}
-          </div>
+          {loading && (
+            <div className="mt-10 flex items-center justify-center py-10 text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          )}
 
-          <div className="mt-10 rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
-            <History className="mx-auto h-10 w-10 text-violet-300" />
-            <h2 className="mt-4 text-2xl font-semibold text-white">Aucun historique chargé</h2>
-            <p className="mt-2 text-sm text-slate-400">Votre activité sera listée ici dès que vous aurez lancé des analyses ou exporté des rapports.</p>
-          </div>
-        </div>
+          {!loading && error && (
+            <Reveal className="mt-10 rounded-3xl border border-red-500/20 bg-red-500/5 p-8 text-center text-sm text-red-300">
+              {error}
+            </Reveal>
+          )}
+
+          {!loading && !error && searches.length === 0 && (
+            <Reveal delay={0.1} className="mt-10 rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+              <History className="mx-auto h-10 w-10 text-violet-300" />
+              <h2 className="mt-4 text-2xl font-semibold text-white">Aucun historique pour le moment</h2>
+              <p className="mt-2 text-sm text-slate-400">Vos recherches sauvegardées apparaîtront ici automatiquement.</p>
+            </Reveal>
+          )}
+
+          {!loading && !error && searches.length > 0 && (
+            <div className="mt-10 divide-y divide-white/10 rounded-2xl border border-white/10">
+              {searches.map((s, index) => (
+                <Reveal key={s.id} delay={index * 0.03} className="flex items-center gap-4 px-5 py-4">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-200">
+                    <Search className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{s.query}</p>
+                    <p className="text-xs text-slate-500">{new Date(s.createdAt).toLocaleString('fr-FR')}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </motion.div>
       </div>
     </DashboardLayout>
   )

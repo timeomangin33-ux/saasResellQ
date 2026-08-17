@@ -16,7 +16,7 @@ export type AuthorizedAIFeatureResult =
   | { user: CurrentUser; usage: { remaining: number; limit: number } }
   | { response: ReturnType<typeof NextResponse.json> }
 
-export async function getCurrentUser() {
+export async function getCurrentUser(_request?: Request) {
   const session = await auth()
   if (!session?.user?.id) return null
   return prisma.user.findUnique({ where: { id: session.user.id } })
@@ -49,8 +49,8 @@ export function hasMinimumPlan(plan: string, minimum: keyof typeof PLAN_RANK) {
   return (PLAN_RANK[normalizePlan(plan)] ?? 0) >= PLAN_RANK[minimum]
 }
 
-export async function authorizeFeature(minimum: keyof typeof PLAN_RANK = 'STARTER'): Promise<AuthorizedFeatureResult> {
-  const user = await getCurrentUser()
+export async function authorizeFeature(request: Request, minimum: keyof typeof PLAN_RANK = 'STARTER'): Promise<AuthorizedFeatureResult> {
+  const user = await getCurrentUser(request)
   if (!user) return { response: errorResponse('Connexion requise.', 401) }
   if (user.role !== 'ADMIN') {
     if (user.subscriptionStatus !== 'ACTIVE') {
@@ -67,14 +67,14 @@ export async function authorizeFeature(minimum: keyof typeof PLAN_RANK = 'STARTE
   return { user }
 }
 
-export async function authorizeAuthenticatedUser(): Promise<AuthorizedFeatureResult> {
-  const user = await getCurrentUser()
+export async function authorizeAuthenticatedUser(request?: Request): Promise<AuthorizedFeatureResult> {
+  const user = await getCurrentUser(request)
   if (!user) return { response: errorResponse('Connexion requise.', 401) }
   return { user }
 }
 
-export async function authorizeAIFeature(action: string, credits = 1, minimum: keyof typeof PLAN_RANK = 'STARTER'): Promise<AuthorizedAIFeatureResult> {
-  const access = await authorizeFeature(minimum)
+export async function authorizeAIFeature(request: Request, action: string, credits = 1, minimum: keyof typeof PLAN_RANK = 'STARTER'): Promise<AuthorizedAIFeatureResult> {
+  const access = await authorizeFeature(request, minimum)
   if ('response' in access) return access
   if (access.user.role === 'ADMIN') return { user: access.user, usage: { remaining: Number.MAX_SAFE_INTEGER, limit: Number.MAX_SAFE_INTEGER } }
 

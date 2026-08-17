@@ -3,7 +3,7 @@ import { EbayProvider } from '@/src/providers/marketplaces/ebay.provider'
 import { authorizeFeature } from '@/lib/access-control'
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   const url = new URL(request.url)

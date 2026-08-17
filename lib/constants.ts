@@ -35,7 +35,7 @@ export const PRICING_PLANS = [
       'Et plus encore...',
     ],
     businessExtras: [],
-    limitations: ['Pas d&apos;historique des prix', 'Pas d&apos;exports', 'Deal Finder basique'],
+    limitations: ['Pas d\'historique des prix', 'Pas d\'exports', 'Deal Finder basique'],
   },
   {
     id: 'pro',

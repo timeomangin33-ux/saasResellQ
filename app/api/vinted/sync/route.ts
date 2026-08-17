@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Trop de requêtes, réessayez plus tard.' }, { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } })
   }
 
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   const user = access.user

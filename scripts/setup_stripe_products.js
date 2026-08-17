@@ -47,7 +47,7 @@ async function main() {
     }
   };
 
-  const imageUrl = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop';
+  const imageUrl = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop'
 
   for (const [level, config] of Object.entries(prices)) {
     try {

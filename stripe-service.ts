@@ -28,7 +28,7 @@ export function getCheckoutPlanConfig(plan?: string) {
       return {
         amount: 7500,
         name: 'ResellQ Pro',
-        description: 'Accède à l&apos;analyse avancée, aux alertes en temps réel et à une vue claire sur les produits qui méritent le plus votre attention.',
+        description: 'Accède à l\'analyse avancée, aux alertes en temps réel et à une vue claire sur les produits qui méritent le plus votre attention.',
         imageUrl: process.env.STRIPE_CHECKOUT_IMAGE_URL ?? (process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/,'')}/resellq-logo.svg` : DEFAULT_CHECKOUT_IMAGE),
       }
     case '149':
@@ -42,7 +42,7 @@ export function getCheckoutPlanConfig(plan?: string) {
       return {
         amount: 7500,
         name: 'ResellQ Pro',
-        description: 'Accède à l&apos;analyse avancée, aux alertes en temps réel et à une vue claire sur les produits qui méritent le plus votre attention.',
+        description: 'Accède à l\'analyse avancée, aux alertes en temps réel et à une vue claire sur les produits qui méritent le plus votre attention.',
         imageUrl: process.env.STRIPE_CHECKOUT_IMAGE_URL ?? (process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/,'')}/resellq-logo.svg` : DEFAULT_CHECKOUT_IMAGE),
       }
   }

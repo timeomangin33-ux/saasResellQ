@@ -3,8 +3,8 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 
 const footerLinks = [
   { href: '/cgv', label: 'CGV' },
-  { href: '/confidentialite', label: 'ConfidentialitÃ©' },
-  { href: '/mentions-legales', label: 'Mentions lÃ©gales' },
+  { href: '/confidentialite', label: 'Confidentialité' },
+  { href: '/mentions-legales', label: 'Mentions légales' },
   { href: '/payment', label: 'Abonnement' },
 ]
 
@@ -18,7 +18,7 @@ export function SiteFooter() {
             ResellQ
           </div>
           <p className="text-sm leading-7 text-slate-400">
-            Une plateforme premium pour analyser les opportunitÃ©s Vinted, prioriser les deals et gagner en marge sans perdre de temps. Support 24h direct.
+            Une plateforme premium pour analyser les opportunités Vinted, prioriser les deals et gagner en marge sans perdre de temps. Support 24h direct.
           </p>
         </div>
 

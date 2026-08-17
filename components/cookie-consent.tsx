@@ -1,25 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { Cookie } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const STORAGE_KEY = 'resellq-cookie-consent'
 
-export function CookieConsent() {
-  const [visible, setVisible] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY)
-      return !stored
-    } catch (e) {
-      return false
-    }
-  })
+function subscribe(callback: () => void) {
+  window.addEventListener('storage', callback)
+  return () => window.removeEventListener('storage', callback)
+}
 
-  const handleChoice = (choice: 'accepted' | 'rejected') => {
-    window.localStorage.setItem(STORAGE_KEY, choice)
-    setVisible(false)
+function getConsentSnapshot() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return 'unavailable'
   }
+}
+
+function getServerConsentSnapshot() {
+  return 'unavailable'
+}
+
+export function CookieConsent() {
+  const consent = useSyncExternalStore(subscribe, getConsentSnapshot, getServerConsentSnapshot)
+  const visible = consent === null
+
+  const handleChoice = useCallback((choice: 'accepted' | 'rejected') => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, choice)
+    } catch {
+      // storage unavailable (private mode, disabled cookies) — dismiss anyway
+    }
+    window.dispatchEvent(new Event('storage'))
+  }, [])
 
   if (!visible) return null
 
@@ -31,8 +46,8 @@ export function CookieConsent() {
             <Cookie className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Ce site utilise des cookies pour la session et l&apos;am&eacute;lioration du produit.</p>
-            <p className="mt-1 text-sm text-slate-400">Nous n&apos;utilisons pas vos donn&eacute;es pour la publicit&eacute;. Vous pouvez accepter ou refuser le stockage de cookies non essentiels.</p>
+            <p className="text-sm font-semibold text-white">Ce site utilise des cookies pour la session et l'am&eacute;lioration du produit.</p>
+            <p className="mt-1 text-sm text-slate-400">Nous n'utilisons pas vos donn&eacute;es pour la publicit&eacute;. Vous pouvez accepter ou refuser le stockage de cookies non essentiels.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

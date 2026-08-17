@@ -1,6 +1,6 @@
-﻿# ðŸš€ ResellQ â€” SaaS Launch Checklist
+﻿# ðŸš€ ResellQ — SaaS Launch Checklist
 
-Checklist complÃ¨te pour lancer ResellQ en production ce soir.
+Checklist complète pour lancer ResellQ en production ce soir.
 
 ---
 
@@ -57,8 +57,8 @@ ADMIN_PASSWORD=<strong-password>
 - [ ] Get **Webhook Secret** for production
 - [ ] Add production domain to Stripe webhook settings
 - [ ] Create product plans in Stripe Dashboard:
-  - `resellq-pro-monthly` (75â‚¬/month)
-  - `resellq-business-monthly` (199â‚¬/month)
+  - `resellq-pro-monthly` (75€/month)
+  - `resellq-business-monthly` (199€/month)
   - etc.
 - [ ] Test payment flow in Stripe Dashboard Sandbox (before going live)
 - [ ] Configure webhook endpoint: `https://resellq.com/api/webhooks/stripe`
@@ -166,9 +166,9 @@ ADMIN_PASSWORD=<strong-password>
 - [ ] Database queries optimized (no N+1 queries)
 
 #### 15. **Responsive Design**
-- [ ] Mobile (320px) â€” all pages readable
-- [ ] Tablet (768px) â€” layout adjusts properly
-- [ ] Desktop (1920px) â€” full experience
+- [ ] Mobile (320px) — all pages readable
+- [ ] Tablet (768px) — layout adjusts properly
+- [ ] Desktop (1920px) — full experience
 - [ ] Test on real devices (or DevTools)
 - [ ] Touch interactions work on mobile
 - [ ] Forms are mobile-friendly
@@ -186,8 +186,8 @@ ADMIN_PASSWORD=<strong-password>
 
 #### 17. **Legal & Compliance**
 - [ ] Terms & Conditions (CGV) page filled
-- [ ] Privacy Policy (ConfidentialitÃ©) page filled
-- [ ] Legal Notice (Mentions lÃ©gales) page filled
+- [ ] Privacy Policy (Confidentialité) page filled
+- [ ] Legal Notice (Mentions légales) page filled
 - [ ] GDPR cookie consent banner working
 - [ ] User data export/deletion capability (optional)
 - [ ] Compliance with local regulations (France/EU)

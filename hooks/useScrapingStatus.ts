@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
 type ScrapingStatus = {
-  status: 'running' | 'completed' | 'unknown';
-  lastRun: string | null;
+  status: 'running' | 'completed' | 'unknown', lastRun: string | null;
   categoriesCount: number;
 };
 

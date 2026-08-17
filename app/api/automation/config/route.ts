@@ -20,7 +20,7 @@ const configSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = access.user
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    // Create default config if doesn't exist
+    // Create default config if doesn\'t exist
     if (!config) {
       config = await prisma.automationConfig.create({
         data: {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const access = await authorizeFeature('PRO')
+    const access = await authorizeFeature(request, 'PRO')
     if ('response' in access) return access.response
     const user = access.user
     const parsed = configSchema.safeParse(await request.json().catch(() => ({})))

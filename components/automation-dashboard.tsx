@@ -107,7 +107,7 @@ export function AutomationDashboard() {
               <Zap className="w-5 h-5 text-yellow-500" />
               Automation Hub
             </CardTitle>
-            <CardDescription>Gestion des jobs d&apos;automation et synchronisation</CardDescription>
+            <CardDescription>Gestion des jobs d'automation et synchronisation</CardDescription>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 // À compléter avec tes vraies clés dans .env.local
 
 export const API_CONFIG = {
-  // OpenAI - Pour l'IA Agent
+  // OpenAI - Pour l\'IA Agent
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
     model: 'gpt-4',

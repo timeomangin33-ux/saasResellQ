@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     if (!stripe) {
       console.error('[stripe/checkout] Stripe not configured')
-      return NextResponse.json({ error: 'Stripe n&apos;est pas configuré' }, { status: 500 })
+      return NextResponse.json({ error: 'Stripe n\'est pas configuré' }, { status: 500 })
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const requestedPlan = typeof body.plan === 'string' ? body.plan.trim() : undefined
     const normalizedPlan = requestedPlan ? planFromCheckout(requestedPlan) : undefined
     if (requestedPlan && normalizedPlan === 'FREE') {
-      return NextResponse.json({ error: "Forfait invalide pour l'abonnement" }, { status: 400 })
+      return NextResponse.json({ error: "Forfait invalide pour l\'abonnement" }, { status: 400 })
     }
 
     let customerId = user.stripeCustomerId

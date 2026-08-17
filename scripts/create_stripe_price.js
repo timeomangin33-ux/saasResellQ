@@ -50,7 +50,7 @@ async function main() {
     console.log('Created price:', price.id);
 
     // Update .env.local
-    const key = 'STRIPE_PRICE_ID_75';
+    const key = 'STRIPE_PRICE_ID_75'
     let updated = false;
     const newLines = lines.map((l) => {
       if (l.match(new RegExp('^\\s*' + key + '\\s*=.*$'))) {

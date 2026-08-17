@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface BotItem {
   id: string
@@ -16,8 +17,7 @@ interface BotItem {
 
 interface BotResult {
   success: boolean
-  source: 'live' | 'fallback'
-  query: string
+  source: 'live' | 'fallback', query: string
   items: BotItem[]
   message: string
 }
@@ -107,7 +107,7 @@ export default function BotPage() {
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-sm backdrop-blur">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="panel-strong p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.3em] text-emerald-500">Bot Vinted</p>
@@ -116,7 +116,7 @@ export default function BotPage() {
                 Ce module récupère désormais les annonces Vinted visibles sur la page de recherche et les affiche dans un flux défilant dans le SaaS.
               </p>
             </div>
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
               État : flux live
             </div>
           </div>
@@ -174,16 +174,16 @@ export default function BotPage() {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {result && (
-          <div className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="panel p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Résultat du dernier scan</p>
                 <p className="text-lg font-semibold text-foreground">{result.query}</p>
               </div>
-              <div className={`rounded-full px-3 py-1 text-sm ${result.source === 'live' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+              <div className={`rounded-full px-3 py-1 text-sm ${result.source === 'live' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-600'}`}>
                 {result.source === 'live' ? 'Scan live' : 'Résultat de secours'}
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function BotPage() {
                             <h2 className="text-base font-semibold text-foreground">{item.title}</h2>
                             <p className="text-sm text-muted-foreground">{item.brand}</p>
                           </div>
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-600">
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-300">
                             {item.price} €
                           </span>
                         </div>
@@ -211,7 +211,7 @@ export default function BotPage() {
                           <span className="rounded-full bg-muted px-2.5 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                             {item.category}
                           </span>
-                          <a href={item.url} target="_blank" rel="noreferrer" className="font-medium text-emerald-600 hover:text-emerald-500">
+                          <a href={item.url} target="_blank" rel="noreferrer" className="font-medium text-emerald-300 hover:text-emerald-500">
                             Voir
                           </a>
                         </div>
@@ -222,10 +222,10 @@ export default function BotPage() {
               </div>
             ) : (
               <p className="mt-6 rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Aucun résultat n&apos;a encore été retourné par le bot.
+                Aucun résultat n'a encore été retourné par le bot.
               </p>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
       <style jsx global>{`

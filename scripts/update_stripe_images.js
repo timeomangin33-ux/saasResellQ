@@ -18,7 +18,7 @@ async function main() {
   const env = readEnv(envPath);
   
   const secret = env.STRIPE_SECRET_KEY;
-  const appUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   
   if (!secret) {
     console.error('STRIPE_SECRET_KEY not found');

@@ -4,7 +4,7 @@ import play from '@/lib/playwright-vinted'
 import { saveVintedSession } from '@/lib/vinted-connector'
 
 export async function POST(request: Request) {
-  const access = await authorizeFeature('STARTER')
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   const user = access.user
