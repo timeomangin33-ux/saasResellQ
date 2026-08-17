@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { automationQueue, productSyncQueue, analysisQueue, watchlistQueue } from '@/lib/queues'
 import { prisma } from '@/prisma'
-import { auth } from '@/auth'
 import { authorizeFeature } from '@/lib/access-control'
+import { runAutomationJob } from '@/lib/automation-actions'
+
+export const maxDuration = 60
 
 /**
- * GET /api/automation/status - Get automation status and job queue
+ * GET /api/automation/status - Get automation status and recent job history
  */
 export async function GET(request: NextRequest) {
   try {
@@ -14,29 +15,21 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: access.user.id }, include: { automationConfig: true } })
     if (!user) return NextResponse.json({ error: 'Utilisateur introuvable.' }, { status: 404 })
 
-    // Get queue stats
-    const [automationCount, syncCount, analysisCount, watchlistCount] = await Promise.all([
-      automationQueue.count(),
-      productSyncQueue.count(),
-      analysisQueue.count(),
-      watchlistQueue.count(),
-    ])
-
-    // Get recent jobs
     const recentJobs = await prisma.automationJob.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       take: 10,
     })
 
+    const lastRunByType: Record<string, string | null> = {}
+    for (const type of ['sync-products', 'analyze-products', 'create-watchlist']) {
+      const last = recentJobs.find((j) => j.jobType === type)
+      lastRunByType[type] = last?.lastRunAt?.toISOString() ?? null
+    }
+
     return NextResponse.json({
       automationEnabled: user.automationConfig?.enabled ?? true,
-      queues: {
-        automation: automationCount,
-        productSync: syncCount,
-        analysis: analysisCount,
-        watchlist: watchlistCount,
-      },
+      lastRunByType,
       config: user.automationConfig,
       recentJobs,
     })
@@ -49,7 +42,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/automation/trigger - Manually trigger automation job
+ * POST /api/automation/status - Run an automation action now and wait for the result.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -60,45 +53,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}))
     const { jobType, payload } = body
 
-    // Validate job type
     const validJobTypes = ['sync-products', 'analyze-products', 'create-watchlist', 'notify-user']
     if (!validJobTypes.includes(jobType)) {
-      return NextResponse.json({ error: `Invalid job type: ${jobType}` }, { status: 400 })
+      return NextResponse.json({ error: `Type de job invalide : ${jobType}` }, { status: 400 })
     }
 
-    // Add job to queue
-    const job = await automationQueue.add(
-      {
-        type: jobType,
-        userId: user.id,
-        payload: typeof payload === 'object' && payload !== null ? payload : {},
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
-        },
-        removeOnComplete: true,
-      }
+    const { jobId, status, result } = await runAutomationJob(
+      user.id,
+      jobType,
+      typeof payload === 'object' && payload !== null ? payload : {},
     )
 
-    // Log to database
-    await prisma.automationJob.create({
-      data: {
-        userId: user.id,
-        jobType,
-        status: 'pending',
-        input: JSON.stringify(typeof payload === 'object' && payload !== null ? payload : {}),
-      },
-    })
-
-    return NextResponse.json({
-      jobId: job.id,
-      status: 'queued',
-      type: jobType,
-      message: `Job ${job.id} has been queued`,
-    })
+    return NextResponse.json({ jobId, status, type: jobType, result })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Server error' },

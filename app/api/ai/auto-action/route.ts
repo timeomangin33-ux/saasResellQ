@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { automationQueue } from '@/lib/queues'
 import { prisma } from '@/prisma'
 import { authorizeAIFeature } from '@/lib/access-control'
+import { runCreateWatchlists, runProductAnalysis, runProductSync, runNotifyUser } from '@/lib/automation-actions'
 import { z } from 'zod'
+
+export const maxDuration = 60
 
 const actionSchema = z.object({
   action: z.string().trim().min(2).max(60),
@@ -61,66 +63,41 @@ async function handleAIAction(
 
   // 1. Create Watchlist
   if (lowerAction.includes('watchlist') || lowerAction.includes('créer watchlist')) {
-    const { category, minMargin, maxPrice, searchTerm } = extractWatchlistParams(query, filters)
+    const { category, searchTerm } = extractWatchlistParams(query, filters)
 
-    await automationQueue.add({
-      type: 'create-watchlist',
-      userId,
-      payload: {
-        name: `📌 ${searchTerm || category || 'Custom'} - IA Generated`,
-        query: searchTerm || category,
-        category,
-        minPrice: filters.minPrice || 10,
-        maxPrice: maxPrice || 500,
-      },
-    })
+    const result = await runCreateWatchlists(userId, category ? { categories: [category] } : {})
 
     return {
-      status: 'queued',
+      status: 'success',
       action: 'watchlist_created',
-      message: `Watchlist created for "${searchTerm || category}" with margin > ${minMargin}%`,
+      message: result.created > 0
+        ? `${result.created} watchlist(s) créée(s) pour "${searchTerm || category}".`
+        : (result.message || 'Aucune nouvelle watchlist créée.'),
+      ...result,
     }
   }
 
   // 2. Analyze Products
   if (lowerAction.includes('analyz') || lowerAction.includes('analyzer')) {
-    const { category, minMargin } = extractWatchlistParams(query, filters)
-
-    await automationQueue.add({
-      type: 'analyze-products',
-      userId,
-      payload: {
-        category,
-        minMargin: minMargin || 25,
-        limit: filters.limit || 100,
-      },
-    })
+    const result = await runProductAnalysis({ limit: filters.limit as number | undefined })
 
     return {
-      status: 'queued',
+      status: 'success',
       action: 'analysis_started',
-      message: `Analyzing products${category ? ` in ${category}` : ''} for profitability...`,
+      message: `${result.analyzed} produit(s) analysé(s) par l'IA.`,
+      ...result,
     }
   }
 
   // 3. Sync Products
   if (lowerAction.includes('sync') || lowerAction.includes('synchron')) {
-    const { category } = extractWatchlistParams(query, filters)
-
-    await automationQueue.add({
-      type: 'sync-products',
-      userId,
-      payload: {
-        category,
-        limit: filters.limit || 200,
-        forceRefresh: filters.forceRefresh || false,
-      },
-    })
+    const result = await runProductSync({ limit: filters.limit as number | undefined })
 
     return {
-      status: 'queued',
+      status: 'success',
       action: 'sync_started',
-      message: `Syncing products from Vinted${category ? ` for ${category}` : ''}...`,
+      message: `${result.synced} annonce(s) synchronisée(s) depuis Vinted sur ${result.categoriesScanned} catégorie(s).`,
+      ...result,
     }
   }
 
@@ -140,14 +117,10 @@ async function handleAIAction(
 
     // Create notification about top opportunities
     if (products.length > 0) {
-      await automationQueue.add({
-        type: 'notify-user',
-        userId,
-        payload: {
-          title: '🎯 Top Opportunities Found',
-          message: `Found ${products.length} products with margin > ${filters.minMargin || 30}%`,
-          type: 'alert',
-        },
+      await runNotifyUser(userId, {
+        title: '🎯 Opportunités trouvées',
+        message: `${products.length} produit(s) avec une marge > ${filters.minMargin || 30}%`,
+        type: 'alert',
       })
     }
 
@@ -167,7 +140,7 @@ async function handleAIAction(
   // 5. Get Category Insights
   if (lowerAction.includes('categor') || lowerAction.includes('trend')) {
     const categories = await prisma.categoryMarket.findMany({
-      orderBy: { avgMargin: 'desc' },
+      orderBy: [{ priceChangePercent: 'desc' }],
       take: 5,
     })
 
@@ -176,8 +149,8 @@ async function handleAIAction(
       action: 'category_insights',
       categories: categories.map((c) => ({
         name: c.category,
-        avgMargin: c.avgMargin,
         trend: c.trendDirection,
+        priceChangePercent: c.priceChangePercent,
         active: c.volumeActive,
         sold: c.volumeSold,
       })),
@@ -186,20 +159,17 @@ async function handleAIAction(
 
   // 6. Create Alert/Notification
   if (lowerAction.includes('alert') || lowerAction.includes('notif')) {
-    await automationQueue.add({
-      type: 'notify-user',
-      userId,
-      payload: {
-        title: filters.title || 'AI Alert',
-        message: query,
-        type: 'alert',
-      },
+    const result = await runNotifyUser(userId, {
+      title: filters.title || 'Alerte IA',
+      message: query,
+      type: 'alert',
     })
 
     return {
-      status: 'queued',
+      status: 'success',
       action: 'alert_created',
-      message: 'Notification has been queued',
+      message: 'Notification créée.',
+      ...result,
     }
   }
 

@@ -45,7 +45,6 @@
     "@stripe/stripe-js": "^4.3.0",
     "@tabler/icons-react": "^3.44.0",
     "bcryptjs": "^2.4.3",
-    "bull": "^4.16.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
