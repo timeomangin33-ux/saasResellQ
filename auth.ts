@@ -98,12 +98,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
-        token.subscriptionStatus = (user as any).subscriptionStatus
-        token.subscriptionPlan = (user as any).subscriptionPlan
-        token.subscriptionEnd = (user as any).subscriptionEnd
-        token.emailVerifiedAt = (user as any).emailVerifiedAt
-        token.twoFactorEnabled = (user as any).twoFactorEnabled
+      }
+      // Re-read subscription/role state from the DB on every request instead of
+      // only at sign-in, so a Stripe webhook (or an admin fix) takes effect
+      // immediately without forcing the user to log out and back in.
+      if (token.id) {
+        const fresh = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: {
+            role: true,
+            subscriptionStatus: true,
+            subscriptionPlan: true,
+            subscriptionEnd: true,
+            emailVerifiedAt: true,
+            twoFactorEnabled: true,
+          },
+        })
+        if (fresh) {
+          token.role = fresh.role
+          token.subscriptionStatus = fresh.subscriptionStatus
+          token.subscriptionPlan = fresh.subscriptionPlan
+          token.subscriptionEnd = fresh.subscriptionEnd
+          token.emailVerifiedAt = fresh.emailVerifiedAt
+          token.twoFactorEnabled = fresh.twoFactorEnabled
+        }
       }
       return token
     },
