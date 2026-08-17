@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { runVintedBotScan } from '@/lib/vinted-bot'
 import { persistVintedScanResults } from '@/lib/market-sync'
+import { scoreProducts } from '@/lib/ai-scoring'
 import { authorizeFeature } from '@/lib/access-control'
 
 export async function POST(request: Request) {
@@ -20,10 +21,16 @@ export async function POST(request: Request) {
   })
 
   if (result.source === 'live' && result.items.length > 0) {
+    const category = body.category || result.query
     try {
-      await persistVintedScanResults(result.items, body.category || result.query)
+      await persistVintedScanResults(result.items, category)
     } catch (err) {
       console.error('bot/vinted/run: failed to persist scan results', err)
+    }
+    try {
+      await scoreProducts(result.items.map((item) => ({ vintedId: item.id, title: item.title, brand: item.brand, price: item.price, category })))
+    } catch (err) {
+      console.error('bot/vinted/run: failed to score products', err)
     }
   }
 

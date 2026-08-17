@@ -51,6 +51,21 @@ export async function POST(request: Request) {
         where: { id: user.id },
         data: { stripeCustomerId: customerId },
       })
+    } else {
+      // Check Stripe directly rather than trusting our DB's cached status —
+      // this is what actually stops a user from creating a second (or third)
+      // subscription by retrying checkout, which is how duplicate billing
+      // happened before.
+      const existingActive = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 })
+      const existingTrialing = existingActive.data.length === 0
+        ? await stripe.subscriptions.list({ customer: customerId, status: 'trialing', limit: 1 })
+        : { data: [] }
+      if (existingActive.data.length > 0 || existingTrialing.data.length > 0) {
+        return NextResponse.json(
+          { error: 'Vous avez déjà un abonnement actif. Gérez-le depuis Facturation.' },
+          { status: 409 },
+        )
+      }
     }
 
     const explicitPriceId = typeof body.priceId === 'string' ? body.priceId : undefined

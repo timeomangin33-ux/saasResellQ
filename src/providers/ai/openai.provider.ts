@@ -18,10 +18,10 @@ export const OpenAIProvider = {
     })
   },
 
-  async chatCompletion(messages: OpenAIMessage[]) {
+  async chatCompletion(messages: OpenAIMessage[], modelOverride?: string) {
     const client = this.getClient()
     const response = await client.chat.completions.create({
-      model: this.model,
+      model: modelOverride || this.model,
       messages,
     })
     return response
