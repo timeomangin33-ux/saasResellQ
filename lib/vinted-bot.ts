@@ -58,32 +58,40 @@ function buildVintedItemsFromHtml(html: string, query: string, limit = 8): Vinte
   const seen = new Set<string>()
   const items: VintedBotItem[] = []
 
-  for (const match of html.matchAll(/alt="([^"]+)"/g)) {
-    const rawText = decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim()
-    if (!rawText || rawText.includes('Logo Vinted') || !rawText.includes('marque:')) continue
+  const testIdRe = /data-testid="product-item-id-(\d+)"(?!--)/g
+  let match: RegExpExecArray | null
 
-    const title = rawText.split(', marque:')[0].trim()
-    const brand = rawText.match(/marque:\s*([^,]+)/i)?.[1]?.trim() || 'Vinted'
-    const state = rawText.match(/état:\s*([^,]+)/i)?.[1]?.trim() || 'État non précisé'
-    const size = rawText.match(/taille:\s*([^,]+)/i)?.[1]?.trim() || ''
+  while ((match = testIdRe.exec(html)) && items.length < limit) {
+    const vintedId = match[1]
+    if (seen.has(vintedId)) continue
+
+    const window = html.slice(match.index, match.index + 1500)
+    const hrefMatch = window.match(/href="(\/items\/\d+[^"]*)"/)
+    const srcMatch = window.match(/src="(https:\/\/images1\.vinted\.net[^"]*)"/)
+    const altMatch = window.match(/alt="([^"]+)"/)
+    if (!altMatch) continue
+
+    const rawText = decodeHtmlEntities(altMatch[1]).replace(/\s+/g, ' ').trim()
+    if (!rawText || rawText.includes('Logo Vinted') || !/marque\s*:/i.test(rawText)) continue
+
+    seen.add(vintedId)
+
+    const title = rawText.split(/,\s*marque\s*:/i)[0].trim()
+    const brand = rawText.match(/marque\s*:\s*([^,]+)/i)?.[1]?.trim() || 'Vinted'
+    const state = rawText.match(/état\s*:\s*([^,]+)/i)?.[1]?.trim() || 'État non précisé'
+    const size = rawText.match(/taille\s*:\s*([^,]+)/i)?.[1]?.trim() || ''
     const price = extractPrice(rawText)
-    const id = `${query}-${title}-${brand}-${price}`
-
-    if (seen.has(id)) continue
-    seen.add(id)
 
     items.push({
-      id,
+      id: vintedId,
       title,
       price,
       brand,
       category: query,
-      image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600',
-      url: `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`,
+      image: srcMatch?.[1] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600',
+      url: hrefMatch ? `https://www.vinted.fr${hrefMatch[1]}` : `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`,
       description: `${state}${size ? ` • Taille ${size}` : ''}`,
     })
-
-    if (items.length >= limit) break
   }
 
   return items
