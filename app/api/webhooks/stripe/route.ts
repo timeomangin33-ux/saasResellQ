@@ -94,17 +94,28 @@ export async function POST(request: Request) {
       const user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId } })
       if (user) {
         const status = normalizeStatus(subscription.status)
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            subscriptionId: subscription.id,
-            subscriptionStatus: status,
-            subscriptionPlan: status === 'ACTIVE' ? subscriptionPlan(subscription.metadata) : 'FREE',
-            subscriptionEnd: subscription.current_period_end
-              ? new Date(subscription.current_period_end * 1000)
-              : undefined,
-          },
-        })
+        const isCurrentSubscription = !user.subscriptionId || user.subscriptionId === subscription.id
+
+        // A customer can end up with more than one Stripe subscription (e.g. a
+        // retried checkout after an earlier attempt never completed). Only let
+        // this event downgrade the user if it's about the subscription we
+        // actually have on file — otherwise a stale/duplicate subscription's
+        // async status change (e.g. an abandoned attempt expiring) could
+        // clobber a newer, genuinely active subscription. An event reporting
+        // an active subscription is always safe to adopt.
+        if (status === 'ACTIVE' || isCurrentSubscription) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionId: subscription.id,
+              subscriptionStatus: status,
+              subscriptionPlan: status === 'ACTIVE' ? subscriptionPlan(subscription.metadata) : 'FREE',
+              subscriptionEnd: subscription.current_period_end
+                ? new Date(subscription.current_period_end * 1000)
+                : undefined,
+            },
+          })
+        }
       }
     }
 
