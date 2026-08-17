@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { runVintedBotScan } from '@/lib/vinted-bot'
 import { persistVintedScanResults } from '@/lib/market-sync'
+import { scoreProducts } from '@/lib/ai-scoring'
+import { sendAlertEmail } from '@/lib/email'
 import { VINTED_CATEGORIES } from '@/vinted'
 
 export const maxDuration = 60
@@ -64,6 +66,14 @@ async function evaluateAlerts() {
       },
     })
     await prisma.alert.update({ where: { id: alert.id }, data: { lastTriggeredAt: new Date() } })
+
+    const user = await prisma.user.findUnique({ where: { id: alert.userId }, select: { email: true, preferences: true } })
+    const preferences = (user?.preferences as Record<string, unknown>) ?? {}
+    if (user?.email && preferences.emailDealAlerts) {
+      await sendAlertEmail({ to: user.email, category: alert.category, detail, condition: alert.condition }).catch((err) => {
+        console.error('market-refresh: failed to send alert email', err)
+      })
+    }
   }
 
   return { evaluated: alerts.length, triggered }
@@ -82,6 +92,9 @@ export async function GET(request: Request) {
       const scan = await runVintedBotScan({ query: category.name, perPage: 12, category: category.name })
       if (scan.source === 'live' && scan.items.length > 0) {
         await persistVintedScanResults(scan.items, category.name)
+        await scoreProducts(scan.items.map((item) => ({ vintedId: item.id, title: item.title, brand: item.brand, price: item.price, category: category.name }))).catch((err) => {
+          console.error(`market-refresh: scoring failed for ${category.name}`, err)
+        })
       }
       results.push({ category: category.name, source: scan.source, items: scan.items.length })
     } catch (err) {
