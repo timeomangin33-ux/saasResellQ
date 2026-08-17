@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/prisma'
 import { getPlanConfig } from '@/lib/plans'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { stripe } from '@/stripe-service'
 
 export async function GET(request: Request) {
   try {
@@ -36,15 +37,45 @@ export async function GET(request: Request) {
 
     const plan = getPlanConfig(user.subscriptionPlan)
 
+    let paymentMethod: { brand: string; last4: string; expMonth: number; expYear: number } | null = null
+    let cancelAtPeriodEnd = false
+    if (stripe && user.stripeCustomerId) {
+      try {
+        const customer = await stripe.customers.retrieve(user.stripeCustomerId, {
+          expand: ['invoice_settings.default_payment_method'],
+        })
+        if (customer && !customer.deleted) {
+          const pm = customer.invoice_settings?.default_payment_method
+          if (pm && typeof pm !== 'string' && pm.card) {
+            paymentMethod = {
+              brand: pm.card.brand,
+              last4: pm.card.last4,
+              expMonth: pm.card.exp_month,
+              expYear: pm.card.exp_year,
+            }
+          }
+        }
+        if (user.subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(user.subscriptionId)
+          cancelAtPeriodEnd = subscription.cancel_at_period_end
+        }
+      } catch (err) {
+        console.warn('[subscription/info] Stripe lookup failed:', err instanceof Error ? err.message : err)
+      }
+    }
+
     return NextResponse.json({
       stripeCustomerId: user.stripeCustomerId,
       subscriptionId: user.subscriptionId,
       subscriptionStatus: user.subscriptionStatus,
       subscriptionEnd: user.subscriptionEnd,
+      cancelAtPeriodEnd,
       planName: plan.label,
       planPrice: plan.price || null,
+      planFeatures: plan.features,
       aiCreditsUsed: user.aiCreditsUsed,
       aiCreditsIncluded: plan.credits,
+      paymentMethod,
     })
   } catch (err) {
     console.error('[subscription/info] Error:', err)

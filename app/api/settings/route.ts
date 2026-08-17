@@ -9,6 +9,9 @@ const preferencesSchema = z.object({
   aiModel: z.enum(['gpt-4', 'gpt-3.5']).optional(),
   detailLevel: z.enum(['short', 'medium', 'detailed']).optional(),
   autoSuggest: z.boolean().optional(),
+  emailDealAlerts: z.boolean().optional(),
+  emailWeeklyReport: z.boolean().optional(),
+  emailProductUpdates: z.boolean().optional(),
 })
 
 export async function GET(request: Request) {
