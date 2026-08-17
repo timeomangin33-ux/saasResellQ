@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import {
@@ -21,11 +21,14 @@ import {
   UserPlus,
   Radar,
   Rocket,
+  Radio,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { Reveal, StaggerGroup, staggerItem } from '@/components/ui/reveal'
 import { SpotlightCard } from '@/components/ui/spotlight-card'
+import { Magnetic } from '@/components/ui/magnetic'
+import { NumberTicker } from '@/components/ui/number-ticker'
 import { PRICING_PLANS } from '@/lib/constants'
 
 const features = [
@@ -155,6 +158,14 @@ export default function LandingPage() {
   const opportunityScore = Math.round(monthlyItems * 5 + 30)
   const { scrollYProgress } = useScroll()
   const navOpacity = useTransform(scrollYProgress, [0, 0.03], [0.4, 0.92])
+  const [liveStats, setLiveStats] = useState<{ productsTracked: number; categoriesTracked: number } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/public/stats')
+      .then((res) => res.json())
+      .then((data) => setLiveStats(data))
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_32%),radial-gradient(circle_at_90%_10%,_rgba(14,165,233,0.13),_transparent_28%),linear-gradient(180deg,_#060b12_0%,_#0a111b_100%)] text-foreground">
@@ -202,31 +213,35 @@ export default function LandingPage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              Analyse Vinted mise à jour pour revendeurs professionnels, sans promesse de chiffres inventés.
+              Le marché Vinted, scanné en continu, pendant que vous faites autre chose.
             </div>
 
             <h1 className="mb-6 max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Sachez quoi acheter ce matin
+              Repérez le bon deal
               <br />
-              pour revendre <span className="text-gradient">plus vite, plus proprement.</span>
+              avant tout le monde, <span className="text-gradient">pas après.</span>
             </h1>
 
             <p className="mb-8 max-w-2xl text-lg leading-8 text-muted-foreground">
-              ResellQ transforme les annonces Vinted en décisions simples : prix d'achat, marge, risque et opportunité, le tout dans un tableau de bord sobre et efficace.
+              ResellQ surveille Vinted à votre place et transforme chaque annonce en décision simple : prix d'achat, marge réelle, risque, opportunité. Vous, vous achetez.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/auth/signup">
-                <Button size="lg" className="btn-shine group w-full gap-2 bg-gradient-to-r from-primary via-emerald-400 to-primary sm:w-auto">
-                  Commencer maintenant
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </Button>
-              </Link>
-              <Link href="/demo">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                  Voir la démo
-                </Button>
-              </Link>
+              <Magnetic strength={0.25}>
+                <Link href="/auth/signup">
+                  <Button size="lg" className="btn-shine group w-full gap-2 bg-gradient-to-r from-primary via-emerald-400 to-primary sm:w-auto">
+                    Commencer gratuitement
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+              </Magnetic>
+              <Magnetic strength={0.25}>
+                <Link href="/demo">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                    Voir la démo
+                  </Button>
+                </Link>
+              </Magnetic>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -358,7 +373,19 @@ export default function LandingPage() {
 
       <section className="border-y border-white/10 bg-background/40 px-6 py-12 backdrop-blur">
         <StaggerGroup className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4">
-          {stats.map(stat => (
+          <motion.div variants={staggerItem} className="text-center">
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              {liveStats ? <NumberTicker value={liveStats.productsTracked} className="text-foreground" /> : '—'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Annonces suivies en ce moment</p>
+          </motion.div>
+          <motion.div variants={staggerItem} className="text-center">
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              {liveStats ? <NumberTicker value={liveStats.categoriesTracked} className="text-foreground" /> : '—'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Catégories scannées en continu</p>
+          </motion.div>
+          {stats.slice(2).map(stat => (
             <motion.div key={stat.label} variants={staggerItem} className="text-center">
               <p className="text-2xl font-semibold tabular-nums text-foreground">{stat.value}</p>
               <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
@@ -449,19 +476,16 @@ export default function LandingPage() {
           </Reveal>
 
           <Reveal delay={0.1} className="panel p-6">
-            <p className="mb-4 text-xs uppercase tracking-wider text-muted-foreground">Témoignage</p>
-            <p className="mb-6 text-base leading-relaxed text-foreground">
-              "Grâce à ResellQ, j'ai amélioré ma sélection produit et je trouve des bons deals beaucoup plus vite."
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-sm font-medium text-foreground">
-                M
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Marie L.</p>
-                <p className="text-xs text-muted-foreground">Revendeuse pro · Paris</p>
-              </div>
+            <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-wider text-primary">
+              <Radio className="h-3.5 w-3.5" />
+              Aucune donnée inventée
             </div>
+            <p className="mb-3 text-base leading-relaxed text-foreground">
+              Pas de faux avis, pas de chiffres gonflés. ResellQ scanne réellement Vinted et n'affiche que ce qu'il trouve — quand la donnée manque, on vous le dit plutôt que d'inventer un résultat.
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              C'est un produit jeune, en évolution rapide. Vous serez parmi les premiers à l'utiliser, avec un accès direct pour orienter ce qu'on construit ensuite.
+            </p>
           </Reveal>
         </div>
       </section>
@@ -476,7 +500,7 @@ export default function LandingPage() {
             <p className="text-sm uppercase tracking-[0.36em] text-slate-400">Pricing</p>
             <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">Plans premium pour revendeurs Vinted</h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-400">
-              Trois offres alignées, une hiérarchie claire et un design qui donne envie d'acheter immédiatement.
+              Trois offres claires, sans engagement. Changez de plan ou résiliez en un clic, à tout moment.
             </p>
           </Reveal>
 
@@ -587,15 +611,19 @@ export default function LandingPage() {
             Rejoignez ResellQ et transformez chaque session de veille en décision claire, appuyée sur des données réelles.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/auth/signup">
-              <Button size="lg" className="btn-shine gap-2 bg-gradient-to-r from-primary via-emerald-400 to-primary">
-                Commencer maintenant
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/demo">
-              <Button variant="outline" size="lg">Voir la démo</Button>
-            </Link>
+            <Magnetic strength={0.25}>
+              <Link href="/auth/signup">
+                <Button size="lg" className="btn-shine gap-2 bg-gradient-to-r from-primary via-emerald-400 to-primary">
+                  Commencer gratuitement
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </Magnetic>
+            <Magnetic strength={0.25}>
+              <Link href="/demo">
+                <Button variant="outline" size="lg">Voir la démo</Button>
+              </Link>
+            </Magnetic>
           </div>
         </Reveal>
       </section>
