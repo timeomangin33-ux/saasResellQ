@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Zap, RefreshCw, CheckCircle2, XCircle } from 'lucide-react'
+import { Zap, RefreshCw, CheckCircle2, XCircle, Lock } from 'lucide-react'
 
 interface AutomationStatus {
   automationEnabled: boolean
@@ -39,6 +40,8 @@ function timeAgo(iso: string | null) {
 }
 
 export function AutomationDashboard() {
+  const { data: session } = useSession()
+  const isBusiness = session?.user?.subscriptionPlan === 'BUSINESS' || session?.user?.role === 'ADMIN'
   const [status, setStatus] = useState<AutomationStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [triggering, setTriggering] = useState<string | null>(null)
@@ -142,11 +145,20 @@ export function AutomationDashboard() {
                 {triggering === 'analyze-products' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
                 Analyser les produits
               </Button>
-              <Button size="sm" variant="outline" onClick={() => triggerJob('create-watchlist')} disabled={triggering !== null}>
-                {triggering === 'create-watchlist' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => triggerJob('create-watchlist')}
+                disabled={triggering !== null || !isBusiness}
+                title={!isBusiness ? 'Réservé au forfait Business' : undefined}
+              >
+                {triggering === 'create-watchlist' ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : !isBusiness ? <Lock className="w-4 h-4 mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
                 Créer des watchlists tendance
               </Button>
             </div>
+            {!isBusiness && (
+              <p className="text-xs text-slate-500">La création automatique de watchlists est réservée au forfait Business.</p>
+            )}
             {lastMessage && (
               <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${lastMessage.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
                 {lastMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> : <XCircle className="h-4 w-4 flex-shrink-0" />}

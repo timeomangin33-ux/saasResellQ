@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { AGENTS, callAgent } from '@/lib/n8n-agents'
-import { authorizeAIFeature } from '@/lib/access-control'
+import { authorizeAIFeature, errorResponse } from '@/lib/access-control'
+import { getPlanLimits } from '@/lib/plans'
 
 interface AgentReportResponse {
   fallback?: boolean
@@ -18,9 +19,18 @@ interface AgentReportResponse {
 
 export async function POST(request: Request) {
   try {
-    const access = await authorizeAIFeature(request, 'report_generation', 3, 'PRO')
+    const access = await authorizeAIFeature(request, 'report_generation', 3, 'STARTER')
     if ('response' in access) return access.response
     const body = await request.json().catch(() => ({}))
+
+    const requestedType = typeof (body as Record<string, unknown>).type === 'string' ? (body as Record<string, unknown>).type as string : 'weekly'
+    if (access.user.role !== 'ADMIN') {
+      const allowedTypes = getPlanLimits(access.user.subscriptionPlan).reportTypes
+      if (!allowedTypes.includes(requestedType)) {
+        return errorResponse(`Les rapports "${requestedType}" ne sont pas inclus dans votre forfait. Passez à un forfait supérieur pour y accéder.`, 403)
+      }
+    }
+
     const data = await callAgent<AgentReportResponse>(AGENTS.reportGenerator, body)
 
     if (data.fallback) {

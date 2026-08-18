@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/prisma'
-import { authorizeAuthenticatedUser, errorResponse } from '@/lib/access-control'
+import { authorizeFeature, authorizeAuthenticatedUser, errorResponse } from '@/lib/access-control'
+import { getPlanLimits } from '@/lib/plans'
 
 const createWatchlistSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const access = await authorizeAuthenticatedUser(request)
+  const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
 
   const parsed = createWatchlistSchema.safeParse(await request.json().catch(() => ({})))
@@ -33,6 +34,14 @@ export async function POST(request: Request) {
 
   if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
     return errorResponse('Le prix minimum doit être inférieur au prix maximum.', 400)
+  }
+
+  if (access.user.role !== 'ADMIN') {
+    const limit = getPlanLimits(access.user.subscriptionPlan).watchlists
+    const count = await prisma.watchlist.count({ where: { userId: access.user.id } })
+    if (count >= limit) {
+      return errorResponse(`Limite de ${limit} watchlists atteinte pour votre forfait. Passez à un forfait supérieur pour en créer davantage.`, 403)
+    }
   }
 
   const watchlist = await prisma.watchlist.create({

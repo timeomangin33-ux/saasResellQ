@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const { action, query, filters } = parsed.data
 
     // Parse AI action and create corresponding job
-    const result = await handleAIAction(access.user.id, action, query, filters)
+    const result = await handleAIAction(access.user.id, action, query, filters, access.user.role === 'ADMIN' || access.user.subscriptionPlan === 'BUSINESS')
 
     return NextResponse.json({ ...result, usage: access.usage })
   } catch (error) {
@@ -57,12 +57,21 @@ async function handleAIAction(
   userId: string,
   action: string,
   query: string,
-  filters: Record<string, any>
+  filters: Record<string, any>,
+  canAutoCreateWatchlists: boolean
 ) {
   const lowerAction = action.toLowerCase()
 
   // 1. Create Watchlist
   if (lowerAction.includes('watchlist') || lowerAction.includes('créer watchlist')) {
+    if (!canAutoCreateWatchlists) {
+      return {
+        status: 'error',
+        action: 'watchlist_create_blocked',
+        message: 'La création automatique de watchlists est réservée au forfait Business.',
+      }
+    }
+
     const { category, searchTerm } = extractWatchlistParams(query, filters)
 
     const result = await runCreateWatchlists(userId, category ? { categories: [category] } : {})
