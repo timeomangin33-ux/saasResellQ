@@ -50,15 +50,17 @@ export default function SupportPage() {
                 <p className="mt-2 text-sm text-slate-400">Assistance sur données, confidentialité et authentification.</p>
               </Reveal>
             </SpotlightCard>
-            <SpotlightCard spotlightColor="rgba(34,211,238,0.14)">
-              <Reveal delay={0.16} className="panel panel-hover p-6">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-200">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <h2 className="mt-4 text-lg font-semibold text-white">FAQ</h2>
-                <p className="mt-2 text-sm text-slate-400">Retrouvez les réponses aux questions les plus courantes.</p>
-              </Reveal>
-            </SpotlightCard>
+            <Link href="/#faq">
+              <SpotlightCard spotlightColor="rgba(34,211,238,0.14)">
+                <Reveal delay={0.16} className="panel panel-hover p-6">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-200">
+                    <MessageCircle className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-lg font-semibold text-white">FAQ</h2>
+                  <p className="mt-2 text-sm text-slate-400">Retrouvez les réponses aux questions les plus courantes.</p>
+                </Reveal>
+              </SpotlightCard>
+            </Link>
           </div>
 
           <Reveal delay={0.1} className="relative mt-10 rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
