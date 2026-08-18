@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, KeyRound, Layers3, LifeBuoy, Menu, Search, Settings, Sparkles, Smartphone, Target, UserRound, X, Workflow, BadgeCheck } from 'lucide-react'
+import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, Layers3, LifeBuoy, Lock, Menu, Search, Settings, Sparkles, Target, UserRound, X, BadgeCheck } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { AuroraField } from '@/components/ui/aurora-field'
@@ -13,7 +13,12 @@ import { Magnetic } from '@/components/ui/magnetic'
 import { cn } from '@/lib/utils'
 import { normalizePlan } from '@/lib/plans'
 
-const explorerNav = [
+const PLAN_RANK = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3 } as const
+const PLAN_LABEL: Record<keyof typeof PLAN_RANK, string> = { FREE: 'Découverte', STARTER: 'Starter', PRO: 'Pro', BUSINESS: 'Business' }
+
+type NavItem = { name: string; href: string; icon: typeof Home; minPlan?: keyof typeof PLAN_RANK }
+
+const explorerNav: NavItem[] = [
   { name: 'Accueil', href: '/dashboard', icon: Home },
   { name: 'Explorer le marché', href: '/market-research', icon: Search },
   { name: 'Top Produits', href: '/top-products', icon: BarChart3 },
@@ -24,17 +29,14 @@ const explorerNav = [
   { name: 'Opportunités', href: '/opportunities', icon: Target },
 ]
 
-const PLAN_RANK = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3 } as const
-
-const toolsNav = [
-  { name: 'Assistant IA', href: '/ai-agent', icon: Bot, minPlan: 'STARTER' as const },
-  { name: 'Rapports', href: '/reports', icon: FileText, minPlan: 'PRO' as const },
-  { name: 'Historique', href: '/historique', icon: Clock3, minPlan: 'PRO' as const },
-  { name: 'Automatisations', href: '/workflows', icon: Workflow, minPlan: 'PRO' as const },
-  { name: 'API', href: '/developer', icon: KeyRound, minPlan: 'PRO' as const },
+const toolsNav: NavItem[] = [
+  { name: 'Assistant IA', href: '/ai-agent', icon: Bot, minPlan: 'STARTER' },
+  { name: 'Rapports', href: '/reports', icon: FileText, minPlan: 'STARTER' },
+  { name: 'Historique', href: '/historique', icon: Clock3, minPlan: 'PRO' },
+  { name: 'Comptes Vinted', href: '/dashboard/accounts', icon: Layers3, minPlan: 'BUSINESS' },
 ]
 
-const accountNav = [
+const accountNav: NavItem[] = [
   { name: 'Facturation', href: '/billing', icon: CreditCard },
   { name: 'Paramètres', href: '/settings', icon: Settings },
   { name: 'Support', href: '/support', icon: LifeBuoy },
@@ -48,7 +50,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [usage, setUsage] = useState<{ remaining: number; limit: number; planLabel: string; active: boolean } | null>(null)
   const [clock, setClock] = useState('')
   const planKey = normalizePlan(session?.user?.subscriptionPlan)
-  const business = planKey === 'BUSINESS'
   const isAdmin = session?.user?.role === 'ADMIN'
   const isAdminRoute = pathname.startsWith('/admin')
 
@@ -123,14 +124,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!session) return <>{children}</>
 
   const isActive = (href: string) => href === '/dashboard' ? pathname === href : pathname.startsWith(href)
-  const availableToolsNav = toolsNav.filter((item) => !item.minPlan || PLAN_RANK[planKey] >= PLAN_RANK[item.minPlan])
-  const businessNav = business ? [
-    { name: 'Device Lab', href: '/dashboard/device-lab', icon: Smartphone },
-    { name: 'Comptes Vinted', href: '/dashboard/accounts', icon: Layers3 },
-  ] : []
   const navSections = [
     { title: 'Explorer', items: explorerNav },
-    { title: 'Outils & IA', items: [...availableToolsNav, ...businessNav, ...(isAdmin ? [{ name: 'Administration', href: '/admin', icon: Activity }] : [])] },
+    { title: 'Outils & IA', items: [...toolsNav, ...(isAdmin ? [{ name: 'Administration', href: '/admin', icon: Activity }] : [])] },
     { title: 'Compte', items: accountNav },
   ]
   const nav = navSections.flatMap((section) => section.items)
@@ -185,16 +181,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-500">{section.title}</p>
             <div className="relative space-y-1">
               {section.items.map((item, index) => {
-                const active = isActive(item.href)
+                const locked = Boolean(item.minPlan && PLAN_RANK[planKey] < PLAN_RANK[item.minPlan])
+                const active = !locked && isActive(item.href)
                 const Icon = item.icon
                 return (
                   <Magnetic key={`${item.href}-${item.name}-${index}`} strength={0.12} className="block w-full">
                     <Link
-                      href={item.href}
+                      href={locked ? '/pricing' : item.href}
                       onClick={() => setOpen(false)}
+                      title={locked ? `Réservé au forfait ${PLAN_LABEL[item.minPlan!]}` : undefined}
                       className={cn(
                         'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-150',
-                        active ? 'text-white' : 'text-zinc-400 hover:text-white',
+                        active ? 'text-white' : locked ? 'text-zinc-600 hover:text-zinc-300' : 'text-zinc-400 hover:text-white',
                       )}
                     >
                       {active && (
@@ -207,8 +205,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       {!active && (
                         <span className="absolute inset-0 rounded-xl bg-white/0 transition-colors duration-150 group-hover:bg-white/[0.06]" />
                       )}
-                      <Icon className={cn('relative z-10 h-4 w-4 flex-shrink-0 transition-transform duration-200', !active && 'group-hover:scale-110 group-hover:text-emerald-300', active && 'text-zinc-950')} />
+                      <Icon className={cn('relative z-10 h-4 w-4 flex-shrink-0 transition-transform duration-200', !active && !locked && 'group-hover:scale-110 group-hover:text-emerald-300', active && 'text-zinc-950')} />
                       <span className={cn('relative z-10 flex-1', active && 'font-semibold text-zinc-950')}>{item.name}</span>
+                      {locked && (
+                        <span className="relative z-10 flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-zinc-500 group-hover:border-violet-400/30 group-hover:text-violet-300">
+                          <Lock className="h-2.5 w-2.5" />
+                          {PLAN_LABEL[item.minPlan!]}
+                        </span>
+                      )}
                       {active && <ChevronRight className="relative z-10 h-4 w-4 text-zinc-950" />}
                     </Link>
                   </Magnetic>
