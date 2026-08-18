@@ -73,7 +73,7 @@ const plans = [
 const proofPoints = [
   'Paiement sécurisé',
   'Annulation à tout moment',
-  'Essai disponible',
+  'Compte gratuit sans carte',
   'Support réactif',
 ]
 
@@ -297,7 +297,7 @@ export default function PricingPage() {
               },
               {
                 q: 'Y a-t-il une période d\'essai ?',
-                a: 'Oui, les nouveaux comptes peuvent tester les fonctionnalités principales rapidement.',
+                a: 'Il n\'y a pas d\'essai payant limité dans le temps. Le compte gratuit, sans carte bancaire, vous donne accès en lecture aux données du marché (top produits, catégories, tendances). Les veilles, alertes, analyses IA et rapports nécessitent un forfait.',
               },
               {
                 q: 'Comment fonctionne le paiement ?',

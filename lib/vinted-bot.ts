@@ -41,12 +41,34 @@ const FALLBACK_ITEMS: VintedBotItem[] = [
   },
 ]
 
+const NAMED_ENTITIES: Record<string, string> = {
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  lt: '<',
+  gt: '>',
+  eacute: 'é',
+  egrave: 'è',
+  agrave: 'à',
+  ccedil: 'ç',
+  ocirc: 'ô',
+  icirc: 'î',
+  ecirc: 'ê',
+  ugrave: 'ù',
+}
+
 function decodeHtmlEntities(input: string) {
-  return input
-    .replace(/&amp;/g, '&')
-    .replace(/"/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/ /g, ' ')
+  return (
+    input
+      // Numeric entities, hex (&#x27;) and decimal (&#39;). Vinted emits hex for
+      // apostrophes, which the previous decoder missed entirely - titles were
+      // persisted and rendered as "Boîte d&#x27;origine".
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+      .replace(/&([a-z]+);/gi, (match, name) => NAMED_ENTITIES[name.toLowerCase()] ?? match)
+      // &amp; last, so "&amp;#39;" doesn't get double-decoded above.
+      .replace(/&amp;/g, '&')
+  )
 }
 
 function extractPrice(text: string) {

@@ -1,9 +1,10 @@
 ﻿import { NextResponse } from 'next/server'
 import { getProductsByCategory } from '@/vinted'
-import { authorizeFeature } from '@/lib/access-control'
+import { authorizeAuthenticatedUser } from '@/lib/access-control'
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature(request, 'STARTER')
+  // Read-only aggregate market data: open to FREE accounts (see top-products).
+  const access = await authorizeAuthenticatedUser(request)
   if ('response' in access) return access.response
 
   const url = new URL(request.url)
