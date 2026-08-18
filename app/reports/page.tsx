@@ -8,8 +8,9 @@ import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { FileText, Download, RefreshCw, Calendar, ChevronRight } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { normalizePlan } from '@/lib/plans'
+import { normalizePlan, getPlanLimits } from '@/lib/plans'
 import { PlanGate } from '@/components/plan-gate'
+import { Lock } from 'lucide-react'
 import { useState } from 'react'
 
 interface Report {
@@ -42,15 +43,17 @@ export default function ReportsPage() {
     return <div className="grid min-h-screen place-items-center bg-[#08080b]"><div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" /></div>
   }
 
-  if (planKey === 'STARTER') {
+  if (planKey === 'FREE') {
     return (
       <DashboardLayout>
-        <PlanGate planKey={planKey} minimumPlan="PRO" feature="Rapports">
+        <PlanGate planKey={planKey} minimumPlan="STARTER" feature="Rapports">
           <></>
         </PlanGate>
       </DashboardLayout>
     )
   }
+
+  const allowedReportTypes = getPlanLimits(planKey).reportTypes
 
   function exportReport(report: Report) {
     const lines = [
@@ -106,9 +109,17 @@ export default function ReportsPage() {
 
           <SpotlightCard spotlightColor="rgba(16,185,129,0.12)">
             <Reveal className="panel panel-hover p-4 text-sm text-zinc-300">
-              <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">Forfait {planKey === 'BUSINESS' ? 'Business' : 'Pro'}</p>
-              <p className="mt-2 font-semibold text-white">{planKey === 'BUSINESS' ? 'Rapports professionnels et exports partagés.' : 'Rapports IA détaillés pour votre stratégie.'}</p>
-              <p className="mt-1 text-xs text-zinc-400">{planKey === 'BUSINESS' ? 'Partagez facilement les synthèses et suivez les performances d\'équipe.' : 'Générez des rapports stratégiques pour suivre les tendances du marché.'}</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">Forfait {planKey === 'BUSINESS' ? 'Business' : planKey === 'PRO' ? 'Pro' : 'Starter'}</p>
+              <p className="mt-2 font-semibold text-white">
+                {planKey === 'BUSINESS' ? 'Rapports professionnels et exports partagés.' : planKey === 'PRO' ? 'Rapports IA détaillés pour votre stratégie.' : 'Rapport hebdomadaire généré par IA.'}
+              </p>
+              <p className="mt-1 text-xs text-zinc-400">
+                {planKey === 'BUSINESS'
+                  ? "Partagez facilement les synthèses et suivez les performances d'équipe."
+                  : planKey === 'PRO'
+                    ? 'Générez des rapports stratégiques pour suivre les tendances du marché.'
+                    : 'Passez à Pro ou Business pour débloquer les rapports quotidiens et mensuels.'}
+              </p>
             </Reveal>
           </SpotlightCard>
 
@@ -117,13 +128,24 @@ export default function ReportsPage() {
             <Reveal delay={0.06} className="panel panel-hover p-6">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Nouveau rapport</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                {REPORT_TYPES.map(type => (
-                  <button key={type.value} onClick={() => setSelectedType(type.value)}
-                    className={`p-4 rounded-xl border text-left transition ${selectedType === type.value ? 'border-emerald-400/40 bg-emerald-500/5 text-foreground' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40'}`}>
-                    <p className="text-sm font-medium mb-0.5">{type.label}</p>
-                    <p className="text-xs opacity-70">{type.desc}</p>
-                  </button>
-                ))}
+                {REPORT_TYPES.map(type => {
+                  const locked = !allowedReportTypes.includes(type.value)
+                  return (
+                    <button
+                      key={type.value}
+                      onClick={() => !locked && setSelectedType(type.value)}
+                      disabled={locked}
+                      title={locked ? 'Passez à un forfait supérieur pour débloquer ce type de rapport.' : undefined}
+                      className={`p-4 rounded-xl border text-left transition ${locked ? 'cursor-not-allowed border-border bg-muted/10 text-muted-foreground/50' : selectedType === type.value ? 'border-emerald-400/40 bg-emerald-500/5 text-foreground' : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40'}`}
+                    >
+                      <p className="flex items-center gap-1.5 text-sm font-medium mb-0.5">
+                        {type.label}
+                        {locked && <Lock className="h-3 w-3" />}
+                      </p>
+                      <p className="text-xs opacity-70">{type.desc}</p>
+                    </button>
+                  )
+                })}
               </div>
               <Magnetic strength={0.15} className="inline-block">
                 <button onClick={generate} disabled={generating}

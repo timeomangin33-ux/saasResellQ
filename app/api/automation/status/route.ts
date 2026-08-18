@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Type de job invalide : ${jobType}` }, { status: 400 })
     }
 
+    if (jobType === 'create-watchlist' && user.role !== 'ADMIN' && user.subscriptionPlan !== 'BUSINESS') {
+      return NextResponse.json({ error: 'La création automatique de watchlists est réservée au forfait Business.' }, { status: 403 })
+    }
+
     const { jobId, status, result } = await runAutomationJob(
       user.id,
       jobType,

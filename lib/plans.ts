@@ -48,6 +48,22 @@ export const PLAN_CONFIG = {
 
 export type PlanKey = keyof typeof PLAN_CONFIG
 
+/**
+ * Concrete, enforced limits per plan — these back the feature bullets shown
+ * on the pricing page (e.g. "Alertes de prix jusqu'à 5", "Watchlist 20
+ * articles"), which previously weren't actually checked anywhere.
+ */
+export const PLAN_LIMITS = {
+  FREE: { watchlists: 0, alerts: 0, vintedAccounts: 0, reportTypes: [] as string[] },
+  STARTER: { watchlists: 20, alerts: 5, vintedAccounts: 1, reportTypes: ['weekly'] as string[] },
+  PRO: { watchlists: 250, alerts: Infinity, vintedAccounts: 1, reportTypes: ['weekly', 'daily'] as string[] },
+  BUSINESS: { watchlists: Infinity, alerts: Infinity, vintedAccounts: Infinity, reportTypes: ['weekly', 'daily', 'monthly'] as string[] },
+} as const
+
+export function getPlanLimits(plan?: string) {
+  return PLAN_LIMITS[normalizePlan(plan)]
+}
+
 export function normalizePlan(plan?: string): PlanKey {
   if (!plan) return 'FREE'
   const normalized = plan.toString().trim().toUpperCase()
