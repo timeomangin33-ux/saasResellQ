@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 import { z } from 'zod'
+import { checkRateLimit } from '@/lib/rate-limit'
 // Email/2FA flows temporarily disabled: do not send verification emails
 
 const loginSchema = z.object({
@@ -52,6 +53,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const normalizedEmail = parsed.data.email.trim().toLowerCase()
 
+          // Brute-force protection: 5 attempts per 15 minutes per email,
+          // regardless of source IP (NextAuth's Credentials authorize() has
+          // no reliable access to the request IP here).
+          const rateLimit = checkRateLimit(`login:${normalizedEmail}`, 5, 15 * 60_000)
+          if (!rateLimit.allowed) {
+            throw new Error('RATE_LIMITED')
+          }
+
           const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
           })
@@ -86,8 +95,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (err: any) {
           // Log the error server-side to help debugging in Vercel logs
           console.error('[NextAuth][Credentials][authorize] error:', err?.message || err)
-          // Re-throw known verification flow to be handled by client
-          if (err?.message === 'EMAIL_NOT_VERIFIED') throw err
+          // Re-throw known verification/rate-limit flows to be handled by client
+          if (err?.message === 'EMAIL_NOT_VERIFIED' || err?.message === 'RATE_LIMITED') throw err
           // For other errors, surface a generic server error to the client
           throw new Error('SERVER_AUTH_ERROR')
         }

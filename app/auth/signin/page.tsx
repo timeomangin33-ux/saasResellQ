@@ -47,6 +47,9 @@ function SignInPageContent() {
       if (result.error === 'EMAIL_NOT_VERIFIED') {
         throw new Error('Veuillez vérifier votre adresse email. Un nouveau lien vient d’être envoyé.')
       }
+      if (result.error === 'RATE_LIMITED') {
+        throw new Error('Trop de tentatives de connexion. Réessayez dans quelques minutes.')
+      }
       if (result.error === 'Configuration') {
         throw new Error('La configuration d’authentification est incomplète. Vérifiez DATABASE_URL et NEXTAUTH_SECRET.')
       }

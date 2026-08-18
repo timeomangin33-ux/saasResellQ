@@ -586,7 +586,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 py-20">
+      <section id="faq" className="px-6 py-20">
         <div className="mx-auto max-w-3xl">
           <Reveal className="mb-10 text-center">
             <p className="kicker mb-3 justify-center">Questions fréquentes</p>
