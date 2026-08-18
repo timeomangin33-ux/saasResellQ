@@ -56,12 +56,12 @@ export default function SignUpPage() {
   return (
     <AuthLayout
       title="Créer un compte ResellQ"
-      subtitle="Inscription gratuite et accès aux essentiels. Activez un plan Starter, Pro ou Business plus tard."
+      subtitle="Gratuit, sans carte bancaire. Accédez aux données du marché en lecture dès l'inscription."
     >
       <div className="space-y-5 mb-6">
         <div className="panel p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Créez votre compte gratuit aujourd'hui et explorez l'interface ResellQ.</p>
-          <p className="mt-2">Le plan reste inactif jusqu'à l'activation d'un abonnement validé via Stripe.</p>
+          <p className="font-medium text-foreground">Compte gratuit, sans carte bancaire.</p>
+          <p className="mt-2">Vous accédez immédiatement aux données du marché en lecture : top produits, catégories et tendances. Les veilles, alertes, analyses IA et rapports nécessitent un forfait.</p>
         </div>
 
         <div className="space-y-1.5">
@@ -140,7 +140,7 @@ export default function SignUpPage() {
             </Button>
 
             <p className="mt-3 text-xs text-center text-muted-foreground">
-              Votre compte est gratuit. Activez un abonnement depuis la page de tarification.
+              Aucune carte bancaire demandée. Vous choisissez un forfait seulement si vous en voulez un.
             </p>
           </form>
 

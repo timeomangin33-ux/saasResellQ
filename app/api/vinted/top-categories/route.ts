@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { getProductsByCategory, VINTED_CATEGORIES } from '@/vinted'
-import { authorizeFeature } from '@/lib/access-control'
+import { authorizeAuthenticatedUser } from '@/lib/access-control'
 
 function normalizeText(text: string) {
   return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
@@ -33,7 +33,8 @@ function buildCategoryPayload(item: any) {
 }
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature(request, 'STARTER')
+  // Read-only aggregate market data: open to FREE accounts (see top-products).
+  const access = await authorizeAuthenticatedUser(request)
   if ('response' in access) return access.response
 
   try {

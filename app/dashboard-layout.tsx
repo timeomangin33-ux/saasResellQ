@@ -20,13 +20,37 @@ type NavItem = { name: string; href: string; icon: typeof Home; minPlan?: keyof 
 
 const explorerNav: NavItem[] = [
   { name: 'Accueil', href: '/dashboard', icon: Home },
-  { name: 'Explorer le marché', href: '/market-research', icon: Search },
   { name: 'Top Produits', href: '/top-products', icon: BarChart3 },
-  { name: 'Vinted', href: '/vinted-dashboard', icon: BarChart3 },
   { name: 'Top Catégories', href: '/categories', icon: Layers3 },
-  { name: 'Veilles', href: '/watchlists', icon: BellDot },
-  { name: 'Alertes', href: '/alertes', icon: BellDot },
-  { name: 'Opportunités', href: '/opportunities', icon: Target },
+  { name: 'Vinted', href: '/vinted-dashboard', icon: BarChart3 },
+  { name: 'Explorer le marché', href: '/market-research', icon: Search, minPlan: 'STARTER' },
+  { name: 'Opportunités', href: '/opportunities', icon: Target, minPlan: 'STARTER' },
+  { name: 'Veilles', href: '/watchlists', icon: BellDot, minPlan: 'STARTER' },
+  { name: 'Alertes', href: '/alertes', icon: BellDot, minPlan: 'STARTER' },
+]
+
+/**
+ * Routes that genuinely need a paid, active plan. Everything else stays
+ * reachable without one: a new account lands on INACTIVE/FREE and must be able
+ * to browse the read-only market data the landing page promises, otherwise
+ * "commencer gratuitement" is a lie and paid traffic hits a wall.
+ */
+const PLAN_REQUIRED_ROUTES = [
+  '/market-research',
+  '/opportunities',
+  '/watchlists',
+  '/alertes',
+  '/ai-agent',
+  '/reports',
+  '/historique',
+  '/product-analyzer',
+  '/deal-finder',
+  '/workflows',
+  '/developer',
+  '/dashboard/accounts',
+  '/dashboard/device-lab',
+  '/dashboard/automation',
+  '/dashboard/bot',
 ]
 
 const toolsNav: NavItem[] = [
@@ -49,8 +73,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [open, setOpen] = useState(false)
   const [usage, setUsage] = useState<{ remaining: number; limit: number; planLabel: string; active: boolean } | null>(null)
   const [clock, setClock] = useState('')
-  const planKey = normalizePlan(session?.user?.subscriptionPlan)
   const isAdmin = session?.user?.role === 'ADMIN'
+  // An expired/inactive subscription must gate like FREE, otherwise the nav
+  // would advertise unlocked features the route guard then bounces them from.
+  const planActive = isAdmin || session?.user?.subscriptionStatus === 'ACTIVE'
+  const planKey = planActive ? normalizePlan(session?.user?.subscriptionPlan) : 'FREE'
   const isAdminRoute = pathname.startsWith('/admin')
 
   useEffect(() => {
@@ -73,10 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       status === 'authenticated' &&
       session?.user?.role !== 'ADMIN' &&
       session?.user?.subscriptionStatus !== 'ACTIVE' &&
-      !pathname.startsWith('/pricing') &&
-      !pathname.startsWith('/payment') &&
-      !pathname.startsWith('/billing') &&
-      !pathname.startsWith('/dashboard/billing')
+      PLAN_REQUIRED_ROUTES.some((route) => pathname.startsWith(route))
     ) {
       router.replace('/pricing')
     }

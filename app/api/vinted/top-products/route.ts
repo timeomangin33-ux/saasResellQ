@@ -1,10 +1,13 @@
 ﻿import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { getTopProducts } from '@/vinted'
-import { authorizeFeature } from '@/lib/access-control'
+import { authorizeAuthenticatedUser } from '@/lib/access-control'
 
 export async function GET(request: Request) {
-  const access = await authorizeFeature(request, 'STARTER')
+  // Aggregate market data served from our own DB: readable by any signed-in
+  // account, including FREE. This is the read-only tier the landing page
+  // promises ("commencer gratuitement") - acting on it still needs a plan.
+  const access = await authorizeAuthenticatedUser(request)
   if ('response' in access) return access.response
 
   const products = await prisma.product.findMany({

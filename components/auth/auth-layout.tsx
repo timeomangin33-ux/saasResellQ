@@ -34,19 +34,29 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <Logo size="lg" />
             <div className="mt-12 space-y-6">
               <div className="chip border-emerald-400/20 bg-emerald-500/10 text-[11px] uppercase tracking-[0.3em] text-emerald-300">
-                Premium access
+                Intelligence marché
               </div>
-              <blockquote className="max-w-md text-lg leading-8 text-slate-200">
-                "ResellQ m'a permis d'augmenter mes marges de 27% en un mois. Je trouve les bons produits beaucoup plus vite."
-              </blockquote>
-              <div>
-                <p className="text-sm font-semibold text-white">Marie L.</p>
-                <p className="text-xs text-slate-400">Revendeuse pro · Paris</p>
-              </div>
+              <p className="max-w-md text-lg leading-8 text-slate-200">
+                Arrêtez d'acheter à l'instinct. ResellQ scanne le marché Vinted, calcule la marge nette avant achat et vous alerte quand un produit sous-coté apparaît.
+              </p>
+              <ul className="space-y-3 text-sm text-slate-400">
+                <li className="flex gap-3">
+                  <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
+                  Données Vinted réelles, rafraîchies chaque jour
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
+                  Veilles et alertes sur vos catégories
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
+                  Analyses IA actionnables, pas de bruit
+                </li>
+              </ul>
             </div>
           </div>
           <div className="panel p-5 text-sm text-slate-400">
-            Données Vinted analysées en temps réel · +50 000 revendeurs actifs · support prioritaire
+            Paiement sécurisé Stripe · Sans engagement, annulation à tout moment
           </div>
         </motion.div>
 
