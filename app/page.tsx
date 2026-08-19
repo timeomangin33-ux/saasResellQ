@@ -14,7 +14,6 @@ import {
   Check,
   ChevronDown,
   Sparkles,
-  TimerReset,
   ShieldCheck,
   Lock,
   CreditCard,
@@ -30,6 +29,7 @@ import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { PRICING_PLANS } from '@/lib/constants'
+import { FilmHero } from '@/components/film-hero'
 
 const features = [
   {
@@ -75,12 +75,6 @@ const heroHighlights = [
   { label: 'Données Vinted', value: 'En direct' },
   { label: 'Veilles opérationnelles', value: 'Automatisées' },
   { label: 'Décisions plus rapides', value: 'Instantané' },
-]
-
-const dealCards = [
-  { title: 'Sneakers populaires', buy: 'Prix repéré', profit: 'Marge projetée' },
-  { title: 'Veste streetwear', buy: 'Prix repéré', profit: 'Marge projetée' },
-  { title: 'Jeans premium', buy: 'Prix repéré', profit: 'Marge projetée' },
 ]
 
 const steps = [
@@ -270,67 +264,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}>
-            <div className="rounded-[32px] border border-white/10 bg-background/80 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.26)] backdrop-blur">
-              <SpotlightCard className="rounded-[24px] border border-white/10 bg-card/90 p-5" spotlightColor="rgba(16,185,129,0.12)">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-primary">Mini-démo</p>
-                    <h2 className="text-lg font-semibold">Deals chauds détectés</h2>
-                  </div>
-                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                    Live
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {dealCards.map((item, index) => (
-                    <motion.div
-                      key={item.title}
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.25, delay: 0.1 + index * 0.08 }}
-                      className="rounded-2xl border border-white/10 bg-background/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">Potentiel de marge • {item.profit}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Achat</p>
-                          <p className="font-semibold text-foreground">{item.buy}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="mt-5 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Synthèse</p>
-                      <p className="mt-2 text-xl font-semibold text-foreground">Opportunités structurées en temps réel</p>
-                    </div>
-                    <div className="rounded-full border border-primary/20 bg-primary/10 p-2 text-primary">
-                      <TimerReset className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-end gap-2">
-                    {[28, 48, 36, 58, 72, 44].map((height, index) => (
-                      <motion.div
-                        key={height}
-                        initial={{ height: 12 }}
-                        whileInView={{ height }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7, delay: 0.2 + index * 0.05 }}
-                        className="flex-1 rounded-full bg-gradient-to-t from-primary to-sky-300"
-                      />
-                    ))}
-                  </div>
-                </div>
-              </SpotlightCard>
-            </div>
+            <FilmHero />
           </motion.div>
         </div>
       </section>
