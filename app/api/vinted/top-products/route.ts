@@ -1,6 +1,5 @@
 ﻿import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { getTopProducts } from '@/vinted'
 import { authorizeAuthenticatedUser } from '@/lib/access-control'
 
 export async function GET(request: Request) {
@@ -13,8 +12,8 @@ export async function GET(request: Request) {
   const products = await prisma.product.findMany({
     where: { status: 'active' },
     orderBy: [
-      { analysisScore: 'desc' },
-      { profitMargin: 'desc' },
+      { analysisScore: { sort: 'desc', nulls: 'last' } },
+      { profitMargin: { sort: 'desc', nulls: 'last' } },
       { createdAt: 'desc' },
     ],
     take: 20,
@@ -32,23 +31,10 @@ export async function GET(request: Request) {
     },
   })
 
-  if (products.length > 0) {
-    return NextResponse.json({ products, source: 'db' })
-  }
-
-  const fallbackProducts = getTopProducts(20).map((product) => ({
-    title: product.title,
-    brand: product.brand,
-    price: product.price,
-    url: product.url ?? '#',
-    imageUrl: product.image,
-    profitMargin: product.profitMargin,
-    analysisScore: product.demandScore,
-    riskLevel: undefined,
-    category: product.category,
-    seller: product.seller ?? 'Vendeur Vinted',
-  }))
-
-  return NextResponse.json({ products: fallbackProducts, source: 'fallback' })
+  // No simulated fallback: an empty scrape must read as empty, not as
+  // invented products. getTopProducts() in vinted.ts pads its output with
+  // generatePlaceholderProducts(), so the old fallback shipped fabricated
+  // titles, prices and margins whenever the table was empty.
+  return NextResponse.json({ products })
 }
 

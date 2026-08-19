@@ -10,19 +10,25 @@ import { SpotlightCard } from '@/components/ui/spotlight-card'
 
 interface TopItem {
   title: string
-  brand: string
+  brand: string | null
   price: number
-  demandScore: number
-  profitMargin: number
-  trendPercent: number
-  sales: number
+  size: string | null
+  condition: string | null
+  url: string | null
+  profitMargin: number | null
+  analysisScore: number | null
 }
 
 interface Category {
   name: string
   category: string
   trend_direction: string | null
-  trend_strength: number | null
+  price_change_percent: number | null
+  avg_price: number | null
+  median_price: number | null
+  avg_margin: number | null
+  volume_active: number
+  product_count: number
   last_analyzed_at: string | null
   topItems: TopItem[]
 }
@@ -37,6 +43,12 @@ function parseNumericValue(value: number | string | null | undefined): number {
   const numeric = typeof value === 'string' ? Number(value) : value
   if (typeof numeric !== 'number' || !Number.isFinite(numeric)) return 0
   return numeric
+}
+
+/** Renders a real number, or an em dash when the pipeline hasn't produced one. */
+function formatOrDash(value: number | null | undefined, suffix = '', digits = 0) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—'
+  return `${value.toFixed(digits)}${suffix}`
 }
 
 function getTrendTone(direction: string | null) {
@@ -90,13 +102,7 @@ function CategoriesContent({ categories, loading, error, search }: {
   return (
     <div className="space-y-3">
       {filteredCategories.map((category, index) => {
-        const bestScore = category.topItems[0]?.demandScore ?? 0
         const currentItems = (category.topItems ?? []) as TopItem[]
-        let totalPrice = 0
-        for (const item of currentItems) {
-          totalPrice += parseNumericValue(item.price)
-        }
-        const averagePrice = currentItems.length ? Math.round(totalPrice / currentItems.length) : 0
 
         return (
           <motion.details
@@ -116,37 +122,40 @@ function CategoriesContent({ categories, loading, error, search }: {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-semibold text-white">{category.name}</h3>
                     <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-400">
-                      Top 20
+                      {category.product_count} annonces
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-400">Produits à forte demande • meilleur score {bestScore}/100</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Prix moyen {formatOrDash(category.avg_price, '€')} • médian {formatOrDash(category.median_price, '€')}
+                  </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <div className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${getTrendTone(category.trend_direction)}`}>
                   {getTrendIcon(category.trend_direction)}
-                  {formatTrendValue(category.trend_strength)}
-                </div>
-                <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 sm:block">
-                  {category.topItems.length} produits
+                  {formatTrendValue(category.price_change_percent)}
                 </div>
                 <ChevronDown className="h-4 w-4 flex-shrink-0 text-zinc-500 transition-transform duration-300 group-open:rotate-180" />
               </div>
             </summary>
 
             <div className="border-t border-white/10 bg-black/20 p-4">
-              <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-3">
+              <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-4">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Prix moyen</p>
-                  <p className="mt-1 text-lg font-semibold text-white">{averagePrice}€</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{formatOrDash(category.avg_price, '€')}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Score de demande</p>
-                  <p className="mt-1 text-lg font-semibold text-white">{bestScore}/100</p>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Prix médian</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{formatOrDash(category.median_price, '€')}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Annonces suivies</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{category.volume_active}</p>
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Dernière analyse</p>
-                  <p className="mt-1 text-sm text-slate-300">{category.last_analyzed_at ? new Date(category.last_analyzed_at).toLocaleString('fr-FR') : 'À venir'}</p>
+                  <p className="mt-1 text-sm text-slate-300">{category.last_analyzed_at ? new Date(category.last_analyzed_at).toLocaleString('fr-FR') : '—'}</p>
                 </div>
               </div>
 
@@ -157,20 +166,32 @@ function CategoriesContent({ categories, loading, error, search }: {
                       <th className="px-2 py-2">#</th>
                       <th className="px-2 py-2">Produit</th>
                       <th className="px-2 py-2">Marque</th>
+                      <th className="px-2 py-2">Taille</th>
                       <th className="px-2 py-2">Prix</th>
-                      <th className="px-2 py-2">Demand</th>
+                      <th className="px-2 py-2">Score</th>
                       <th className="px-2 py-2">Marge</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {category.topItems.slice(0, 20).map((item, itemIndex) => (
+                    {currentItems.slice(0, 20).map((item, itemIndex) => (
                       <tr key={`${category.name}-${item.title}-${itemIndex}`} className="border-b border-white/10 text-slate-300 last:border-b-0 transition-colors hover:bg-emerald-500/[0.04]">
-                        <td className="px-2 py-2 text-slate-500">{itemIndex + 1}</td>
-                        <td className="px-2 py-2 font-medium text-white">{item.title}</td>
-                        <td className="px-2 py-2">{item.brand}</td>
-                        <td className="px-2 py-2">{parseNumericValue(item.price).toFixed(0)}€</td>
-                        <td className="px-2 py-2">{item.demandScore}/100</td>
-                        <td className="px-2 py-2 font-medium text-emerald-300">{parseNumericValue(item.profitMargin)}%</td>
+                        <td className="px-2 py-2 text-slate-500 tabular-nums">{itemIndex + 1}</td>
+                        <td className="px-2 py-2 font-medium text-white">
+                          {item.url ? (
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-300 hover:underline">
+                              {item.title}
+                            </a>
+                          ) : (
+                            item.title
+                          )}
+                        </td>
+                        <td className="px-2 py-2">{item.brand || '—'}</td>
+                        <td className="px-2 py-2 text-slate-400">{item.size || '—'}</td>
+                        <td className="px-2 py-2 tabular-nums">{parseNumericValue(item.price).toFixed(0)}€</td>
+                        <td className="px-2 py-2 tabular-nums text-slate-400">{item.analysisScore === null ? '—' : `${Math.round(item.analysisScore)}/100`}</td>
+                        <td className={`px-2 py-2 font-medium tabular-nums ${item.profitMargin === null ? 'text-slate-500' : 'text-emerald-300'}`}>
+                          {item.profitMargin === null ? '—' : `${Math.round(item.profitMargin)}%`}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,24 +256,23 @@ export default function CategoriesPage() {
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <PageHeader
-                title="Catégories & Top 20"
-                description="Une vue d'ensemble pro, claire et exploitable pour suivre chaque marché, ses meilleures opportunités et son potentiel de marge."
+                title="Catégories & marché"
+                description="Chaque catégorie que le robot suit sur Vinted : prix moyen, prix médian, volume d'annonces et évolution des prix depuis la dernière analyse."
               />
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-400">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
                   <motion.span className="h-1.5 w-1.5 rounded-full bg-emerald-400" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
-                  Live sync
+                  Annonces Vinted réelles
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Mises à jour régulières</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Priorité marge & demande</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Analyse quotidienne</span>
               </div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300">
               <div className="flex items-center gap-2 font-medium text-white">
                 <Sparkles className="h-4 w-4 text-emerald-300" />
-                Vue opérateur
+                Comment lire cette page
               </div>
-              <p className="mt-2 max-w-xs text-slate-400">Chaque catégorie expose ses 20 produits les plus pertinents, avec une lecture rapide de la demande, du prix et du potentiel de marge.</p>
+              <p className="mt-2 max-w-xs text-slate-400">Prix et volumes proviennent des annonces réellement collectées. Les colonnes Score et Marge restent vides tant que l'analyse IA n'a pas tourné sur le lot.</p>
             </div>
           </div>
         </motion.div>

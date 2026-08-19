@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { getTrendingBrands } from '@/vinted'
 import { authorizeAuthenticatedUser } from '@/lib/access-control'
 
 export async function GET(request: Request) {
@@ -29,20 +28,24 @@ export async function GET(request: Request) {
             take: 1,
           })
 
+          const score = item._avg?.analysisScore
           return {
             brand: item.brand as string,
             category: topCategory[0]?.category ?? 'Divers',
             productCount: item._count.brand,
-            totalSales: item._count.brand,
-            averageDemandScore: Math.round(item._avg?.analysisScore ?? 0),
+            // Null rather than 0 when the AI scoring pass hasn't run: a score
+            // of 0 reads as "terrible brand", which is a different claim from
+            // "not scored yet".
+            averageDemandScore: typeof score === 'number' ? Math.round(score) : null,
           }
         })
       )
-      return NextResponse.json({ brands, source: 'db' })
+      return NextResponse.json({ brands })
     }
+
+    return NextResponse.json({ brands: [] })
   } catch (err) {
     console.error('top-brands db error:', err)
+    return NextResponse.json({ error: 'Impossible de charger les marques.' }, { status: 500 })
   }
-
-  return NextResponse.json({ brands: getTrendingBrands(20), source: 'fallback' })
 }

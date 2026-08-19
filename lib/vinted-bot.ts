@@ -110,7 +110,10 @@ function buildVintedItemsFromHtml(html: string, query: string, limit = 8): Vinte
       price,
       brand,
       category: query,
-      image: srcMatch?.[1] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600',
+      // No stock-photo fallback: showing an unrelated Unsplash image next to a
+      // real listing misrepresents the item. Empty means "no image", and the
+      // UI renders a placeholder instead.
+      image: srcMatch?.[1] || '',
       url: hrefMatch ? `https://www.vinted.fr${hrefMatch[1]}` : `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`,
       description: `${state}${size ? ` • Taille ${size}` : ''}`,
     })
