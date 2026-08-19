@@ -27,6 +27,14 @@ export function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
+  // Le film publicitaire est intégré en iframe dans notre propre page d'accueil.
+  // On autorise la mise en cadre par ce seul site — page statique, sans session
+  // ni formulaire, donc sans surface de détournement de clic.
+  if (request.nextUrl.pathname.startsWith('/film/')) {
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.set('Content-Security-Policy', "frame-ancestors 'self'")
+  }
+
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
