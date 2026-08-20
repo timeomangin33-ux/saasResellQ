@@ -76,8 +76,12 @@ function extractPrice(text: string) {
   return match ? Number(match[1].replace(',', '.')) : 0
 }
 
-function buildVintedItemsFromHtml(html: string, query: string, limit = 8): VintedBotItem[] {
-  const seen = new Set<string>()
+function buildVintedItemsFromHtml(
+  html: string,
+  query: string,
+  limit = 8,
+  seen: Set<string> = new Set(),
+): VintedBotItem[] {
   const items: VintedBotItem[] = []
 
   const testIdRe = /data-testid="product-item-id-(\d+)"(?!--)/g
@@ -122,8 +126,10 @@ function buildVintedItemsFromHtml(html: string, query: string, limit = 8): Vinte
   return items
 }
 
-function fetchVintedSearchPage(query: string): Promise<string> {
-  const url = `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`
+function fetchVintedSearchPage(query: string, page = 1): Promise<string> {
+  const url =
+    `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}` +
+    (page > 1 ? `&page=${page}` : '')
 
   return new Promise((resolve, reject) => {
     const req = https.get(
@@ -149,21 +155,68 @@ function fetchVintedSearchPage(query: string): Promise<string> {
   })
 }
 
+const ANNONCES_PAR_PAGE = 96
+const DECALAGE_ENTRE_PAGES = 250
+const MAX_PAGES = 6
+
+const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Scanne une recherche Vinted.
+ *
+ * Une page de catalogue contient 96 annonces : l'ancienne limite de 12 en
+ * jetait 84 sur 96, pour exactement le même coût réseau. On lit donc la page
+ * entière, puis on pagine si la cible n'est pas atteinte — les pages se
+ * recouvrent très peu, de l'ordre de 5 annonces sur 96.
+ *
+ * `deadline` protège le cron : la fonction rend ce qu'elle a déjà collecté
+ * plutôt que de dépasser le temps d'exécution alloué.
+ */
 export async function runVintedBotScan({
   query = 'nike',
-  perPage = 8,
+  perPage = 96,
   category,
+  deadline,
 }: {
   query?: string
   perPage?: number
   category?: string
+  deadline?: number
 } = {}): Promise<VintedBotScanResult> {
   const normalizedQuery = (query || '').trim() || 'nike'
-  const normalizedPerPage = Math.max(4, Math.min(12, Number(perPage) || 8))
+  const cible = Math.max(4, Math.min(600, Number(perPage) || 96))
 
   try {
-    const html = await fetchVintedSearchPage(normalizedQuery)
-    const items = buildVintedItemsFromHtml(html, normalizedQuery, normalizedPerPage)
+    const seen = new Set<string>()
+    const items: VintedBotItem[] = []
+
+    // Une page rend 96 annonces : on sait donc combien en demander sans avoir
+    // à sonder. Les pages partent ensemble plutôt qu'à la file — deux requêtes
+    // simultanées, c'est moins que ce qu'un navigateur ouvre pour afficher la
+    // même page, et ça divise par deux le temps passé sur chaque catégorie.
+    const pages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(cible / ANNONCES_PAR_PAGE)))
+
+    const reponses = await Promise.all(
+      Array.from({ length: pages }, async (_, i) => {
+        // Un léger décalage évite d'arriver toutes en même temps.
+        if (i > 0) await attendre(i * DECALAGE_ENTRE_PAGES)
+        if (deadline && Date.now() > deadline) return null
+        try {
+          return await fetchVintedSearchPage(normalizedQuery, i + 1)
+        } catch {
+          return null // une page perdue ne doit pas faire échouer les autres
+        }
+      }),
+    )
+
+    for (const html of reponses) {
+      if (!html || items.length >= cible) continue
+      items.push(...buildVintedItemsFromHtml(html, normalizedQuery, cible - items.length, seen))
+    }
+
+    if (items.length === 0 && reponses.every((r) => r === null)) {
+      throw new Error('Aucune page Vinted n\'a pu être chargée')
+    }
 
     if (items.length === 0) {
       throw new Error('Aucune annonce n\'a été extraite de la page Vinted')

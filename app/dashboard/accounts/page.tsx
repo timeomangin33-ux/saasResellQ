@@ -72,7 +72,6 @@ export default function DashboardAccountsPage() {
           <h1 className="mt-2 text-3xl font-semibold text-white">Vue multi-comptes Vinted</h1>
           <p className="mt-2 text-sm text-zinc-400">Surveillez l'activité consolidée de tous vos comptes connectés.</p>
         </div>
-        <Link href="/dashboard/device-lab" className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500/15">Device Lab <ArrowRight className="h-4 w-4" /></Link>
       </motion.div>
 
       <StaggerGroup className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -88,7 +87,6 @@ export default function DashboardAccountsPage() {
               <p className="text-sm font-medium text-white">Comptes Vinted</p>
               <p className="mt-1 text-sm text-zinc-500">Activité réelle de chaque compte connecté, calculée depuis vos synchronisations.</p>
             </div>
-            <Link href="/dashboard/device-lab" className="text-sm font-semibold text-emerald-300">Ouvrir Device Lab</Link>
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">

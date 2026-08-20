@@ -45,10 +45,7 @@ const PLAN_REQUIRED_ROUTES = [
   '/historique',
   '/product-analyzer',
   '/deal-finder',
-  '/workflows',
-  '/developer',
   '/dashboard/accounts',
-  '/dashboard/device-lab',
   '/dashboard/automation',
   '/dashboard/bot',
 ]

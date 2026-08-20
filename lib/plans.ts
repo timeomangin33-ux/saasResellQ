@@ -39,6 +39,7 @@ export const PLAN_CONFIG = {
       'Tout du forfait Pro',
       'Multi-comptes Vinted',
       'Veilles illimitées',
+      'Historique des prix et courbes par catégorie',
       'Rapports mensuels',
       'Support prioritaire',
     ],

@@ -265,6 +265,27 @@ model AutomationJob {
 }
 
 // Category Market Data
+/// Un point par catégorie et par jour.
+///
+/// CategoryMarket ne garde que l'instantané courant : il est écrasé à chaque
+/// passage du robot, ce qui rend toute courbe dans le temps impossible. Cette
+/// table conserve l'historique, ligne après ligne. C'est elle qui permet de
+/// répondre à la seule question qui intéresse un revendeur : est-ce que cette
+/// catégorie monte ou descend depuis un mois ?
+model CategoryMarketDaily {
+  id             String   @id @default(cuid())
+  category       String
+  day            DateTime @db.Date
+  avgPrice       Float?
+  medianPrice    Float?
+  volumeActive   Int?
+  sampleSize     Int?
+  createdAt      DateTime @default(now())
+
+  @@unique([category, day])
+  @@index([category, day])
+}
+
 model CategoryMarket {
   id              String   @id @default(cuid())
   category        String   @unique

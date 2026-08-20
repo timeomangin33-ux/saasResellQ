@@ -27,9 +27,15 @@ function pctChange(next: number, prev: number | null | undefined) {
 export async function persistVintedScanResults(items: VintedBotItem[], category: string) {
   if (items.length === 0) return { productsWritten: 0 }
 
-  for (const item of items) {
+  // Cent upserts à la file, c'est cent allers-retours réseau vers Neon, soit
+  // une dizaine de secondes par catégorie — assez pour que le cron se fasse
+  // couper avant d'avoir tout traité. Par lots parallèles, on tombe à moins
+  // d'une seconde, sans saturer le pool de connexions.
+  const TAILLE_LOT = 25
+  for (let i = 0; i < items.length; i += TAILLE_LOT) {
+    await Promise.all(items.slice(i, i + TAILLE_LOT).map((item) => {
     const [state] = item.description.split(' • ')
-    await prisma.product.upsert({
+    return prisma.product.upsert({
       where: { vintedId: item.id },
       update: {
         title: item.title,
@@ -54,18 +60,28 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
         status: 'active',
       },
     })
+    }))
   }
 
-  const activeProducts = await prisma.product.findMany({
-    where: { category, status: 'active' },
-    select: { price: true },
-  })
+  // Moyenne et médiane calculées par Postgres plutôt qu'en rapatriant toutes
+  // les lignes : un aller-retour au lieu d'un transfert qui grossit chaque
+  // jour. percentile_cont donne la vraie médiane, y compris sur un nombre
+  // pair de valeurs.
+  const [agregat] = await prisma.$queryRaw<
+    { avg_price: number | null; median_price: number | null; volume: bigint }[]
+  >`
+    SELECT AVG(price)::float8 AS avg_price,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS median_price,
+           COUNT(*) AS volume
+    FROM "products"
+    WHERE category = ${category} AND status = 'active'
+  `
 
-  if (activeProducts.length > 0) {
-    const prices = activeProducts.map((p) => p.price).sort((a, b) => a - b)
-    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length
-    const medianPrice = prices[Math.floor(prices.length / 2)]
-    const volumeActive = activeProducts.length
+  const volumeActive = Number(agregat?.volume ?? 0)
+
+  if (volumeActive > 0 && agregat?.avg_price !== null && agregat?.median_price !== null) {
+    const avgPrice = agregat.avg_price as number
+    const medianPrice = agregat.median_price as number
 
     const previous = await prisma.categoryMarket.findUnique({ where: { category } })
     const priceChangePercent = pctChange(avgPrice, previous?.avgPrice)
@@ -93,6 +109,24 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
         volumeChangePercent,
         lastAnalyzedAt: new Date(),
       },
+    })
+
+    // Et un point figé pour la journée, qui lui n'est jamais écrasé : c'est
+    // ce qui rend les courbes dans le temps possibles. Le jour sert de clé,
+    // donc plusieurs passages le même jour affinent le point au lieu d'en
+    // créer un deuxième.
+    const jour = new Date()
+    jour.setUTCHours(0, 0, 0, 0)
+    const pointDuJour = {
+      avgPrice,
+      medianPrice,
+      volumeActive,
+      sampleSize: volumeActive,
+    }
+    await prisma.categoryMarketDaily.upsert({
+      where: { category_day: { category, day: jour } },
+      update: pointDuJour,
+      create: { category, day: jour, ...pointDuJour },
     })
   }
 

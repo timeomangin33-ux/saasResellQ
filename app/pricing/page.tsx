@@ -41,7 +41,7 @@ const plans = [
     name: 'Business',
     price: 149,
     description: 'Pour piloter une activité structurée.',
-    tagline: 'Comptes Vinted illimités, veilles illimitées, rapports mensuels.',
+    tagline: 'Historique des prix : voir si une catégorie monte ou descend depuis un mois.',
     image: '/pricing-images/plan-149.png',
     features: PLAN_CONFIG.BUSINESS.features,
     cta: 'Choisir Business',
@@ -166,7 +166,7 @@ export default function PricingPage() {
                   </span>
                 ))}
               </div>
-              <p className="mt-6 text-sm text-slate-400">Starter, Pro et Business offrent des niveaux de profondeur distincts : veille, automatisation, exports et IA.</p>
+              <p className="mt-6 text-sm text-slate-400">Tous les forfaits donnent accès au marché du jour. Ce qui change d&apos;un forfait à l&apos;autre : le nombre de veilles et d&apos;alertes, la fréquence des rapports, et l&apos;accès à l&apos;historique des prix.</p>
             </div>
 
             <div className="rounded-[28px] border border-white/10 bg-[#0B1220] p-6">

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { Analytics } from '@vercel/analytics/next'
 import { Inter } from 'next/font/google'
 import '../globals.css'
 import '../lib/initEnv' // Validate environment variables on startup
@@ -56,6 +57,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <ConditionalSiteFooter />
             </div>
             <Toaster />
+            {/* Sans mesure, impossible de savoir où les visiteurs s'arrêtent. */}
+            <Analytics />
             <CookieConsent />
           </div>
         </Providers>

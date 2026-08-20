@@ -168,6 +168,10 @@ export default function DashboardPage() {
   }
 
   const firstName = session?.user?.name?.split(' ')[0] || 'là'
+  // Connecter un compte Vinted demande un forfait : sans ça, proposer la
+  // connexion à un nouvel inscrit l'envoie contre un mur.
+  const sansForfait =
+    session?.user?.role !== 'ADMIN' && session?.user?.subscriptionStatus !== 'ACTIVE'
   const opportunities = useMemo(() => products.slice(0, 3), [products])
   const latestAnalyses = useMemo(() => categories.slice(0, 3), [categories])
 
@@ -290,7 +294,32 @@ export default function DashboardPage() {
 
           <SpotlightCard spotlightColor="rgba(16,185,129,0.16)">
             <GlassPanel accent="emerald" className="flex h-full flex-col items-center justify-center p-6 text-center sm:p-8">
-              {vintedStatus === 'not_connected' ? (
+              {vintedStatus === 'not_connected' && sansForfait ? (
+                <>
+                  <p className="text-sm font-semibold text-white">Compte Vinted</p>
+                  <p className="mx-auto mt-2 max-w-[280px] text-sm text-zinc-400">
+                    Ton compte Découverte donne accès au marché : catégories, prix moyens et
+                    médians, tendances. Connecter ton propre compte Vinted pour suivre tes ventes
+                    demande un forfait.
+                  </p>
+                  <motion.div
+                    className="mt-6 grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500/25 to-teal-400/10 text-emerald-200"
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <Link2 className="h-7 w-7" />
+                  </motion.div>
+                  <Magnetic strength={0.2} className="mt-6 w-full">
+                    <Link
+                      href="/pricing"
+                      className="btn-shine inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_-14px_rgba(16,185,129,0.6)]"
+                    >
+                      <Sparkles className="h-4 w-4" /> Voir les forfaits
+                    </Link>
+                  </Magnetic>
+                  <p className="mt-4 text-xs text-zinc-500">Sans carte bancaire tant que tu ne choisis pas.</p>
+                </>
+              ) : vintedStatus === 'not_connected' ? (
                 <>
                   <p className="text-sm font-semibold text-white">Compte Vinted</p>
                   <p className="mx-auto mt-2 max-w-[260px] text-sm text-zinc-400">Connecte ton compte Vinted pour synchroniser tes annonces, ventes et statistiques.</p>
