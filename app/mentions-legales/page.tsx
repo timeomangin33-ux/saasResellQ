@@ -5,20 +5,9 @@ import { ArrowLeft, Building2, Globe, Mail, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Logo } from '@/components/ui/logo'
+import { champsRenseignes, champsManquants, HEBERGEUR } from '@/lib/legal'
 
 const blocks = [
-  {
-    title: 'Éditeur du site',
-    body: 'ResellQ est le prestataire de la plateforme et du service accessible via le site internet et ses interfaces associées.',
-  },
-  {
-    title: 'Hébergeur',
-    body: 'Le site est hébergé par un prestataire technique spécialisé dans l\'hébergement de services web et applications. Les informations d\'hébergement peuvent être mises à jour selon la configuration technique retenue.',
-  },
-  {
-    title: 'Responsable de publication',
-    body: 'La responsabilité éditoriale du site est assumée par ResellQ, ou par la personne désignée à cet effet pour la gestion de la plateforme.',
-  },
   {
     title: 'Contact',
     body: 'Pour toute demande d\'information, vous pouvez nous contacter à l\'adresse suivante : contact@resellq.com.',
@@ -34,6 +23,9 @@ const blocks = [
 ]
 
 export default function MentionsLegalesPage() {
+  const renseignes = champsRenseignes()
+  const manquants = champsManquants()
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-5xl flex-col px-6 py-8 sm:py-10">
@@ -57,6 +49,45 @@ export default function MentionsLegalesPage() {
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Informations légales et identité du service</h1>
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
                 Les mentions ci-dessous donnent les informations essentielles relatives à l'éditeur du site, à l'hébergement, aux coordonnées de contact et au cadre juridique d'utilisation du service.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-background/60 p-5">
+              <h2 className="mb-3 text-lg font-semibold text-foreground">Éditeur du site</h2>
+              {renseignes.length > 0 ? (
+                <dl className="space-y-2">
+                  {renseignes.map(champ => (
+                    <div key={champ.cle} className="flex flex-wrap gap-x-3 text-sm leading-7">
+                      <dt className="min-w-[13rem] text-muted-foreground">{champ.libelle}</dt>
+                      <dd className="font-medium text-foreground">{champ.valeur}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+              {manquants.length > 0 ? (
+                <p className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm leading-6 text-amber-200">
+                  Les informations d&apos;identification de l&apos;éditeur ne sont pas encore
+                  publiées. Elles sont obligatoires et seront ajoutées ici :{' '}
+                  {manquants.map(c => c.libelle).join(', ')}. En attendant, vous
+                  pouvez nous joindre à contact@resellq.com.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-background/60 p-5">
+              <h2 className="mb-2 text-lg font-semibold text-foreground">Hébergeur</h2>
+              <p className="text-sm leading-7 text-muted-foreground">
+                Le site est hébergé par{' '}
+                <span className="font-medium text-foreground">{HEBERGEUR.nom}</span>
+                {HEBERGEUR.adresse ? `, ${HEBERGEUR.adresse}.` : ''}{' '}
+                <a
+                  href={HEBERGEUR.site}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  vercel.com
+                </a>
               </p>
             </div>
 

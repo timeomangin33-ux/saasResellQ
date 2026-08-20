@@ -27,7 +27,7 @@ export const PLAN_CONFIG = {
       'Alertes illimitées',
       'Rapports quotidiens',
       'Support prioritaire',
-      'Watchlists intelligentes',
+      'Veilles jusqu\'à 250',
     ],
   },
   BUSINESS: {
@@ -38,10 +38,9 @@ export const PLAN_CONFIG = {
       '6 000 crédits IA par mois',
       'Tout du forfait Pro',
       'Multi-comptes Vinted',
-      'Intégrations API et webhooks',
-      'Automations avancées',
-      'Accès Device Lab',
-      'Support 24/7 prioritaire',
+      'Veilles illimitées',
+      'Rapports mensuels',
+      'Support prioritaire',
     ],
   },
 } as const

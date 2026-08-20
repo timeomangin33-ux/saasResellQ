@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Reveal } from '@/components/ui/reveal'
 import { Magnetic } from '@/components/ui/magnetic'
 import Link from 'next/link'
+import { PLAN_CONFIG } from '@/lib/plans'
 
 const plans = [
   {
@@ -18,13 +19,7 @@ const plans = [
     description: 'Pour débuter proprement.',
     tagline: 'Une base solide pour analyser, suivre et agir.',
     image: '/pricing-images/plan-29.png',
-    features: [
-      '250 crédits IA par mois',
-      'Analyses de marché essentielles',
-      'Alertes de prix jusqu\'à 5',
-      'Rapports hebdomadaires',
-      'Support par email',
-    ],
+    features: PLAN_CONFIG.STARTER.features,
     cta: 'Choisir Starter',
     highlighted: false,
     badge: 'Essentiel',
@@ -36,14 +31,7 @@ const plans = [
     description: 'Le meilleur équilibre pour une activité sérieuse.',
     tagline: 'Le forfait le plus utilisé pour gagner du temps et augmenter sa marge.',
     image: '/pricing-images/plan-75.png',
-    features: [
-      '2 000 crédits IA par mois',
-      'Analyses avancées',
-      'Alertes illimitées',
-      'Rapports quotidiens',
-      'Support prioritaire',
-      'Watchlists intelligentes',
-    ],
+    features: PLAN_CONFIG.PRO.features,
     cta: 'Choisir Pro',
     highlighted: true,
     badge: 'Le plus populaire',
@@ -53,17 +41,9 @@ const plans = [
     name: 'Business',
     price: 149,
     description: 'Pour piloter une activité structurée.',
-    tagline: 'L\'espace complet pour automatiser, analyser et administrer vos environnements de test.',
+    tagline: 'Comptes Vinted illimités, veilles illimitées, rapports mensuels.',
     image: '/pricing-images/plan-149.png',
-    features: [
-      '6 000 crédits IA par mois',
-      'Tout du forfait Pro',
-      'Multi-comptes Vinted',
-      'Intégrations API et webhooks',
-      'Automations avancées',
-      'Accès Device Lab',
-      'Support 24/7 prioritaire',
-    ],
+    features: PLAN_CONFIG.BUSINESS.features,
     cta: 'Choisir Business',
     highlighted: false,
     badge: 'Business',
@@ -86,7 +66,7 @@ export default function PricingPage() {
   const planDescriptions = {
     Starter: 'Idéal pour démarrer proprement avec les bases de l’analyse.',
     Pro: 'Pour une activité sérieuse avec plus de volume et d’automatisation.',
-    Business: 'Pour piloter une activité structurée avec API, exports et Device Lab.',
+    Business: 'Pour suivre plusieurs comptes Vinted et un grand nombre de références.',
   }
 
   const handleSubscribe = async (level: string) => {

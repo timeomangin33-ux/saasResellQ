@@ -6,6 +6,13 @@ export const PRICING = {
   planName: 'ResellQ Pro',
 } as const
 
+/**
+ * Ce que chaque forfait donne réellement, et rien d'autre.
+ *
+ * Les limites citées ici sont celles que PLAN_LIMITS applique vraiment dans
+ * lib/plans.ts. Tout ce qui n'est pas adossé à du code exécuté a été retiré :
+ * une page de tarifs est un engagement contractuel, pas un argumentaire.
+ */
 export const PRICING_PLANS = [
   {
     id: 'starter',
@@ -19,23 +26,13 @@ export const PRICING_PLANS = [
     cta: 'Commencer',
     tokenLabel: '250 crédits IA / mois',
     features: [
-      '5 catégories incluses',
-      'Top 20 deals',
-      'Alertes 5/jour',
-      'Watchlist 20 articles',
-      'Assistant IA & recherche produit (consomme des crédits selon les mots/requêtes)',
-      'Deal Finder basique',
-    ],
-    missingFeatures: [
-      'Historique des prix',
-      'Exports',
-      'Rapports',
-      'Notifications instantanées',
-      'Support prioritaire',
-      'Et plus encore...',
+      'Prix moyens, médians et tendances par catégorie',
+      '20 veilles',
+      '5 alertes de prix',
+      'Rapports hebdomadaires',
+      '1 compte Vinted connecté',
     ],
     businessExtras: [],
-    limitations: ['Pas d\'historique des prix', 'Pas d\'exports', 'Deal Finder basique'],
   },
   {
     id: 'pro',
@@ -49,29 +46,13 @@ export const PRICING_PLANS = [
     cta: 'Passer au Pro',
     tokenLabel: '2 000 crédits IA / mois',
     features: [
-      '20 catégories incluses',
-      'Top 100 deals',
-      'Historique des prix 90 jours',
+      'Tout du forfait Starter',
+      '250 veilles',
       'Alertes illimitées',
-      'Watchlist 250 articles',
-      'Assistant IA prioritaire & recherche produit',
-      'Exports CSV / Excel',
-      'Deal Finder avancé',
-      'Rapports simples',
-      'Notifications instantanées',
+      'Rapports hebdomadaires et quotidiens',
       'Support prioritaire',
     ],
-    missingFeatures: [
-      'Toutes les catégories',
-      'Deals illimités',
-      'Historique des prix illimité',
-      'Exports PDF + API',
-      'Deal Finder IA prioritaire',
-      'Rapports avancés',
-      'Support VIP',
-    ],
     businessExtras: [],
-    limitations: ['Pas de PDF / API', 'Pas de dashboard Business', 'IA coach non inclus'],
   },
   {
     id: 'business',
@@ -79,36 +60,18 @@ export const PRICING_PLANS = [
     price: 149,
     currency: '€',
     period: 'mois',
-    description: 'Pour les revendeurs sérieux qui veulent dominer le marché.',
+    description: 'Pour ceux qui suivent plusieurs comptes et beaucoup de références.',
     badge: 'Business',
     highlight: false,
     cta: 'Devenir Business',
-    tokenLabel: 'IA illimitée',
+    tokenLabel: '6 000 crédits IA / mois',
     features: [
-      'Toutes les catégories incluses',
-      'Top deals illimité',
-      'Historique des prix illimité',
-      'Alertes temps réel',
-      'Watchlist illimitée',
-      'Exports CSV / Excel / PDF',
-      'Assistant IA prioritaire & recherche produit illimités',
-      'Deal Finder IA prioritaire',
-      'Rapports avancés',
-      'Notifications instantanées prioritaires',
-      'Support priorité + Discord privé',
+      'Tout du forfait Pro',
+      'Veilles illimitées',
+      'Comptes Vinted illimités',
+      'Rapports hebdomadaires, quotidiens et mensuels',
     ],
-    missingFeatures: [],
-    limitations: [],
-    businessExtras: [
-      'Détection 2 à 5 min avant les autres',
-      'Score de rentabilité IA détaillé',
-      'Historique complet : demande, saisonnalité, meilleur/pire mois',
-      'Heatmap Vinted des catégories en explosion',
-      'IA Coach intelligent',
-      'Scanner de marques',
-      'Scanner de vendeurs',
-      'Dashboard Business : ROI, bénéfices, temps moyen de vente',
-    ],
+    businessExtras: [],
   },
 ] as const
 
