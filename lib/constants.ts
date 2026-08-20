@@ -67,6 +67,7 @@ export const PRICING_PLANS = [
     tokenLabel: '6 000 crédits IA / mois',
     features: [
       'Tout du forfait Pro',
+      'Historique des prix et courbes par catégorie',
       'Veilles illimitées',
       'Comptes Vinted illimités',
       'Rapports hebdomadaires, quotidiens et mensuels',

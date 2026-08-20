@@ -84,24 +84,70 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 })
   }
 
-  const categories = VINTED_CATEGORIES.slice(0, 12)
+  // Rotation : si le budget temps coupe avant la fin, ce ne sont pas toujours
+  // les mêmes catégories qui passent. Le décalage suit le jour de l'année,
+  // donc chacune finit par être rafraîchie même dans le pire des cas.
+  const toutes = VINTED_CATEGORIES.slice(0, 12)
+  const jourDeLAnnee = Math.floor(Date.now() / 86_400_000)
+  const depart = jourDeLAnnee % toutes.length
+  const categories = [...toutes.slice(depart), ...toutes.slice(0, depart)]
   const results: { category: string; source: string; items: number }[] = []
 
+  // La fonction est plafonnée à 60 s. On garde 8 s pour les alertes et la
+  // réponse : passé ce budget, le scan rend ce qu il a plutôt
+  // que de se faire couper au milieu d'une écriture.
+  const BUDGET_SCAN_MS = 52_000
+  const finDuScan = Date.now() + BUDGET_SCAN_MS
+
+  // Une page Vinted contient exactement 96 annonces. Viser 96 plutôt que 100
+  // évite une seconde requête par catégorie pour quatre annonces de plus :
+  // toutes les catégories passent dans le budget au lieu de sept, ce qui fait
+  // plus de volume au total et deux fois moins de requêtes vers Vinted.
+  const ANNONCES_PAR_CATEGORIE = 96
+
+  // Le scoring IA consomme des crédits par produit : on ne score que les
+  // nouveautés les plus récentes, pas les cent annonces à chaque passage.
+  const MAX_SCORING_PAR_CATEGORIE = 12
+  let scoringDisponible = Boolean(process.env.OPENAI_API_KEY)
+
   for (const category of categories) {
+    if (Date.now() > finDuScan) {
+      results.push({ category: category.name, source: 'skipped-time-budget', items: 0 })
+      continue
+    }
     try {
-      const scan = await runVintedBotScan({ query: category.name, perPage: 12, category: category.name })
+      const scan = await runVintedBotScan({
+        query: category.name,
+        perPage: ANNONCES_PAR_CATEGORIE,
+        category: category.name,
+        deadline: finDuScan,
+      })
       if (scan.source === 'live' && scan.items.length > 0) {
         await persistVintedScanResults(scan.items, category.name)
-        await scoreProducts(scan.items.map((item) => ({ vintedId: item.id, title: item.title, brand: item.brand, price: item.price, category: category.name }))).catch((err) => {
-          console.error(`market-refresh: scoring failed for ${category.name}`, err)
-        })
+        if (scoringDisponible) {
+          await scoreProducts(
+            scan.items.slice(0, MAX_SCORING_PAR_CATEGORIE).map((item) => ({
+              vintedId: item.id,
+              title: item.title,
+              brand: item.brand,
+              price: item.price,
+              category: category.name,
+            })),
+          ).catch((err) => {
+            // Un compte OpenAI sans crédit échoue à chaque appel, et chaque
+            // échec coûte un aller-retour réseau. On arrête d'essayer pour ce
+            // passage plutôt que de brûler le budget temps du cron.
+            scoringDisponible = false
+            console.error(`market-refresh: scoring désactivé pour ce passage (${category.name})`, err)
+          })
+        }
       }
       results.push({ category: category.name, source: scan.source, items: scan.items.length })
     } catch (err) {
       console.error(`market-refresh: scan failed for ${category.name}`, err)
       results.push({ category: category.name, source: 'error', items: 0 })
     }
-    await sleep(600)
+    await sleep(300)
   }
 
   const alertSummary = await evaluateAlerts()

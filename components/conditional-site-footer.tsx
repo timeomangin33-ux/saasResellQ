@@ -15,7 +15,6 @@ import { SiteFooter } from './site-footer'
 //
 // Matched by exact pathname (not prefix) so dynamic child routes that do NOT
 // use DashboardLayout — e.g. /brands/[brand], /categories/[slug],
-// /dashboard/workflows — keep the marketing footer.
 const AUTH_PREFIX = '/auth'
 
 const DASHBOARD_SHELL_ROUTES = [
@@ -29,9 +28,7 @@ const DASHBOARD_SHELL_ROUTES = [
   '/dashboard/automation',
   '/dashboard/billing',
   '/dashboard/bot',
-  '/dashboard/device-lab',
   '/deal-finder',
-  '/developer',
   '/historique',
   '/insights',
   '/market-research',
@@ -45,7 +42,6 @@ const DASHBOARD_SHELL_ROUTES = [
   '/top-products',
   '/vinted-dashboard',
   '/watchlists',
-  '/workflows',
 ]
 
 export function ConditionalSiteFooter() {
