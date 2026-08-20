@@ -33,9 +33,14 @@ export const metadata: Metadata = {
     type: 'website',
   },
   icons: {
-    icon: '/resellq-logo.svg',
-    apple: '/resellq-logo.svg',
-    shortcut: '/resellq-logo.svg',
+    // Le SVG pour les navigateurs qui l'acceptent, le .ico parce qu'ils le
+    // demandent tous d'office, le PNG parce que Safari ne veut que celui-là.
+    icon: [
+      { url: '/resellq-logo.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '48x48' },
+    ],
+    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon.ico',
   },
 }
 
