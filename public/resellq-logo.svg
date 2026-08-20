@@ -1,15 +1,14 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)"/>
-  <path d="M20 18H36C40.4183 18 44 21.5817 44 26V26C44 30.4183 40.4183 34 36 34H24V44" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M24 34L20 38" stroke="white" stroke-width="4" stroke-linecap="round"/>
-  <path d="M24 26H34" stroke="white" stroke-width="4" stroke-linecap="round"/>
-  <path d="M34 26C34 22.6863 36.6863 20 40 20V20" stroke="#A7F3D0" stroke-width="3" stroke-linecap="round"/>
-  <path d="M20 18L20 44" stroke="#E0F2FE" stroke-width="4" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="ResellQ">
   <defs>
-    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#10B981"/>
-      <stop offset="0.55" stop-color="#22D3EE"/>
-      <stop offset="1" stop-color="#8B5CF6"/>
+    <linearGradient id="resellq-teal" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0E9C74"/>
+      <stop offset="100%" stop-color="#34D399"/>
     </linearGradient>
   </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="225" ry="225" fill="url(#resellq-teal)"/>
+
+  <rect x="252" y="530" width="140" height="240" rx="28" fill="#FFFFFF"/>
+  <rect x="442" y="390" width="140" height="380" rx="28" fill="#FFFFFF"/>
+  <rect x="632" y="250" width="140" height="520" rx="28" fill="#FFFFFF"/>
 </svg>

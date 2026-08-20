@@ -23,19 +23,9 @@ export function FilmHero() {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 px-1">
-        <p className="text-xs text-muted-foreground">
-          Le marché Vinted au 18 août 2026. Données réelles, aucune mise en scène.
-        </p>
-        <a
-          href="/film/dezoome.html"
-          target="_blank"
-          rel="noreferrer"
-          className="shrink-0 text-xs font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Version longue
-        </a>
-      </div>
+      <p className="mt-4 px-1 text-center text-xs text-muted-foreground">
+        Le marché Vinted au 18 août 2026. Données réelles, aucune mise en scène.
+      </p>
     </div>
   )
 }

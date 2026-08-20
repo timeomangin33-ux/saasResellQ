@@ -117,6 +117,7 @@
   button:hover,button:focus-visible{background:var(--em);color:#04211a;border-color:var(--em);outline:none}
   button.p{background:var(--em);color:#04211a;border-color:var(--em)}
   button.on{border-color:var(--em);color:var(--em)}
+  button#rec.rec{background:#c0392b;border-color:#c0392b;color:#fff}
   .cutsep{width:1px;height:20px;background:var(--line2);margin:0 3px}
   input[type=range]{flex:1;min-width:120px;accent-color:var(--em)}
   .beats{border:1px solid var(--line);background:var(--panel)}
@@ -213,6 +214,8 @@
       <span class="cutsep"></span>
       <button id="c52" class="on">52 s</button>
       <button id="c30">30 s</button>
+      <span class="cutsep"></span>
+      <button id="rec" title="Enregistre un fichier vidéo 9:16">Enregistrer</button>
       <button id="bigb">Plein cadre</button>
       <button id="sfb">Zone sûre</button>
       <button id="cln">Repères</button>
@@ -224,7 +227,7 @@
 <button class="exit" id="exit" style="display:none">Quitter le plein cadre</button>
 
 <footer>
-  Ajoute <code>#t=23</code> à l'URL pour ouvrir sur une seconde précise. Vignettes produit et plan de
+  <span id="noterec"><b>Enregistrer</b> produit un fichier vidéo 9:16 sans aucun logiciel : clique, choisis « Cet onglet » dans la fenêtre de partage, et laisse tourner — le fichier se télécharge tout seul à la fin.</span> Ajoute <code>#t=23</code> à l'URL pour ouvrir sur une seconde précise. Vignettes produit et plan de
   preuve découpés dans les captures réelles ; chiffres, catégories et titres d'annonces issus de la
   base de production au 18/08/2026.
 </footer>
@@ -311,9 +314,8 @@
     [15.3,16.8,"Une autre s'effondrait."],
     [17.2,19.9,"Prix moyen, prix médian, volume réel."],
     [20.4,23.9,"Les produits. Les catégories. Les tendances. Tes veilles."],
-    [24.5,26.8,"Arrête d'acheter à l'aveugle."],
-    [27.3,28.9,"Viens voir le marché."],
-    [29,30,"ResellQ point com."]];
+    [24.4,26.6,"Arrête d'acheter à l'aveugle."],
+    [27.6,30,"ResellQ point com."]];
   const SUBS=[[0.5,3.2,"Sur Vinted, j'ai mis <em>longtemps</em> à comprendre un truc."],
     [3.6,6.0,"J'achetais ce que je pensais qui allait plaire."],
     [6.3,7.9,"Pas forcément ce qui <em>se vendait</em>."],
@@ -504,6 +506,120 @@
   const m=/[#?&]t=([\d.]+)/.exec(location.hash+location.search);
   seek(m?parseFloat(m[1]):0);
   requestAnimationFrame(loop);
+
+  /* ===== Enregistrement d'un fichier vidéo, sans logiciel =====
+     On capture l'onglet, on recadre sur la scène 9:16, on écrit un WebM.
+     Le recadrage est ce qui compte : une capture d'écran brute donnerait
+     une vidéo 16:9 avec la scène perdue au milieu. */
+  const recBtn = $('rec');
+  let enCours = false;
+
+  async function enregistrer(){
+    if (enCours) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || !window.MediaRecorder){
+      alert("Ce navigateur ne sait pas capturer. Ouvre le film dans Chrome ou Edge.");
+      return;
+    }
+    /* Plein écran d'abord, tant que le geste de l'utilisateur est encore valide :
+       la scène passe de 405 px de large à toute la hauteur de l'écran, ce qui
+       change tout sur la netteté du fichier final. */
+    let pleinEcran = false;
+    if (document.documentElement.requestFullscreen && !document.fullscreenElement){
+      try { await document.documentElement.requestFullscreen(); pleinEcran = true; }
+      catch(e){ /* refusé : on continue en fenêtre */ }
+    }
+
+    let flux;
+    try{
+      flux = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 }, audio: false, preferCurrentTab: true });
+    }catch(e){
+      if (pleinEcran && document.fullscreenElement) document.exitFullscreen();
+      return;                                  /* annulé par l'utilisateur */
+    }
+
+    const piste = flux.getVideoTracks()[0];
+    const surface = piste.getSettings().displaySurface;
+    if (surface && surface !== 'browser'){
+      alert("Choisis « Cet onglet » et non l'écran entier, sinon le cadrage sera faux.");
+      piste.stop(); return;
+    }
+
+    /* Plein cadre et repères masqués : la scène occupe le maximum de pixels. */
+    if (!document.body.classList.contains('big')) toggleBig();
+    S.classList.add('clean');
+    measure(); render();
+    await new Promise(r => setTimeout(r, 450));   /* le plein écran doit être stabilisé */
+
+    const video = document.createElement('video');
+    video.srcObject = flux; video.muted = true; video.playsInline = true;
+    await video.play();
+
+    const L = 1080, H = 1920;
+    const toile = document.createElement('canvas');
+    toile.width = L; toile.height = H;
+    const ctx = toile.getContext('2d', { alpha: false });
+
+    /* Position de la scène dans l'onglet, convertie vers les pixels capturés. */
+    const r = S.getBoundingClientRect();
+    const kx = video.videoWidth / innerWidth, ky = video.videoHeight / innerHeight;
+    const sx = r.left * kx, sy = r.top * ky, sw = r.width * kx, sh = r.height * ky;
+
+    const formats = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const mime = formats.find(m => MediaRecorder.isTypeSupported(m));
+    const rec = new MediaRecorder(toile.captureStream(30),
+      { mimeType: mime, videoBitsPerSecond: 8000000 });
+    const morceaux = [];
+    rec.ondataavailable = e => { if (e.data.size) morceaux.push(e.data) };
+    rec.onstop = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(morceaux, { type: mime }));
+      a.download = 'resellq-dezoome-' + CUT + 's.webm';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    };
+
+    let dessine = true;
+    (function peindre(){
+      if (!dessine) return;
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, L, H);
+      requestAnimationFrame(peindre);
+    })();
+
+    enCours = true;
+    recBtn.classList.add('rec');
+    seek(0);
+    if (!playing) $('play').click();
+    rec.start();
+
+    const veille = setInterval(() => {
+      recBtn.textContent = 'Rec ' + Math.floor(t) + ' / ' + DUR + ' s';
+      if (t >= DUR - 0.03 || piste.readyState === 'ended'){
+        clearInterval(veille);
+        dessine = false;
+        rec.stop();
+        flux.getTracks().forEach(x => x.stop());
+        if (document.fullscreenElement) document.exitFullscreen();
+        enCours = false;
+        recBtn.classList.remove('rec');
+        recBtn.textContent = 'Enregistrer';
+      }
+    }, 100);
+  }
+  recBtn.onclick = enregistrer;
+  /* Le bouton n'apparait que la ou il fonctionne vraiment. Dans une iframe
+     d'apercu, les telechargements sont bloques : ni bouton, ni promesse en
+     bas de page. */
+  let dansIframe = false;
+  try { dansIframe = window.self !== window.top } catch (e) { dansIframe = true }
+  const peutEnregistrer = !dansIframe
+    && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)
+    && typeof MediaRecorder !== 'undefined';
+  if (!peutEnregistrer) {
+    recBtn.style.display = 'none';
+    const note = $('noterec');
+    if (note) note.style.display = 'none';
+  }
 
   /* ===== Mode intégré : ?embed=1 (&cut=30) =====
      Le film occupe toute la fenêtre, sans habillage, et tourne en boucle.
