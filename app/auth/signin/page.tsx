@@ -89,6 +89,8 @@ function SignInPageContent() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="vous@exemple.com"
+                autoComplete="email"
+                inputMode="email"
                 required
               />
             </div>
@@ -101,6 +103,7 @@ function SignInPageContent() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                   className="pr-10"
                 />
