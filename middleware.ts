@@ -30,9 +30,11 @@ export function middleware(request: NextRequest) {
   // Le film publicitaire est intégré en iframe dans notre propre page d'accueil.
   // On autorise la mise en cadre par ce seul site — page statique, sans session
   // ni formulaire, donc sans surface de détournement de clic.
+  // La politique complète est définie une seule fois, dans next.config.ts.
+  // Y toucher ici l'écraserait : le middleware ne règle donc que l'en-tête
+  // hérité X-Frame-Options, que la configuration ne peut pas nuancer seule.
   if (request.nextUrl.pathname.startsWith('/film/')) {
     response.headers.set('X-Frame-Options', 'SAMEORIGIN')
-    response.headers.set('Content-Security-Policy', "frame-ancestors 'self'")
   }
 
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')

@@ -152,5 +152,39 @@ export async function GET(request: Request) {
 
   const alertSummary = await evaluateAlerts()
 
-  return NextResponse.json({ ok: true, categoriesScanned: results.length, results, alerts: alertSummary })
+  // Le robot lit le HTML de Vinted : un changement de balisage chez eux le
+  // fait basculer en secours, silencieusement, avec un HTTP 200. Sans trace
+  // écrite, les chiffres se figeraient sans que personne ne l'apprenne. Chaque
+  // passage laisse donc son bilan, et un passage dégradé est enregistré comme
+  // un échec, visible dans les compteurs d'administration.
+  const enSecours = results.filter((r) => r.source === 'fallback' || r.source === 'error').length
+  const collectees = results.reduce((t, r) => t + r.items, 0)
+  const degrade = enSecours > results.length / 3 || collectees < 100
+
+  await prisma.automationJob
+    .create({
+      data: {
+        jobType: 'market-refresh',
+        status: degrade ? 'failed' : 'completed',
+        lastRunAt: new Date(),
+        result: JSON.stringify({ collectees, enSecours, categories: results.length }),
+        error: degrade
+          ? `Collecte dégradée : ${collectees} annonces, ${enSecours} catégorie(s) en secours. Le balisage Vinted a peut-être changé.`
+          : null,
+      },
+    })
+    .catch((err) => console.error('market-refresh: bilan non enregistré', err))
+
+  if (degrade) {
+    console.error(`market-refresh: PASSAGE DÉGRADÉ — ${collectees} annonces, ${enSecours} en secours`)
+  }
+
+  return NextResponse.json({
+    ok: true,
+    degraded: degrade,
+    categoriesScanned: results.length,
+    itemsCollected: collectees,
+    results,
+    alerts: alertSummary,
+  })
 }
