@@ -24,6 +24,9 @@ function pctChange(next: number, prev: number | null | undefined) {
  * the CategoryMarket aggregate for that category, so the rest of the app
  * (top-products, top-categories, opportunities...) reflects real scan data.
  */
+/** Une annonce non revue depuis ce délai sort des agrégats. */
+export const JOURS_AVANT_PEREMPTION = 7
+
 export async function persistVintedScanResults(items: VintedBotItem[], category: string) {
   if (items.length === 0) return { productsWritten: 0 }
 
@@ -62,6 +65,18 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
     })
     }))
   }
+
+  // Une annonce vendue ou retirée disparaît simplement des résultats Vinted :
+  // rien ne vient nous le dire. Sans péremption, la table accumule des
+  // fantômes et les médianes finissent par décrire un marché qui n'existe
+  // plus. Tout ce que le robot n'a pas revu depuis une semaine sort donc des
+  // agrégats — le délai est large exprès, les catégories passant à tour de
+  // rôle et pas forcément tous les jours.
+  const perimee = new Date(Date.now() - JOURS_AVANT_PEREMPTION * 86_400_000)
+  const { count: perimees } = await prisma.product.updateMany({
+    where: { category, status: 'active', updatedAt: { lt: perimee } },
+    data: { status: 'stale' },
+  })
 
   // Moyenne et médiane calculées par Postgres plutôt qu'en rapatriant toutes
   // les lignes : un aller-retour au lieu d'un transfert qui grossit chaque
@@ -130,5 +145,5 @@ export async function persistVintedScanResults(items: VintedBotItem[], category:
     })
   }
 
-  return { productsWritten: items.length }
+  return { productsWritten: items.length, perimees }
 }

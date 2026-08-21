@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ExternalLink, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import { VINTED_CATEGORIES } from '@/vinted'
 import { StaggerGroup, staggerItem } from '@/components/ui/reveal'
+import { CategoryHistory } from '@/components/category-history'
 
 /**
  * Every figure on this page comes from the scraper's own rows. It previously
@@ -197,6 +198,8 @@ export default function CategoryPage() {
             </div>
           </div>
         </motion.div>
+
+        <CategoryHistory category={category?.name ?? slug} />
 
         {loading ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
