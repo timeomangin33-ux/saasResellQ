@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/app/dashboard-layout'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PageHeader } from '@/components/ui/page-header'
+import { IntegrationsNotice } from '@/components/integrations-notice'
 import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { BellDot, Plus, Trash2, Loader2, X } from 'lucide-react'
@@ -151,6 +152,8 @@ export default function AlertesPage() {
             </Magnetic>
           }
         />
+
+        <IntegrationsNotice cles={['Envoi des e-mails']} />
 
         <AnimatePresence>
           {showForm && (
