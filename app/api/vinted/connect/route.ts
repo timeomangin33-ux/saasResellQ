@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { authorizeFeature, errorResponse } from '@/lib/access-control'
+import { integrationConfiguree } from '@/lib/integrations'
 import { getPlanLimits } from '@/lib/plans'
 import { saveVintedSession } from '@/lib/vinted-connector'
 
@@ -29,9 +30,20 @@ export async function POST(request: Request) {
       }
     }
 
+    // Sans la clé de chiffrement, la sauvegarde échoue de toute façon — mais
+    // avec un 500 et un message interne. Autant le dire clairement et tôt.
+    if (!integrationConfiguree('VINTED_COOKIE_SECRET')) {
+      return errorResponse(
+        "La connexion de comptes Vinted est momentanément indisponible. Rien n'a été enregistré.",
+        503,
+      )
+    }
+
     const account = await saveVintedSession(user.id, { username, profileUrl, cookieJar })
     return NextResponse.json({ ok: true, account })
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? 'Erreur' }, { status: 500 })
+    // Le message d'erreur brut expose la configuration interne du serveur.
+    console.error('vinted/connect', err)
+    return NextResponse.json({ error: 'La connexion a échoué. Réessaie dans un instant.' }, { status: 500 })
   }
 }
