@@ -8,15 +8,34 @@ import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianG
 import { Reveal, StaggerGroup, staggerItem } from '@/components/ui/reveal'
 import { Magnetic } from '@/components/ui/magnetic'
 
-const chartData = [
-  { day: 'Lun', value: 34 },
-  { day: 'Mar', value: 42 },
-  { day: 'Mer', value: 51 },
-  { day: 'Jeu', value: 48 },
-  { day: 'Ven', value: 58 },
-  { day: 'Sam', value: 67 },
-  { day: 'Dim', value: 73 },
-]
+/**
+ * Les chiffres de cette page viennent de `/api/public/demo`, c'est-à-dire des
+ * annonces réellement collectées.
+ *
+ * Ils étaient auparavant écrits en dur — « 73/100 », « +410 € », « +18 % » et
+ * une courbe de sept points inventée. Un visiteur les prenait pour la
+ * production du produit, alors qu'ils ne mesuraient rien et ne changeaient
+ * jamais. Une démonstration qui ment sur ce qu'elle montre est un mauvais
+ * argument de vente, et un mauvais départ.
+ */
+interface ChiffresPublics {
+  annoncesSuivies: number | null
+  categoriesSuivies: number | null
+  opportunites: number | null
+  gainTop10: number | null
+  ageMinutes: number | null
+  courbe: { day: string; value: number }[]
+  variationVolume: number | null
+  seuilOpportunite: number
+}
+
+function fraicheur(minutes: number | null) {
+  if (minutes === null) return '—'
+  if (minutes < 60) return `${minutes} min`
+  const heures = Math.round(minutes / 60)
+  if (heures < 48) return `${heures} h`
+  return `${Math.round(heures / 24)} j`
+}
 
 const TABS = [
   { id: 'overview', label: "Vue d\'ensemble" },
@@ -30,6 +49,25 @@ const getMarginClass = (margin: number) =>
 
 export default function DemoDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
+  const [chiffres, setChiffres] = useState<ChiffresPublics | null>(null)
+
+  useEffect(() => {
+    let vivant = true
+    void (async () => {
+      try {
+        const res = await fetch('/api/public/demo')
+        if (!res.ok) return
+        const data = (await res.json()) as ChiffresPublics
+        if (vivant) setChiffres(data)
+      } catch {
+        // La page reste lisible sans les chiffres : elle affiche « — » plutôt
+        // que de les inventer.
+      }
+    })()
+    return () => { vivant = false }
+  }, [])
+
+  const chartData = chiffres?.courbe ?? []
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,23 +114,59 @@ export default function DemoDashboardPage() {
         {/* Action Block */}
         <Reveal className="panel-strong grid gap-4 p-5 md:grid-cols-[1fr_auto] items-center">
           <div>
-            <p className="text-sm font-semibold">À acheter maintenant</p>
-            <p className="text-xs text-muted-foreground mt-1">3 deals chauds sous-cotés détectés par ResellQ avec marge projetée en cash.</p>
+            <p className="text-sm font-semibold">Ce que le robot voit en ce moment</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {chiffres?.opportunites != null
+                ? `${chiffres.opportunites.toLocaleString('fr-FR')} annonce${chiffres.opportunites > 1 ? 's' : ''} au-dessus de ${chiffres.seuilOpportunite}/100, sur ${(chiffres.annoncesSuivies ?? 0).toLocaleString('fr-FR')} suivies en direct.`
+                : 'Chargement des chiffres du marché…'}
+            </p>
           </div>
           <div className="rounded-2xl bg-[#08131F] px-4 py-2 text-right">
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Potentiel</p>
-            <p className="text-xl font-semibold text-accent">+410€</p>
-            <p className="text-[11px] text-muted-foreground">valeur estimée aujourd'hui</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Top 10</p>
+            <p className="text-xl font-semibold text-accent">
+              {chiffres?.gainTop10 != null ? `+${chiffres.gainTop10.toLocaleString('fr-FR')}€` : '—'}
+            </p>
+            <p className="text-[11px] text-muted-foreground">gain estimé sur les 10 meilleures</p>
           </div>
         </Reveal>
 
         {/* KPIs */}
         <StaggerGroup className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Opportunités du jour', value: '73', unit: '/100', delta: 'Marché favorable', up: true, icon: BarChart2 },
-            { label: 'À lire maintenant', value: '3', unit: ' deals', delta: '+12%', up: true, icon: Zap },
-            { label: 'Marge potentielle', value: '410', unit: '€', delta: '+14%', up: true, icon: TrendingUp },
-            { label: 'Données fraîches', value: '2', unit: ' min', delta: 'Actualisé maintenant', up: null, icon: ShoppingBag },
+            {
+              label: 'Annonces suivies',
+              value: chiffres?.annoncesSuivies?.toLocaleString('fr-FR') ?? '—',
+              unit: '',
+              delta: `${chiffres?.categoriesSuivies ?? '—'} catégories`,
+              up: null,
+              icon: BarChart2,
+            },
+            {
+              label: `Notées au-dessus de ${chiffres?.seuilOpportunite ?? 70}`,
+              value: chiffres?.opportunites?.toLocaleString('fr-FR') ?? '—',
+              unit: '',
+              delta: 'sur 100 points',
+              up: null,
+              icon: Zap,
+            },
+            {
+              label: 'Gain estimé, top 10',
+              value: chiffres?.gainTop10?.toLocaleString('fr-FR') ?? '—',
+              unit: '€',
+              delta: 'revente au prix médian',
+              up: null,
+              icon: TrendingUp,
+            },
+            {
+              label: 'Dernière collecte',
+              value: fraicheur(chiffres?.ageMinutes ?? null),
+              unit: '',
+              // Le mot « frais » n'est mérité qu'en dessous de trois heures :
+              // au-delà, on le dit.
+              delta: chiffres?.ageMinutes != null && chiffres.ageMinutes > 180 ? 'données en retard' : 'à jour',
+              up: chiffres?.ageMinutes != null && chiffres.ageMinutes > 180 ? false : null,
+              icon: ShoppingBag,
+            },
           ].map(kpi => {
             const Icon = kpi.icon
             return (
@@ -130,12 +204,21 @@ export default function DemoDashboardPage() {
               <motion.div variants={staggerItem} className="xl:col-span-2 panel p-5">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p className="text-sm font-medium">Indice de demande</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">7 derniers jours</p>
+                    <p className="text-sm font-medium">Annonces suivies</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">7 derniers jours, toutes catégories</p>
                   </div>
-                  <span className="text-xs text-accent bg-accent/10 px-2 py-0.5 rounded-full font-medium">+18%</span>
+                  {chiffres?.variationVolume != null && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${chiffres.variationVolume >= 0 ? 'text-accent bg-accent/10' : 'text-rose-400 bg-rose-500/10'}`}>
+                      {chiffres.variationVolume > 0 ? '+' : ''}{chiffres.variationVolume}%
+                    </span>
+                  )}
                 </div>
                 <div className="h-48">
+                  {chartData.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                      Pas encore assez d&apos;historique pour tracer une courbe.
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                       <CartesianGrid stroke="#1F2937" strokeDasharray="3 3" vertical={false} />
@@ -145,6 +228,7 @@ export default function DemoDashboardPage() {
                       <Line type="monotone" dataKey="value" stroke="#06B6D4" strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
               </motion.div>
 

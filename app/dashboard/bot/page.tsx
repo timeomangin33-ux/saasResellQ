@@ -10,18 +10,44 @@ interface BotItem {
   id: string
   title: string
   price: number
+  totalPrice: number
   brand: string
+  size: string
+  condition: string
   category: string
   image: string
   url: string
   description: string
+  sellerLogin: string | null
+  favouriteCount: number
+  listedAt: string | null
 }
 
 interface BotResult {
   success: boolean
-  source: 'live' | 'fallback', query: string
+  /**
+   * `api` : lecture normale, données complètes.
+   * `html` : l'API a refusé, on a lu la page publique — vendeur et favoris
+   * manquent alors, et l'interface le dit au lieu de laisser croire à zéro.
+   * `failed` : aucune annonce lue. Aucune donnée inventée n'est affichée.
+   */
+  source: 'api' | 'html' | 'failed'
+  query: string
   items: BotItem[]
   message: string
+  failure?: { cause: string; detail: string }
+  durationMs?: number
+}
+
+/** Il y a un mois. Sert à situer une annonce dans le temps sans dépendance. */
+function depuis(iso: string | null) {
+  if (!iso) return null
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
+  if (!Number.isFinite(minutes) || minutes < 0) return null
+  if (minutes < 60) return `il y a ${minutes} min`
+  const heures = Math.round(minutes / 60)
+  if (heures < 48) return `il y a ${heures} h`
+  return `il y a ${Math.round(heures / 24)} j`
 }
 
 interface TopCategory {
@@ -29,6 +55,27 @@ interface TopCategory {
   category?: string
   trend_direction?: string
   trend_strength?: string
+}
+
+const ETAT: Record<BotResult['source'], { libelle: string; court: string; classe: string; pastille: string }> = {
+  api: {
+    libelle: 'État : lecture directe de Vinted',
+    court: 'Lecture API',
+    classe: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+    pastille: 'bg-emerald-500/10 text-emerald-300',
+  },
+  html: {
+    libelle: 'État : lecture dégradée (page publique)',
+    court: 'Lecture dégradée',
+    classe: 'border-amber-500/20 bg-amber-500/10 text-amber-500',
+    pastille: 'bg-amber-500/10 text-amber-600',
+  },
+  failed: {
+    libelle: 'État : Vinted illisible',
+    court: 'Échec',
+    classe: 'border-red-500/30 bg-red-500/10 text-red-400',
+    pastille: 'bg-red-500/10 text-red-400',
+  },
 }
 
 export default function BotPage() {
@@ -53,7 +100,7 @@ export default function BotPage() {
         const response = await fetch('/api/bot/vinted/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: value, perPage: 8, category: value }),
+          body: JSON.stringify({ query: value, perPage: 48, category: value }),
         })
 
         const data = await response.json()
@@ -61,7 +108,7 @@ export default function BotPage() {
       } catch (error) {
         setResult({
           success: false,
-          source: 'fallback',
+          source: 'failed',
           query: value,
           items: [],
           message: error instanceof Error ? error.message : 'Erreur inconnue lors du scan.',
@@ -101,7 +148,7 @@ export default function BotPage() {
 
     const interval = window.setInterval(() => {
       setActiveCategoryIndex((prev) => (prev + 1) % topCategories.length)
-    }, 18000)
+    }, 45000)
 
     return () => window.clearInterval(interval)
   }, [autoRotate, topCategories])
@@ -119,8 +166,8 @@ export default function BotPage() {
                 Ce module scanne les annonces Vinted en direct et alimente vos top produits et catégories avec ce qu'il trouve.
               </p>
             </div>
-            <div className={`rounded-2xl border px-4 py-3 text-sm ${result ? (result.source === 'live' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/20 bg-amber-500/10 text-amber-500') : 'border-border/70 bg-muted/60 text-muted-foreground'}`}>
-              {result ? (result.source === 'live' ? 'État : flux live' : 'État : secours (Vinted indisponible)') : 'État : en attente du premier scan'}
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${result ? ETAT[result.source].classe : 'border-border/70 bg-muted/60 text-muted-foreground'}`}>
+              {result ? ETAT[result.source].libelle : 'État : en attente du premier scan'}
             </div>
           </div>
 
@@ -190,8 +237,9 @@ export default function BotPage() {
                 <p className="text-sm font-medium text-muted-foreground">Résultat du dernier scan</p>
                 <p className="text-lg font-semibold text-foreground">{result.query}</p>
               </div>
-              <div className={`rounded-full px-3 py-1 text-sm ${result.source === 'live' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-600'}`}>
-                {result.source === 'live' ? 'Scan live' : 'Résultat de secours'}
+              <div className={`rounded-full px-3 py-1 text-sm ${ETAT[result.source].pastille}`}>
+                {ETAT[result.source].court}
+                {result.durationMs ? ` · ${(result.durationMs / 1000).toFixed(1)} s` : ''}
               </div>
             </div>
 
@@ -202,18 +250,33 @@ export default function BotPage() {
                 <div className="flex gap-4 animate-[marquee_24s_linear_infinite]">
                   {result.items.concat(result.items).map((item, index) => (
                     <article key={`${item.id}-${index}`} className="min-w-[270px] overflow-hidden rounded-2xl border border-border/70 bg-background">
-                      <Image src={item.image} alt={item.title} width={360} height={144} className="h-36 w-full object-cover" />
+                      {item.image ? (
+                        <Image src={item.image} alt={item.title} width={360} height={144} className="h-36 w-full object-cover" />
+                      ) : (
+                        // Pas d'image de remplacement : une photo prise ailleurs
+                        // à côté d'une vraie annonce ferait croire que c'est
+                        // l'article. Un cadre neutre dit la vérité.
+                        <div className="flex h-36 w-full items-center justify-center bg-muted text-xs text-muted-foreground">
+                          Pas de photo
+                        </div>
+                      )}
                       <div className="space-y-2 p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <h2 className="text-base font-semibold text-foreground">{item.title}</h2>
                             <p className="text-sm text-muted-foreground">{item.brand}</p>
                           </div>
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-300">
+                          <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-300">
                             {item.price} €
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">{item.description}</p>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          {item.totalPrice > item.price && <span>{item.totalPrice.toFixed(2)} € protection incluse</span>}
+                          {item.favouriteCount > 0 && <span>{item.favouriteCount} ♥</span>}
+                          {depuis(item.listedAt) && <span>{depuis(item.listedAt)}</span>}
+                          {item.sellerLogin && <span className="truncate">@{item.sellerLogin}</span>}
+                        </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="rounded-full bg-muted px-2.5 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                             {item.category}
@@ -228,9 +291,12 @@ export default function BotPage() {
                 </div>
               </div>
             ) : (
-              <p className="mt-6 rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Aucun résultat n'a encore été retourné par le bot.
-              </p>
+              // Zéro annonce n'est pas « le marché est vide » : c'est une
+              // panne de lecture. On le dit, avec la cause.
+              <div className="mt-6 rounded-2xl border border-dashed border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+                <p className="font-medium text-amber-500">Le scan n'a rien pu lire sur Vinted.</p>
+                <p className="mt-1 text-muted-foreground">{result.message}</p>
+              </div>
             )}
           </motion.div>
           </SpotlightCard>

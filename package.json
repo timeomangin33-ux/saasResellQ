@@ -10,7 +10,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "check:spell": "npx -y cspell --config .cspell.json \"**/*.{md,ts,tsx,js,jsx,json,html,txt,yml,yaml}\" --no-progress --no-must-find-files --exclude node_modules --exclude vinted-discord-bot-main",
+    "check:spell": "cspell --config .cspell.json \"**/*.{md,ts,tsx,js,jsx,json,html,txt,yml,yaml}\" --no-progress --no-must-find-files",
     "check:ci": "npm run lint && npm run build && npm run check:spell",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -21,7 +21,11 @@
     "clean:prisma-client": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/cleanup-prisma.ps1",
     "rebuild": "npm run clean:prisma-client && npm run build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "collector": "tsx scripts/collector.ts",
+    "bot:check": "tsx scripts/verifier-robot.ts",
+    "targets:seed": "tsx scripts/amorcer-cibles.ts",
+    "collect:status": "tsx scripts/etat-collecte.ts"
   },
   "postinstall": "git config core.hooksPath .githooks || true",
   "dependencies": {
@@ -74,6 +78,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cspell/dict-fr-fr": "^2.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.5.0",
     "@types/papaparse": "^5.3.14",
@@ -81,6 +86,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.185.0",
     "autoprefixer": "^10.4.20",
+    "cspell": "^10.1.1",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.12",
     "postcss": "^8.4.41",

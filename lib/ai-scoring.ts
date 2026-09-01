@@ -15,7 +15,7 @@ interface ScoredProduct {
  * Runs once per scanned category batch to keep API usage bounded.
  */
 export async function scoreProducts(products: { vintedId: string; title: string; brand: string | null; price: number; category: string }[]) {
-  if (products.length === 0 || !process.env.OPENAI_API_KEY) return { scored: 0 }
+  if (products.length === 0 || !process.env.OPENAI_API_KEY) return { scored: 0, error: false as const }
 
   const prompt = `Tu es un expert en revente sur Vinted. Pour chaque article ci-dessous, estime son potentiel de revente.
 Réponds UNIQUEMENT avec un tableau JSON (pas de texte autour), un objet par article, dans le même ordre, avec ces clés exactes :
@@ -50,9 +50,13 @@ ${products.map((p, i) => `${i + 1}. ${p.title} — marque: ${p.brand || 'inconnu
         if (!score) return null
         return prisma.product.update({
           where: { vintedId: product.vintedId },
+          // `analysisScore` et `profitMargin` ne sont plus écrits ici. Ils sont
+          // calculés à chaque collecte à partir de la médiane réelle de la
+          // catégorie (voir lib/vinted/scoring-marche.ts), donc pour toutes les
+          // annonces et sans dépendre d'un compte OpenAI approvisionné. Le
+          // modèle garde ce qu'il fait mieux qu'une formule : le niveau de
+          // risque et la recommandation.
           data: {
-            analysisScore: typeof score.analysisScore === 'number' ? score.analysisScore : null,
-            profitMargin: typeof score.profitMargin === 'number' ? score.profitMargin : null,
             riskLevel: score.riskLevel ?? null,
             recommendation: score.recommendation ?? null,
             aiProcessed: true,
@@ -61,9 +65,13 @@ ${products.map((p, i) => `${i + 1}. ${p.title} — marque: ${p.brand || 'inconnu
       }),
     )
 
-    return { scored: products.length }
+    return { scored: products.length, error: false as const }
   } catch (error) {
-    console.error('[ai-scoring] Failed to score products:', error instanceof Error ? error.message : error)
-    return { scored: 0, error: true }
+    // L'erreur est rendue à l'appelant, pas seulement journalisée : sans ça, un
+    // compte OpenAI sans crédit fait échouer chaque appel en silence, et le
+    // collecteur continue d'essayer catégorie après catégorie pour rien.
+    const raison = error instanceof Error ? error.message : String(error)
+    console.error('[ai-scoring] notation impossible :', raison)
+    return { scored: 0, error: true as const, reason: raison }
   }
 }

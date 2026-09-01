@@ -216,6 +216,15 @@ model Product {
   imageUrl        String?
   url             String?
   status          String   @default("active") // active, sold, archived
+
+  // Signaux de demande, lus sur l'API Vinted. Le prix seul ne dit pas si un
+  // article part : c'est le nombre de favoris rapporte au temps passe en ligne
+  // qui distingue une bonne affaire d'une annonce qui dort depuis trois mois.
+  totalPrice      Float?   // prix protection acheteurs incluse
+  favouriteCount  Int?
+  viewCount       Int?
+  listedAt        DateTime? // mise en ligne cote Vinted, pas cote base
+  lastSeenAt      DateTime? // derniere fois que le robot a revu l'annonce
   
   // AI Scoring
   analysisScore   Float?   // 0-100 profitability score
@@ -236,6 +245,7 @@ model Product {
   @@index([analysisScore])
   @@index([profitMargin])
   @@index([createdAt])
+  @@index([lastSeenAt])
   @@map("products")
 }
 
@@ -388,4 +398,45 @@ model AutomationConfig {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("automation_configs")
+}
+
+/// File de travail du collecteur.
+///
+/// Le robot tournait sur une liste de douze categories ecrite en dur dans le
+/// code du cron, une fois par jour a 6 h. Trois consequences : on ne pouvait
+/// rien ajouter sans redeployer, une categorie ratee attendait vingt-quatre
+/// heures, et rien ne gardait trace de ce qui avait echoue.
+///
+/// Cette table renverse le sens : c'est la base qui dit quoi collecter et
+/// quand. Le collecteur prend la cible la plus en retard, la traite, replanifie
+/// la suivante. Ajouter une recherche, c'est une ligne ; changer une frequence,
+/// c'est un UPDATE. Rien a redeployer.
+model CollectTarget {
+  id                  String    @id @default(cuid())
+  /// Le texte cherche sur Vinted. Unique : deux lignes identiques feraient
+  /// deux fois le meme trafic pour le meme resultat.
+  query               String    @unique
+  label               String?
+  /// Nombre d'annonces visees par passage. 96 = une page Vinted exactement.
+  targetItems         Int       @default(96)
+  /// Delai souhaite entre deux passages, en minutes.
+  intervalMinutes     Int       @default(60)
+  /// A priorite egale, c'est le plus en retard qui passe en premier.
+  priority            Int       @default(0)
+  enabled             Boolean   @default(true)
+  lastRunAt           DateTime?
+  nextRunAt           DateTime?
+  /// ok | empty | blocked | auth | network | format | timeout
+  lastStatus          String?
+  lastError           String?
+  lastItemCount       Int?
+  /// Sert au recul automatique : une cible qui echoue est repoussee de plus en
+  /// plus loin, au lieu de consommer le budget des cibles qui fonctionnent.
+  consecutiveFailures Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([enabled, nextRunAt])
+  @@index([priority])
+  @@map("collect_targets")
 }

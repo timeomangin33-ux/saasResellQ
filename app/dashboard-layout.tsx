@@ -12,6 +12,7 @@ import { AuroraField } from '@/components/ui/aurora-field'
 import { Magnetic } from '@/components/ui/magnetic'
 import { cn } from '@/lib/utils'
 import { normalizePlan } from '@/lib/plans'
+import { EtatCollecte } from '@/components/etat-collecte'
 
 const PLAN_RANK = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3 } as const
 const PLAN_LABEL: Record<keyof typeof PLAN_RANK, string> = { FREE: 'Découverte', STARTER: 'Starter', PRO: 'Pro', BUSINESS: 'Business' }
@@ -356,6 +357,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       <main className="lg:ml-[280px]">
+        {/* Avant tout le reste : si la donnée n'est plus fraîche, il faut le
+            savoir avant de lire les chiffres, pas après. */}
+        <EtatCollecte />
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={pathname}

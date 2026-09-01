@@ -19,7 +19,6 @@ function resolveDatabaseEnv(): void {
     .find(({ value }) => Boolean(value))
 
   if (!process.env.DATABASE_URL && candidate?.value) {
-    // eslint-disable-next-line no-console
     console.warn(`[prisma] DATABASE_URL not set, using fallback from ${candidate.key}`)
     process.env.DATABASE_URL = candidate.value
   }

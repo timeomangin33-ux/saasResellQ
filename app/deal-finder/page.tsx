@@ -15,13 +15,15 @@ interface Deal {
   id: string
   title: string
   price: number
+  totalPrice: number
   brand: string
   category: string
-  profitMargin: number
-  demandScore: number
-  estimatedProfit?: number
-  whyNow?: string
-  url?: string
+  condition: string
+  profitMargin: number | null
+  estimatedProfit: number
+  favouritesPerDay: number | null
+  score: number | null
+  url?: string | null
 }
 
 interface TopCategory {
@@ -70,30 +72,37 @@ export default function DealFinderPage() {
     )
   }
 
+  /**
+   * La recherche interroge les annonces collectées.
+   *
+   * Elle passait d'abord par `/api/ai/deal-finder`, un agent n8n qui n'est pas
+   * déployé : l'appel échouait systématiquement et le vrai jeu de données
+   * n'arrivait qu'en second recours, sans que l'utilisateur sache lequel des
+   * deux il regardait. Une seule source, celle qui existe.
+   */
   async function handleSearch() {
     setLoading(true)
     setError('')
     setSearched(true)
     try {
-      const res = await fetch('/api/ai/deal-finder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(filters),
-      })
+      const params = new URLSearchParams({ limit: '60' })
+      params.set('minProfit', String(filters.minProfit))
+      if (filters.category) params.set('category', filters.category)
+      if (filters.riskLevel) params.set('riskLevel', filters.riskLevel)
+
+      const res = await fetch(`/api/vinted/opportunities?${params.toString()}`)
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setResults(data.deals || data.opportunities || [])
-    } catch {
-      try {
-        const params = new URLSearchParams()
-        params.set('minProfit', filters.minProfit.toString())
-        if (filters.category) params.set('category', filters.category)
-        const res = await fetch(`/api/vinted/opportunities?${params}`)
-        const data = await res.json()
-        setResults(data.opportunities || [])
-      } catch {
-        setError('Impossible de charger les résultats. Vérifiez la connexion au service d\'analyse.')
-      }
+      if (!res.ok) throw new Error(data?.error || 'Impossible de charger les résultats.')
+
+      // Le budget se filtre ici : c'est une contrainte de l'acheteur, pas une
+      // propriété du marché, et elle porte sur le prix réellement payé.
+      const dansLeBudget = (data.opportunities ?? []).filter(
+        (d: Deal) => d.totalPrice >= filters.minBudget && d.totalPrice <= filters.maxBudget,
+      )
+      setResults(dansLeBudget)
+    } catch (err) {
+      setResults([])
+      setError(err instanceof Error ? err.message : 'Impossible de charger les résultats.')
     } finally {
       setLoading(false)
     }
@@ -180,7 +189,10 @@ export default function DealFinderPage() {
                 <p className="text-sm font-medium">{results.length} résultat{results.length !== 1 ? 's' : ''}</p>
               </div>
               {results.length === 0 ? (
-                <p className="px-5 py-8 text-sm text-muted-foreground text-center">Aucun résultat. Élargissez vos critères.</p>
+                <p className="px-5 py-8 text-sm text-muted-foreground text-center">
+                  Aucune annonce collectée ne correspond à ces critères. Élargissez le budget
+                  ou baissez la marge minimale.
+                </p>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
@@ -190,7 +202,8 @@ export default function DealFinderPage() {
                       <th className="text-left px-3 py-2.5 text-xs font-medium text-muted-foreground">Catégorie</th>
                       <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Prix</th>
                       <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Marge</th>
-                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Taux de rotation</th>
+                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground" title="Favoris par jour depuis la mise en ligne">Demande</th>
+                      <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Score</th>
                       <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Lien</th>
                     </tr>
                   </thead>
@@ -199,13 +212,27 @@ export default function DealFinderPage() {
                       <motion.tr key={deal.id ?? i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.5) }} whileHover={{ backgroundColor: 'rgba(16,185,129,0.05)' }} className="transition-colors">
                         <td className="px-5 py-3">
                           <p className="font-medium truncate max-w-[220px]">{deal.title}</p>
-                          {deal.whyNow && <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{deal.whyNow}</p>}
                         </td>
                         <td className="px-3 py-3"><span className="text-muted-foreground font-medium">{deal.brand}</span></td>
                         <td className="px-3 py-3 text-muted-foreground">{deal.category}</td>
-                        <td className="px-3 py-3 text-right tabular-nums font-medium">{deal.price}€</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-emerald-400 font-medium">{deal.profitMargin}%</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{deal.demandScore}%</td>
+                        <td className="px-3 py-3 text-right tabular-nums font-medium">
+                          {deal.price}€
+                          {deal.totalPrice > deal.price && (
+                            <span className="block text-[11px] font-normal text-muted-foreground">{deal.totalPrice.toFixed(2)}€ frais inclus</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-emerald-400 font-medium">
+                          {deal.profitMargin != null ? `${Math.round(deal.profitMargin)}%` : '—'}
+                          {deal.estimatedProfit > 0 && (
+                            <span className="block text-[11px] font-normal text-muted-foreground">≈ +{deal.estimatedProfit.toFixed(2)}€</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                          {deal.favouritesPerDay != null ? `${deal.favouritesPerDay} ♥/j` : <span className="text-muted-foreground/40">—</span>}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums">
+                          {deal.score != null ? <span className="text-emerald-300 font-medium">{Math.round(deal.score)}/100</span> : <span className="text-muted-foreground/40">—</span>}
+                        </td>
                         <td className="px-5 py-3 text-right">
                           {deal.url ? (
                             <a href={deal.url} target="_blank" rel="noopener noreferrer"
