@@ -24,6 +24,18 @@ npm run dev
 npm run build
 ```
 
+## Le collecteur Vinted
+
+C'est lui qui remplit la base. Sa documentation a son propre fichier :
+**[COLLECTEUR.md](./COLLECTEUR.md)** — comment il marche, comment vérifier qu'il
+marche, et quoi regarder quand il ne marche plus.
+
+```bash
+npm run bot:check       # le robot lit-il Vinted, maintenant ?
+npm run collect:status  # qu'y a-t-il en base, qu'est-ce qui échoue ?
+npm run collector       # collecte en continu
+```
+
 ## Required environment variables
 Set these in `.env.local` before running in production:
 
@@ -36,7 +48,12 @@ Set these in `.env.local` before running in production:
 - `STRIPE_PRICE_ID`
 
 Optional but recommended:
-- `OPENAI_API_KEY` (for AI features)
+- `OPENAI_API_KEY` (fonctions IA : chat, analyses, rapports. La note
+  d'opportunité, elle, ne dépend plus d'OpenAI — voir COLLECTEUR.md)
+- `CRON_SECRET` (protège `/api/cron/market-refresh` ; sans lui, la route
+  n'accepte que les appels du cron Vercel)
+- `VINTED_SESSION_COOKIE` (cookie d'un navigateur Vinted connecté ; utile
+  seulement si la session anonyme se fait bloquer)
 
 ## Deployment (Vercel)
 - Link the repository in Vercel and set the environment variables in the Vercel dashboard (production and preview).

@@ -4,13 +4,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   images: {
-    domains: [
-      'images.vinted.net',
-      'thumbs.vinted.net',
-      'photos.vinted.net',
-      'images.unsplash.com',
-      'avatars.githubusercontent.com',
-      'lh3.googleusercontent.com',
+    // Vinted repartit ses photos sur images1, images2... vinted.net : la liste
+    // fixe ne contenait que « images.vinted.net », qui n'existe pas. Toutes les
+    // photos d'annonces echouaient donc avec « hostname is not configured »,
+    // c'est-a-dire chaque vignette de la page du robot. Un motif joker couvre
+    // les sous-domaines presents et ceux que Vinted ajoutera.
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.vinted.net' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
   },
   webpack(config, { dev, isServer }) {

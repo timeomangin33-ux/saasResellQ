@@ -1,60 +1,118 @@
+/**
+ * eBay.
+ *
+ * Ce fichier fabriquait ses résultats : six annonces par recherche, titres
+ * assemblés (« Enchère en cours », « Vendeur Top »), prix tirés au hasard dans
+ * une fourchette selon les mots-clés, photos de banque d'images, et un lien
+ * vers une page de recherche eBay pour faire vrai. Une comparaison de prix
+ * inter-plateformes construite là-dessus n'informe pas : elle invente.
+ *
+ * L'API Browse d'eBay existe et rend de vraies annonces, mais elle demande des
+ * identifiants applicatifs (EBAY_CLIENT_ID / EBAY_CLIENT_SECRET). Tant qu'ils
+ * ne sont pas fournis, la seule réponse honnête est « non disponible ».
+ */
+
 export interface EbayListing {
   id: string
   title: string
   price: number
+  currency: string
   image: string
-  platform: 'ebay', condition: string
-  bids?: number
+  platform: 'ebay'
+  condition: string
   link: string
 }
 
-const EBAY_IMAGES = [
-  'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400',
-  'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400',
-  'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400',
-  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-  'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=400',
-]
-
-const EBAY_TITLES = [
-  'Enchère en cours',
-  'Vendeur Top',
-  'Occasion premium',
-  'Neuf avec garantie',
-  'Meilleure offre',
-]
-
-function getEbayPrice(query: string) {
-  const normalized = query.toLowerCase()
-  if (/ps5|playstation|xbox|switch|console|nintendo|jeu/.test(normalized)) return 210 + Math.floor(Math.random() * 140)
-  if (/iphone|samsung|galaxy|pixel|airpods|macbook|ipad|ordinateur|portable/.test(normalized)) return 110 + Math.floor(Math.random() * 520)
-  if (/sac|handbag|pochette|gucci|louis|chanel/.test(normalized)) return 70 + Math.floor(Math.random() * 320)
-  if (/jordan|air force|nike|adidas|sneaker|chaussures|new balance|converse|vans/.test(normalized)) return 40 + Math.floor(Math.random() * 120)
-  if (/veste|manteau|robe|jean|hoodie|pull|chemise/.test(normalized)) return 20 + Math.floor(Math.random() * 80)
-  return 30 + Math.floor(Math.random() * 110)
+export class MarketplaceNonConfigure extends Error {
+  readonly plateforme: string
+  readonly variables: string[]
+  constructor(plateforme: string, variables: string[]) {
+    super(
+      `L'intégration ${plateforme} n'est pas configurée : ${variables.join(' et ')} ${variables.length > 1 ? 'sont absentes' : 'est absente'}.`,
+    )
+    this.name = 'MarketplaceNonConfigure'
+    this.plateforme = plateforme
+    this.variables = variables
+  }
 }
 
-function getEbaySearchKeyword(query: string) {
-  return query.trim() || 'Article recherché'
+const OAUTH = 'https://api.ebay.com/identity/v1/oauth2/token'
+const BROWSE = 'https://api.ebay.com/buy/browse/v1/item_summary/search'
+const PORTEE = 'https://api.ebay.com/oauth/api_scope'
+
+let jeton: { valeur: string; expireA: number } | null = null
+
+async function obtenirJeton(clientId: string, clientSecret: string) {
+  if (jeton && Date.now() < jeton.expireA) return jeton.valeur
+
+  const reponse = await fetch(OAUTH, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+    },
+    body: `grant_type=client_credentials&scope=${encodeURIComponent(PORTEE)}`,
+  })
+
+  if (!reponse.ok) {
+    throw new Error(`eBay a refusé les identifiants (HTTP ${reponse.status}).`)
+  }
+
+  const donnees = (await reponse.json()) as { access_token?: string; expires_in?: number }
+  if (!donnees.access_token) throw new Error("eBay n'a pas renvoyé de jeton d'accès.")
+
+  // On renouvelle une minute avant l'expiration annoncée, pour ne pas se faire
+  // refuser une requête déjà partie.
+  jeton = { valeur: donnees.access_token, expireA: Date.now() + ((donnees.expires_in ?? 7200) - 60) * 1000 }
+  return jeton.valeur
 }
 
 export const EbayProvider = {
-  clientId: process.env.EBAY_CLIENT_ID || '',
-  clientSecret: process.env.EBAY_CLIENT_SECRET || '',
-  baseUrl: 'https://api.ebay.com',
+  estConfigure() {
+    return Boolean(process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET)
+  },
 
-  async searchListings(query: string): Promise<EbayListing[]> {
-    const base = getEbaySearchKeyword(query)
-    const price = getEbayPrice(query)
-    return Array.from({ length: 6 }, (_, index) => ({
-      id: `ebay-${index + 1}`,
-      title: `${base} ${EBAY_TITLES[index % EBAY_TITLES.length]}`,
-      price: Math.max(12, price + (index - 1) * 10 + Math.floor(Math.random() * 12)),
-      image: EBAY_IMAGES[index % EBAY_IMAGES.length],
-      platform: 'ebay',
-      condition: index % 2 === 0 ? 'Neuf' : 'Occasion',
-      bids: index % 2 === 0 ? undefined : 8 + Math.floor(Math.random() * 18),
-      link: `https://www.ebay.fr/sch/i.html?_nkw=${encodeURIComponent(query)}&_sop=${index + 1}`,
+  async searchListings(query: string, limite = 12): Promise<EbayListing[]> {
+    const clientId = process.env.EBAY_CLIENT_ID
+    const clientSecret = process.env.EBAY_CLIENT_SECRET
+    if (!clientId || !clientSecret) {
+      throw new MarketplaceNonConfigure('eBay', ['EBAY_CLIENT_ID', 'EBAY_CLIENT_SECRET'])
+    }
+
+    const acces = await obtenirJeton(clientId, clientSecret)
+    const url = `${BROWSE}?q=${encodeURIComponent(query)}&limit=${Math.min(50, limite)}`
+
+    const reponse = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${acces}`,
+        'X-EBAY-C-MARKETPLACE-ID': process.env.EBAY_MARKETPLACE_ID || 'EBAY_FR',
+      },
+    })
+
+    if (!reponse.ok) {
+      throw new Error(`eBay a répondu HTTP ${reponse.status} sur la recherche.`)
+    }
+
+    const donnees = (await reponse.json()) as {
+      itemSummaries?: {
+        itemId?: string
+        title?: string
+        price?: { value?: string; currency?: string }
+        image?: { imageUrl?: string }
+        condition?: string
+        itemWebUrl?: string
+      }[]
+    }
+
+    return (donnees.itemSummaries ?? []).map((item, index) => ({
+      id: item.itemId ?? `ebay-${index}`,
+      title: item.title ?? 'Sans titre',
+      price: Number(item.price?.value ?? 0),
+      currency: item.price?.currency ?? 'EUR',
+      image: item.image?.imageUrl ?? '',
+      platform: 'ebay' as const,
+      condition: item.condition ?? 'Non précisé',
+      link: item.itemWebUrl ?? `https://www.ebay.fr/sch/i.html?_nkw=${encodeURIComponent(query)}`,
     }))
   },
 }

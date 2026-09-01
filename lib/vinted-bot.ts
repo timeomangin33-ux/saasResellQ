@@ -1,247 +1,149 @@
-import https from 'node:https'
+/**
+ * Le robot Vinted.
+ *
+ * Une seule fonction publique, `runVintedBotScan`, appelée par la route du
+ * tableau de bord, par le cron et par le collecteur permanent. Elle essaie
+ * l'API JSON, puis la page HTML si l'API est refusée, et ne rend jamais autre
+ * chose que des annonces réellement lues sur Vinted.
+ *
+ * Ce que faisait l'ancienne version et qu'on a retiré volontairement : quand
+ * la collecte échouait, elle renvoyait deux annonces inventées (« Nike Air
+ * Force 1 blanc », 69 €) avec un HTTP 200. Ces lignes partaient en base, se
+ * mélangeaient aux vraies, et faussaient les moyennes de catégorie. Une panne
+ * doit se voir. Ici, un échec rend zéro annonce et dit pourquoi.
+ */
 
-export interface VintedBotItem {
-  id: string
-  title: string
-  price: number
-  brand: string
-  category: string
-  image: string
-  url: string
-  description: string
-}
+import { collecter, VintedAuthError, VintedBlockedError, type AnnonceVinted } from './vinted/api'
+import { collecterViaHtml } from './vinted/html'
+import { etatSession } from './vinted/session'
+
+export type { AnnonceVinted } from './vinted/api'
+
+/** Conservé pour les appelants historiques : c'est le même objet. */
+export type VintedBotItem = AnnonceVinted
+
+export type SourceScan = 'api' | 'html' | 'failed'
+
+export type CauseEchec = 'blocked' | 'auth' | 'network' | 'format' | 'timeout'
 
 export interface VintedBotScanResult {
   success: boolean
-  source: 'live' | 'fallback', query: string
-  items: VintedBotItem[]
+  source: SourceScan
+  query: string
+  items: AnnonceVinted[]
   message: string
+  /** Renseigné seulement quand `source` vaut `failed`. */
+  failure?: { cause: CauseEchec; detail: string }
+  /** Combien de temps la collecte a pris, pour le suivi d'exploitation. */
+  durationMs: number
 }
 
-const FALLBACK_ITEMS: VintedBotItem[] = [
-  {
-    id: 'fallback-1',
-    title: 'Nike Air Force 1 blanc',
-    price: 69,
-    brand: 'Nike',
-    category: 'Chaussures',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
-    url: 'https://www.vinted.fr',
-    description: 'Exemple de scan Vinted pour valider l\'intégration SaaS.',
-  },
-  {
-    id: 'fallback-2',
-    title: 'Veste Levi\'s 501 vintage',
-    price: 42,
-    brand: 'Levi\'s',
-    category: 'Femmes',
-    image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600',
-    url: 'https://www.vinted.fr',
-    description: 'Résultat de secours si Vinted bloque la requête.',
-  },
-]
-
-const NAMED_ENTITIES: Record<string, string> = {
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-  lt: '<',
-  gt: '>',
-  eacute: 'é',
-  egrave: 'è',
-  agrave: 'à',
-  ccedil: 'ç',
-  ocirc: 'ô',
-  icirc: 'î',
-  ecirc: 'ê',
-  ugrave: 'ù',
-}
-
-function decodeHtmlEntities(input: string) {
-  return (
-    input
-      // Numeric entities, hex (&#x27;) and decimal (&#39;). Vinted emits hex for
-      // apostrophes, which the previous decoder missed entirely - titles were
-      // persisted and rendered as "Boîte d&#x27;origine".
-      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
-      .replace(/&([a-z]+);/gi, (match, name) => NAMED_ENTITIES[name.toLowerCase()] ?? match)
-      // &amp; last, so "&amp;#39;" doesn't get double-decoded above.
-      .replace(/&amp;/g, '&')
-  )
-}
-
-function extractPrice(text: string) {
-  const match = text.match(/([0-9]+(?:[.,][0-9]+)?)\s*€/)
-  return match ? Number(match[1].replace(',', '.')) : 0
-}
-
-function buildVintedItemsFromHtml(
-  html: string,
-  query: string,
-  limit = 8,
-  seen: Set<string> = new Set(),
-): VintedBotItem[] {
-  const items: VintedBotItem[] = []
-
-  const testIdRe = /data-testid="product-item-id-(\d+)"(?!--)/g
-  let match: RegExpExecArray | null
-
-  while ((match = testIdRe.exec(html)) && items.length < limit) {
-    const vintedId = match[1]
-    if (seen.has(vintedId)) continue
-
-    const window = html.slice(match.index, match.index + 1500)
-    const hrefMatch = window.match(/href="(\/items\/\d+[^"]*)"/)
-    const srcMatch = window.match(/src="(https:\/\/images1\.vinted\.net[^"]*)"/)
-    const altMatch = window.match(/alt="([^"]+)"/)
-    if (!altMatch) continue
-
-    const rawText = decodeHtmlEntities(altMatch[1]).replace(/\s+/g, ' ').trim()
-    if (!rawText || rawText.includes('Logo Vinted') || !/marque\s*:/i.test(rawText)) continue
-
-    seen.add(vintedId)
-
-    const title = rawText.split(/,\s*marque\s*:/i)[0].trim()
-    const brand = rawText.match(/marque\s*:\s*([^,]+)/i)?.[1]?.trim() || 'Vinted'
-    const state = rawText.match(/état\s*:\s*([^,]+)/i)?.[1]?.trim() || 'État non précisé'
-    const size = rawText.match(/taille\s*:\s*([^,]+)/i)?.[1]?.trim() || ''
-    const price = extractPrice(rawText)
-
-    items.push({
-      id: vintedId,
-      title,
-      price,
-      brand,
-      category: query,
-      // No stock-photo fallback: showing an unrelated Unsplash image next to a
-      // real listing misrepresents the item. Empty means "no image", and the
-      // UI renders a placeholder instead.
-      image: srcMatch?.[1] || '',
-      url: hrefMatch ? `https://www.vinted.fr${hrefMatch[1]}` : `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`,
-      description: `${state}${size ? ` • Taille ${size}` : ''}`,
-    })
+function classer(erreur: unknown): { cause: CauseEchec; detail: string } {
+  if (erreur instanceof VintedBlockedError) {
+    return { cause: 'blocked', detail: erreur.message }
   }
-
-  return items
+  if (erreur instanceof VintedAuthError) {
+    return { cause: 'auth', detail: erreur.message }
+  }
+  const message = erreur instanceof Error ? erreur.message : String(erreur)
+  if (/budget de temps/i.test(message)) return { cause: 'timeout', detail: message }
+  if (/items|format|JSON/i.test(message)) return { cause: 'format', detail: message }
+  return { cause: 'network', detail: message }
 }
 
-function fetchVintedSearchPage(query: string, page = 1): Promise<string> {
-  const url =
-    `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}` +
-    (page > 1 ? `&page=${page}` : '')
-
-  return new Promise((resolve, reject) => {
-    const req = https.get(
-      url,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-        },
-      },
-      (res) => {
-        let body = ''
-        res.setEncoding('utf8')
-        res.on('data', (chunk) => {
-          body += chunk
-        })
-        res.on('end', () => resolve(body))
-      },
-    )
-
-    req.on('error', reject)
-  })
-}
-
-const ANNONCES_PAR_PAGE = 96
-const DECALAGE_ENTRE_PAGES = 250
-const MAX_PAGES = 6
-
-const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-/**
- * Scanne une recherche Vinted.
- *
- * Une page de catalogue contient 96 annonces : l'ancienne limite de 12 en
- * jetait 84 sur 96, pour exactement le même coût réseau. On lit donc la page
- * entière, puis on pagine si la cible n'est pas atteinte — les pages se
- * recouvrent très peu, de l'ordre de 5 annonces sur 96.
- *
- * `deadline` protège le cron : la fonction rend ce qu'elle a déjà collecté
- * plutôt que de dépasser le temps d'exécution alloué.
- */
-export async function runVintedBotScan({
-  query = 'nike',
-  perPage = 96,
-  category,
-  deadline,
-}: {
+export interface OptionsScan {
   query?: string
+  /** Nombre d'annonces visé. Vinted rend 96 par page ; viser un multiple évite une requête pour quelques annonces. */
   perPage?: number
   category?: string
+  priceFrom?: number
+  priceTo?: number
+  /** Horodatage au-delà duquel on rend ce qui a été collecté plutôt que de dépasser. */
   deadline?: number
-} = {}): Promise<VintedBotScanResult> {
-  const normalizedQuery = (query || '').trim() || 'nike'
-  const cible = Math.max(4, Math.min(600, Number(perPage) || 96))
+}
 
+export async function runVintedBotScan(options: OptionsScan = {}): Promise<VintedBotScanResult> {
+  const debut = Date.now()
+  const recherche = (options.query || '').trim() || 'nike'
+  const categorie = options.category || recherche
+  const cible = Math.max(4, Math.min(2000, Number(options.perPage) || 96))
+
+  const commun = {
+    searchText: recherche,
+    priceFrom: options.priceFrom,
+    priceTo: options.priceTo,
+    deadline: options.deadline,
+    cible,
+  }
+
+  // 1. L'API. C'est le chemin normal : données complètes, vingt fois moins de
+  //    volume transféré, et un format qui ne casse pas au premier changement
+  //    de balisage.
+  let echecApi: { cause: CauseEchec; detail: string } | null = null
   try {
-    const seen = new Set<string>()
-    const items: VintedBotItem[] = []
-
-    // Une page rend 96 annonces : on sait donc combien en demander sans avoir
-    // à sonder. Les pages partent ensemble plutôt qu'à la file — deux requêtes
-    // simultanées, c'est moins que ce qu'un navigateur ouvre pour afficher la
-    // même page, et ça divise par deux le temps passé sur chaque catégorie.
-    const pages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(cible / ANNONCES_PAR_PAGE)))
-
-    const reponses = await Promise.all(
-      Array.from({ length: pages }, async (_, i) => {
-        // Un léger décalage évite d'arriver toutes en même temps.
-        if (i > 0) await attendre(i * DECALAGE_ENTRE_PAGES)
-        if (deadline && Date.now() > deadline) return null
-        try {
-          return await fetchVintedSearchPage(normalizedQuery, i + 1)
-        } catch {
-          return null // une page perdue ne doit pas faire échouer les autres
-        }
-      }),
-    )
-
-    for (const html of reponses) {
-      if (!html || items.length >= cible) continue
-      items.push(...buildVintedItemsFromHtml(html, normalizedQuery, cible - items.length, seen))
+    const { items } = await collecter(commun)
+    if (items.length > 0) {
+      return {
+        success: true,
+        source: 'api',
+        query: recherche,
+        items: items.map((a) => ({ ...a, category: categorie })),
+        message: `${items.length} annonce${items.length > 1 ? 's' : ''} lue${items.length > 1 ? 's' : ''} sur Vinted pour « ${recherche} ».`,
+        durationMs: Date.now() - debut,
+      }
     }
+    echecApi = { cause: 'format', detail: "L'API Vinted a répondu, mais sans aucune annonce exploitable." }
+  } catch (erreur) {
+    echecApi = classer(erreur)
+  }
 
-    if (items.length === 0 && reponses.every((r) => r === null)) {
-      throw new Error('Aucune page Vinted n\'a pu être chargée')
+  // 2. La page HTML publique. Elle survit parfois quand l'API refuse la
+  //    session — ce n'est pas la même protection en face.
+  try {
+    const items = await collecterViaHtml(recherche, cible, options.deadline)
+    if (items.length > 0) {
+      return {
+        success: true,
+        source: 'html',
+        query: recherche,
+        items: items.map((a) => ({ ...a, category: categorie })),
+        message:
+          `${items.length} annonce${items.length > 1 ? 's' : ''} lue${items.length > 1 ? 's' : ''} sur la page publique. ` +
+          `L'API est indisponible (${echecApi.detail}) : le vendeur, les favoris et la date de mise en ligne manquent.`,
+        durationMs: Date.now() - debut,
+      }
     }
+  } catch {
+    // On garde la cause de l'API : c'est elle qui explique le mieux la panne.
+  }
 
-    if (items.length === 0) {
-      throw new Error('Aucune annonce n\'a été extraite de la page Vinted')
-    }
+  const session = etatSession()
+  return {
+    success: false,
+    source: 'failed',
+    query: recherche,
+    items: [],
+    message:
+      `Aucune annonce n'a pu être lue sur Vinted pour « ${recherche} ». ${echecApi.detail}` +
+      (session.ouverte ? '' : ' Aucune session Vinted n\'est ouverte.'),
+    failure: echecApi,
+    durationMs: Date.now() - debut,
+  }
+}
 
-    return {
-      success: true,
-      source: 'live',
-      query: normalizedQuery,
-      items,
-      message: `Les dernières annonces Vinted pour "${normalizedQuery}" ont été chargées.`,
-    }
-  } catch (error) {
-    const fallbackItems = FALLBACK_ITEMS.map((item) => ({
-      ...item,
-      title: item.title.replace('Nike', normalizedQuery),
-      category: category || item.category,
-    }))
-
-    return {
-      success: false,
-      source: 'fallback',
-      query: normalizedQuery,
-      items: fallbackItems,
-      message: `Le flux live a échoué (${error instanceof Error ? error.message : 'erreur inconnue'}). Les résultats de secours sont affichés.`,
-    }
+/** Diagnostic : est-ce que le robot peut lire Vinted, là, maintenant ? */
+export async function diagnostiquerRobot() {
+  const scan = await runVintedBotScan({ query: 'nike', perPage: 12 })
+  return {
+    ok: scan.success,
+    source: scan.source,
+    annonces: scan.items.length,
+    dureeMs: scan.durationMs,
+    message: scan.message,
+    failure: scan.failure ?? null,
+    session: etatSession(),
+    // Un échantillon complet vaut mieux qu'un compteur : il montre du premier
+    // coup d'œil si un champ est revenu vide après un changement chez Vinted.
+    echantillon: scan.items[0] ?? null,
   }
 }

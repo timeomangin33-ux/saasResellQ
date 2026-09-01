@@ -10,10 +10,15 @@ import { useEffect, useState, useMemo } from 'react'
 
 interface Trend {
   category: string
-  priceChange: number
+  /** Variation du prix moyen sur la période. `null` = pas assez d'historique. */
+  priceChange: number | null
   volume: number
-  demandIndex: number
-  prediction?: string
+  /** Part des annonces qui intéressent quelqu'un. `null` si non mesurable. */
+  demandIndex: number | null
+  avgPrice: number | null
+  medianPrice: number | null
+  /** Nombre de points d'historique derrière la variation. */
+  historyPoints: number
 }
 
 interface Report { title: string; summary: string; insights: string[]; createdAt: string }
@@ -147,8 +152,12 @@ export default function InsightsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {trends.map((t, i) => {
-                    const up = t.priceChange > 10
-                    const down = t.priceChange < 0
+                    // Une variation inconnue n'est pas une variation nulle :
+                    // deux jours d'historique ne disent rien d'une tendance, et
+                    // afficher « 0 % » les ferait passer pour un marché stable.
+                    const inconnue = t.priceChange === null
+                    const up = !inconnue && t.priceChange! > 2
+                    const down = !inconnue && t.priceChange! < -2
                     return (
                       <>
                         <tr key={i}
@@ -156,18 +165,26 @@ export default function InsightsPage() {
                           onClick={() => setExpanded(expanded === t.category ? null : t.category)}>
                           <td className="px-5 py-3 font-medium">{t.category}</td>
                           <td className="px-3 py-3 text-right">
-                            <span className={`inline-flex items-center gap-1 tabular-nums text-sm font-medium ${up ? 'text-emerald-400' : down ? 'text-rose-400' : 'text-amber-400'}`}>
-                              {up ? <TrendingUp className="w-3.5 h-3.5" /> : down ? <TrendingDown className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-                              {t.priceChange > 0 ? '+' : ''}{t.priceChange}%
-                            </span>
+                            {inconnue ? (
+                              <span className="text-xs text-muted-foreground/60">pas assez d'historique</span>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1 tabular-nums text-sm font-medium ${up ? 'text-emerald-400' : down ? 'text-rose-400' : 'text-amber-400'}`}>
+                                {up ? <TrendingUp className="w-3.5 h-3.5" /> : down ? <TrendingDown className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                                {t.priceChange! > 0 ? '+' : ''}{t.priceChange}%
+                              </span>
+                            )}
                           </td>
                           <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{t.volume.toLocaleString('fr-FR')}</td>
-                          <td className="px-5 py-3 text-right tabular-nums font-medium">{t.demandIndex}%</td>
+                          <td className="px-5 py-3 text-right tabular-nums font-medium">
+                            {t.demandIndex === null ? <span className="text-muted-foreground/40">—</span> : `${t.demandIndex}%`}
+                          </td>
                         </tr>
-                        {expanded === t.category && t.prediction && (
-                          <tr key={`${i}-pred`} className="bg-emerald-500/[0.03]">
+                        {expanded === t.category && (
+                          <tr key={`${i}-detail`} className="bg-emerald-500/[0.03]">
                             <td colSpan={4} className="px-5 py-2.5 text-xs text-muted-foreground">
-                              <span className="text-foreground font-medium">Prédiction : </span>{t.prediction}
+                              Prix moyen {t.avgPrice?.toFixed(2) ?? '—'} € · médian {t.medianPrice?.toFixed(2) ?? '—'} € ·
+                              {' '}{t.volume.toLocaleString('fr-FR')} annonces actives ·
+                              {' '}variation calculée sur {t.historyPoints} jour{t.historyPoints > 1 ? 's' : ''} d'historique
                             </td>
                           </tr>
                         )}

@@ -15,23 +15,48 @@ import { VINTED_CATEGORIES } from '@/vinted'
 
 export async function runProductSync(payload: { limit?: number } = {}) {
   const categories = VINTED_CATEGORIES.slice(0, 6)
+  const parCategorie = Math.min(96, Math.max(24, payload.limit ?? 96))
   let totalItems = 0
-  const details: { category: string; source: string; items: number }[] = []
+  let echecs = 0
+  const details: { category: string; source: string; items: number; error?: string }[] = []
 
   for (const category of categories) {
     try {
-      const scan = await runVintedBotScan({ query: category.name, perPage: 10, category: category.name })
-      if (scan.source === 'live' && scan.items.length > 0) {
-        await persistVintedScanResults(scan.items, category.name)
-        totalItems += scan.items.length
+      const scan = await runVintedBotScan({
+        query: category.name,
+        perPage: parCategorie,
+        category: category.name,
+      })
+
+      if (scan.success && scan.items.length > 0) {
+        const bilan = await persistVintedScanResults(scan.items, category.name)
+        totalItems += bilan.annoncesEcrites
+        details.push({ category: category.name, source: scan.source, items: bilan.annoncesEcrites })
+      } else {
+        echecs += 1
+        details.push({ category: category.name, source: scan.source, items: 0, error: scan.message })
       }
-      details.push({ category: category.name, source: scan.source, items: scan.items.length })
     } catch (err) {
-      details.push({ category: category.name, source: 'error', items: 0 })
+      echecs += 1
+      details.push({
+        category: category.name,
+        source: 'error',
+        items: 0,
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
   }
 
-  return { synced: totalItems, categoriesScanned: details.length, details }
+  // Une synchronisation où tout echoue doit se lire comme un echec. Elle
+  // rendait « synced: 0 » avec un air de succes, et l'interface affichait
+  // « synchronisation terminee ».
+  return {
+    synced: totalItems,
+    categoriesScanned: details.length,
+    failures: echecs,
+    ok: echecs < details.length,
+    details,
+  }
 }
 
 export async function runProductAnalysis(payload: { limit?: number } = {}) {
