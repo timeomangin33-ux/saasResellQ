@@ -2,6 +2,10 @@
 import { ArrowRight, Sparkles } from 'lucide-react'
 
 const footerLinks = [
+  // En premier, parce que c'est la page utile sans compte : elle fait entrer
+  // les visiteurs venus de Google, et le pied de page est ce que les robots
+  // d'indexation suivent depuis toutes les autres pages.
+  { href: '/prix', label: 'Prix Vinted par marque' },
   { href: '/cgv', label: 'CGV' },
   { href: '/confidentialite', label: 'Confidentialité' },
   { href: '/mentions-legales', label: 'Mentions légales' },

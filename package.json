@@ -25,7 +25,10 @@
     "collector": "tsx scripts/collector.ts",
     "bot:check": "tsx scripts/verifier-robot.ts",
     "targets:seed": "tsx scripts/amorcer-cibles.ts",
-    "collect:status": "tsx scripts/etat-collecte.ts"
+    "collect:status": "tsx scripts/etat-collecte.ts",
+    "deploy:prod": "npm run collect:pause && prisma generate && vercel pull --yes --environment=production && vercel build --prod && vercel deploy --prebuilt --prod && npm run collect:resume",
+    "collect:pause": "cmd /c scripts\\pause-collecteur.cmd",
+    "collect:resume": "cmd /c scripts\\reprendre-collecteur.cmd"
   },
   "postinstall": "git config core.hooksPath .githooks || true",
   "dependencies": {
