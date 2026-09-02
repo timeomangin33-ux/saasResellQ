@@ -101,10 +101,22 @@ personne de démarrer.
 
 ### Cron Vercel
 
-`vercel.json` déclare un passage horaire. **Ce projet est sur le plan Hobby**,
-qui ne déclenche les crons qu'une fois par jour : le passage horaire ne prendra
-effet que sur un plan Pro. En attendant, le collecteur local est la source
-principale, et le cron n'est qu'un filet de sécurité quotidien.
+`vercel.json` déclare **un passage par jour**, à 6 h UTC. Ce n'est pas un choix
+de confort : sur le plan Hobby, Vercel ne se contente pas d'ignorer un cron plus
+fréquent, **il refuse le déploiement en entier**.
+
+> Error: Hobby accounts are limited to daily cron jobs. This cron expression
+> (0 * * * *) would run more than once per day.
+
+Déclenché par un push ou par un Deploy Hook, ce refus est muet : rien
+n'apparaît dans la liste des déploiements, ni en attente ni en erreur. Le site
+reste sur son build précédent et personne n'apprend pourquoi. C'est ce qui a
+gelé la production pendant onze jours. Le message n'apparaît qu'en lançant
+`vercel deploy` depuis la ligne de commande.
+
+Toute modification de `crons` doit donc rester à un déclenchement quotidien tant
+que le projet est sur Hobby. Le collecteur local est de toute façon la source
+principale ; ce cron n'est qu'un filet de sécurité.
 
 La production se déploie depuis la branche `main` du dépôt GitHub. Tant qu'une
 modification n'est pas fusionnée dans `main`, le site en ligne tourne sur
