@@ -75,6 +75,24 @@ la collecte s'est arrêtée cinq jours sans que rien ne le signale. D'où le
 bandeau de fraîcheur et l'alerte décrits plus bas. Pour une collecte qui ne
 s'arrête jamais, il faut une machine allumée en permanence.
 
+**Un veilleur relance le collecteur.** Une tâche planifiée, `ResellQ - Veilleur
+collecteur`, s'exécute toutes les cinq minutes et rappelle le lanceur si aucune
+fenêtre de collecteur n'est ouverte. Elle s'installe sans droits administrateur :
+
+```
+schtasks /Create /TN "ResellQ - Veilleur collecteur" /TR "cmd /c \"<racine>\scripts\veiller-collecteur.cmd\"" /SC MINUTE /MO 5 /F
+```
+
+Elle existe parce que les deux protections précédentes ne suffisaient pas : le
+lanceur relance le collecteur quand *le collecteur* plante, et le raccourci de
+démarrage ne joue qu'à *l'ouverture de session*. Entre les deux, il restait le
+cas qui s'est produit deux fois — la fenêtre disparaît alors que la session
+reste ouverte, et plus rien ne relance quoi que ce soit. La deuxième fois, le PC
+n'avait même pas redémarré depuis six jours.
+
+Le journal est dans `logs/collecteur.log` : sans lui, un arrêt nocturne ne
+laisse aucune trace de sa cause.
+
 **Un seul collecteur par machine.** Le script pose un verrou (`resellq-collecteur.lock`
 dans le dossier temporaire) contenant son PID. Un second lancement se retire
 avec le code 3, et le lanceur `.cmd` arrête alors sa boucle au lieu de réessayer

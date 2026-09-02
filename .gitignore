@@ -24,3 +24,5 @@ Thumbs.db
 vinted-discord-bot-main/
 backups/
 .claude/
+
+logs/
