@@ -1,0 +1,12 @@
+# Par défaut, git normalise les fins de ligne : LF dans le dépôt, la convention
+# de la plateforme à l'extraction.
+* text=auto
+
+# Sauf ceux-là, qui doivent rester en CRLF partout. `cmd.exe` peut se perdre sur
+# un `goto` dans un fichier à fins de ligne Unix, et `wscript` n'aime pas
+# davantage. Ces scripts pilotent le collecteur : ils doivent fonctionner même
+# quand ils ont été écrits depuis une machine Linux.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.vbs  text eol=crlf
+*.ps1  text eol=crlf

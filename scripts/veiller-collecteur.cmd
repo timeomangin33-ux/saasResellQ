@@ -1,32 +1,41 @@
 @echo off
+setlocal enabledelayedexpansion
+
 rem ---------------------------------------------------------------------------
 rem  Le veilleur.
 rem
-rem  Appele toutes les cinq minutes par une tache planifiee. Il ne fait rien
-rem  quand le collecteur tourne : c'est le collecteur lui-meme qui refuse de
-rem  demarrer en double, grace a son verrou. Le veilleur se contente donc de
-rem  relancer le lanceur, et le lanceur se retire tout seul si de trop.
+rem  Appele toutes les cinq minutes par une tache planifiee. Il relance le
+rem  collecteur uniquement s'il ne tourne plus.
 rem
-rem  Pourquoi il existe : le lanceur relance le collecteur quand celui-ci
-rem  plante, mais rien ne relancait le lanceur quand la fenetre disparaissait.
-rem  La collecte s'est arretee cinq jours de cette facon, puis une nuit
-rem  entiere, sans qu'aucune de ces deux fois ne laisse de trace.
+rem  La premiere version cherchait le collecteur par le titre de sa fenetre
+rem  (tasklist /V, "Collecteur Vinted"). Une fenetre reduite ou lancee par le
+rem  planificateur n'expose pas ce titre : le veilleur croyait donc qu'il n'y
+rem  avait aucun collecteur, en ouvrait un toutes les cinq minutes, et celui-ci
+rem  se retirait aussitot a cause du verrou. Resultat : une fenetre qui
+rem  apparait sans arret et vole le focus, y compris en plein jeu.
+rem
+rem  On interroge maintenant le verrou, qui est la seule source de verite : il
+rem  contient le PID du collecteur. Un PID mort ne compte pas.
 rem ---------------------------------------------------------------------------
 
 cd /d "%~dp0.."
 
-rem  Une fenetre de collecteur est-elle deja ouverte ? On le demande a Windows
-rem  plutot que de se fier au verrou : un verrou peut survivre a son processus.
-tasklist /FI "IMAGENAME eq cmd.exe" /FO CSV /V 2>nul | find /I "Collecteur Vinted" >nul
-if not errorlevel 1 goto dejala
+set "VERROU=%TEMP%\resellq-collecteur.lock"
 
+if not exist "%VERROU%" goto relancer
+
+set "PID="
+set /p PID=<"%VERROU%"
+if "!PID!"=="" goto relancer
+
+rem  Le processus dont le verrou porte le numero est-il encore vivant ?
+tasklist /FI "PID eq !PID!" /NH 2>nul | find "!PID!" >nul
+if not errorlevel 1 goto fin
+
+:relancer
 if not exist "logs" mkdir "logs"
-echo [%date% %time%] Veilleur : aucun collecteur, relance. >> "logs\collecteur.log"
-start "" /MIN cmd /c "%~dp0demarrer-collecteur.cmd"
-goto fin
-
-:dejala
-rem  Rien a faire. On ne journalise pas : une ligne toutes les cinq minutes
-rem  pour dire que tout va bien noierait les lignes qui comptent.
+echo [%date% %time%] Veilleur : collecteur absent, relance. >> "logs\collecteur.log"
+wscript "%~dp0lancer-invisible.vbs" "%~dp0demarrer-collecteur.cmd"
 
 :fin
+endlocal

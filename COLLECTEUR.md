@@ -75,13 +75,19 @@ la collecte s'est arrêtée cinq jours sans que rien ne le signale. D'où le
 bandeau de fraîcheur et l'alerte décrits plus bas. Pour une collecte qui ne
 s'arrête jamais, il faut une machine allumée en permanence.
 
-**Un veilleur relance le collecteur.** Une tâche planifiée, `ResellQ - Veilleur
-collecteur`, s'exécute toutes les cinq minutes et rappelle le lanceur si aucune
-fenêtre de collecteur n'est ouverte. Elle s'installe sans droits administrateur :
+**Rien ne doit jamais s'afficher.** Le collecteur et le veilleur passent tous
+deux par `scripts/lancer-invisible.vbs`, qui les démarre avec une fenêtre
+cachée. Ce n'est pas un détail de confort : une console qui s'ouvre, même
+réduite et pour une fraction de seconde, **prend le focus**. Toutes les cinq
+minutes, sur un poste où l'on joue, l'écran bascule — le poste devient
+inutilisable.
 
-```
-schtasks /Create /TN "ResellQ - Veilleur collecteur" /TR "cmd /c \"<racine>\scripts\veiller-collecteur.cmd\"" /SC MINUTE /MO 5 /F
-```
+Pour savoir ce que fait la collecte : `npm run collect:status`, ou
+`logs/collecteur.log`.
+
+**Un veilleur relance le collecteur.** Une tâche planifiée, `ResellQ - Veilleur
+collecteur`, s'exécute toutes les cinq minutes. Elle s'installe sans droits
+administrateur, par `scripts/installer-demarrage-windows.ps1`.
 
 Elle existe parce que les deux protections précédentes ne suffisaient pas : le
 lanceur relance le collecteur quand *le collecteur* plante, et le raccourci de
@@ -90,8 +96,18 @@ cas qui s'est produit deux fois — la fenêtre disparaît alors que la session
 reste ouverte, et plus rien ne relance quoi que ce soit. La deuxième fois, le PC
 n'avait même pas redémarré depuis six jours.
 
-Le journal est dans `logs/collecteur.log` : sans lui, un arrêt nocturne ne
-laisse aucune trace de sa cause.
+**Le veilleur interroge le verrou, jamais le titre de fenêtre.** La première
+version cherchait une fenêtre nommée « Collecteur Vinted » avec `tasklist /V`.
+Une fenêtre réduite, ou lancée par le planificateur, n'expose pas ce titre : le
+veilleur concluait chaque fois qu'aucun collecteur ne tournait, en ouvrait un,
+et celui-ci se retirait aussitôt à cause du verrou. Vingt-trois fenêtres pour
+rien en une soirée, chacune volant le focus. Le verrou contient le PID ; un
+`tasklist /FI "PID eq ..."` répond sans ambiguïté.
+
+Le journal est dans `logs/collecteur.log`, et il reçoit désormais aussi la
+sortie de `npm run collector` : lors du plantage en boucle du 2 septembre
+(code 1 toutes les 30 s pendant quatre minutes), la cause n'a laissé aucune
+trace, parce que seul le code de sortie était enregistré.
 
 **Un seul collecteur par machine.** Le script pose un verrou (`resellq-collecteur.lock`
 dans le dossier temporaire) contenant son PID. Un second lancement se retire
