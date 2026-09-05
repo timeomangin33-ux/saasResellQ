@@ -26,3 +26,9 @@ backups/
 .claude/
 
 logs/
+.vercel
+.env*
+
+# Fichiers de sondage jetables, mis de cote en attendant une suppression manuelle.
+scripts/_to_delete/
+Bot market analyzer.code-workspace

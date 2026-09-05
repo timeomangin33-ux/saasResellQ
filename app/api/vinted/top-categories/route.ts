@@ -35,6 +35,15 @@ export async function GET(request: Request) {
           volumeActive: true,
           trendDirection: true,
           priceChangePercent: true,
+          historyDays: true,
+          sellThroughRate: true,
+          sellThroughSample: true,
+          medianDaysToDisappear: true,
+          lastSweepAt: true,
+          sweepCoverage: true,
+          confidence: true,
+          publishable: true,
+          qualityNote: true,
           lastAnalyzedAt: true,
         },
       }),
@@ -87,6 +96,20 @@ export async function GET(request: Request) {
           avg_margin: market?.avgMargin ?? null,
           volume_active: market?.volumeActive ?? group?._count.category ?? 0,
           product_count: group?._count.category ?? 0,
+          history_days: market?.historyDays ?? 0,
+          // Rotation vérifiée annonce par annonce, sept jours après la première
+          // vue. « Plus en vente » et non « vendue » : Vinted ne publie pas les
+          // transactions, une annonce qui s'en va peut avoir été retirée.
+          sell_through_rate: market?.sellThroughRate ?? null,
+          sell_through_sample: market?.sellThroughSample ?? null,
+          median_days_to_disappear: market?.medianDaysToDisappear ?? null,
+          last_sweep_at: market?.lastSweepAt ?? null,
+          sweep_coverage: market?.sweepCoverage ?? null,
+          // confirme | en-mesure | insuffisant — de quoi afficher un repère de
+          // fiabilité au lieu de laisser croire que tous les chiffres se valent.
+          confidence: market?.confidence ?? 'insuffisant',
+          publishable: market?.publishable ?? false,
+          quality_note: market?.qualityNote ?? null,
           last_analyzed_at: market?.lastAnalyzedAt ?? null,
           topItems: topItems.map((product) => ({
             title: product.title,
@@ -102,8 +125,14 @@ export async function GET(request: Request) {
       })
     )
 
-    // Busiest markets first - that ordering is derived from real row counts.
-    categories.sort((a, b) => b.product_count - a.product_count)
+    // Les catégories dont la mesure tient passent devant, et le volume départage
+    // à l'intérieur de chaque groupe. Trier sur le seul volume mettrait en tête
+    // une catégorie très fournie mais suivie depuis deux jours, dont on ne peut
+    // rien dire d'utile — et c'est précisément la ligne qu'un lecteur pressé
+    // regarde en premier.
+    const rang = (c: { confidence: string }) =>
+      c.confidence === 'confirme' ? 0 : c.confidence === 'en-mesure' ? 1 : 2
+    categories.sort((a, b) => rang(a) - rang(b) || b.product_count - a.product_count)
 
     return NextResponse.json({ categories })
   } catch (err) {

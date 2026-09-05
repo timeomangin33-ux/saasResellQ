@@ -188,6 +188,8 @@ export async function GET(request: Request) {
     targetsProcessed: bilan.cibles.length,
     itemsCollected: bilan.annoncesCollectees,
     itemsWritten: bilan.annoncesEcrites,
+    fullSweeps: bilan.balayages,
+    itemsDisappeared: bilan.disparues,
     failures: bilan.echecs,
     results: bilan.cibles,
     alerts: alertes,

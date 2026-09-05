@@ -21,6 +21,11 @@ export const dynamic = 'force-dynamic'
 
 const FENETRES: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
+/** Ordre d'affichage : ce dont on peut répondre passe devant. */
+function rangDeConfiance(confiance: string) {
+  return confiance === 'confirme' ? 0 : confiance === 'en-mesure' ? 1 : 2
+}
+
 export async function POST(request: Request) {
   const access = await authorizeFeature(request, 'PRO')
   if ('response' in access) return access.response
@@ -75,35 +80,61 @@ export async function POST(request: Request) {
   const trends = marches
     .map((marche) => {
       const points = parCategorie.get(marche.category) ?? []
-      const premier = points.find((p) => p.avgPrice !== null)
-      const dernier = [...points].reverse().find((p) => p.avgPrice !== null)
-
-      // Sans deux points, il n'y a pas de tendance. On rend `null`, que
-      // l'interface affiche comme « pas assez d'historique » — pas 0 %, qui se
-      // lirait « stable ».
-      const variationPrix =
-        premier && dernier && premier.avgPrice && premier.avgPrice > 0 && premier !== dernier
-          ? Math.round(((dernier.avgPrice! - premier.avgPrice) / premier.avgPrice) * 1000) / 10
-          : null
-
       const d = demandeParCategorie.get(marche.category)
       const indiceDemande =
         d && d.annonces > 0 ? Math.round(Math.min(100, (d.favoris / d.annonces) * 20)) : null
 
+      // La variation vient du calcul stabilisé écrit par le collecteur, pas
+      // d'une soustraction refaite ici entre le premier et le dernier point de
+      // la fenêtre. C'est le même écart-mesuré-sur-fenêtres, avec sa zone
+      // morte, que celui qui sert à décider de la flèche : deux calculs
+      // différents pour une même notion, c'est la garantie que l'un des deux
+      // contredira l'autre à l'écran.
       return {
         category: marche.category,
-        priceChange: variationPrix,
+        priceChange: marche.priceChangePercent,
+        trendDirection: marche.trendDirection ?? 'inconnue',
         volume: marche.volumeActive ?? 0,
         demandIndex: indiceDemande,
         avgPrice: marche.avgPrice,
         medianPrice: marche.medianPrice,
+        // Rotation vérifiée : part des annonces dont la page, relue sept jours
+        // après la première vue, n'était plus une annonce en vente. Vendue ou
+        // retirée ; Vinted ne publie pas les transactions, donc jamais « vendue ».
+        sellThroughRate: marche.sellThroughRate,
+        sellThroughSample: marche.sellThroughSample,
+        medianDaysToDisappear: marche.medianDaysToDisappear,
         // De combien de jours d'historique vient la variation : trois jours ne
         // font pas une tendance, et le lecteur doit pouvoir en juger.
         historyPoints: points.length,
+        historyDays: marche.historyDays,
+        confidence: marche.confidence ?? 'insuffisant',
+        publishable: marche.publishable,
+        qualityNote: marche.qualityNote,
+        lastSweepAt: marche.lastSweepAt,
         lastAnalyzedAt: marche.lastAnalyzedAt,
       }
     })
-    .sort((a, b) => (b.priceChange ?? -999) - (a.priceChange ?? -999))
+    // Les catégories dont on peut répondre de la mesure d'abord ; à l'intérieur
+    // de chaque groupe, la plus forte variation. Une catégorie sans historique
+    // ne doit pas se retrouver en tête du tableau juste parce que son chiffre
+    // est bruyant.
+    .sort((a, b) => {
+      if (rangDeConfiance(a.confidence) !== rangDeConfiance(b.confidence)) {
+        return rangDeConfiance(a.confidence) - rangDeConfiance(b.confidence)
+      }
+      return (b.priceChange ?? -999) - (a.priceChange ?? -999)
+    })
 
-  return NextResponse.json({ trends, period: body.period ?? '7d', source: 'collecte' })
+  return NextResponse.json({
+    trends,
+    period: body.period ?? '7d',
+    source: 'collecte',
+    // Ce que le tableau montre et ce qu'il ne montre pas, en une phrase
+    // reprise telle quelle par l'interface.
+    lecture:
+      'Prix demandés, jamais prix de vente : Vinted ne publie aucune transaction. ' +
+      'La rotation est vérifiée annonce par annonce : part de celles qui ne sont plus en vente ' +
+      'sept jours après leur première vue (vendues ou retirées, Vinted ne dit pas laquelle).',
+  })
 }

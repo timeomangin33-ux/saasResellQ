@@ -29,6 +29,15 @@ interface Category {
   avg_margin: number | null
   volume_active: number
   product_count: number
+  history_days: number
+  sell_through_rate: number | null
+  sell_through_sample: number | null
+  median_days_to_disappear: number | null
+  last_sweep_at: string | null
+  sweep_coverage: number | null
+  confidence: 'confirme' | 'en-mesure' | 'insuffisant' | string
+  publishable: boolean
+  quality_note: string | null
   last_analyzed_at: string | null
   topItems: TopItem[]
 }
@@ -54,7 +63,28 @@ function formatOrDash(value: number | null | undefined, suffix = '', digits = 0)
 function getTrendTone(direction: string | null) {
   if (direction === 'up') return 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20'
   if (direction === 'down') return 'text-rose-300 bg-rose-500/10 border-rose-400/20'
+  if (direction === 'inconnue') return 'text-slate-400 bg-white/[0.03] border-white/10'
   return 'text-slate-300 bg-slate-500/10 border-slate-400/20'
+}
+
+/**
+ * Le repère de fiabilité.
+ *
+ * Il existe parce qu'une flèche verte à côté d'un chiffre calculé sur deux
+ * jours de relevés se lit exactement comme une flèche verte calculée sur trois
+ * semaines, alors que la première ne vaut rien. Plutôt que de masquer les
+ * catégories jeunes — ce qui donnerait une application vide au démarrage —
+ * on les montre en disant où elles en sont.
+ */
+const CONFIANCE: Record<string, { texte: string; classe: string }> = {
+  confirme: { texte: 'Mesure confirmée', classe: 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20' },
+  'en-mesure': { texte: 'Mesure en cours', classe: 'text-amber-300 bg-amber-500/10 border-amber-400/20' },
+  insuffisant: { texte: 'Trop peu de recul', classe: 'text-slate-400 bg-white/[0.03] border-white/10' },
+}
+
+function formatRotation(taux: number | null | undefined) {
+  if (taux === null || taux === undefined || !Number.isFinite(taux)) return '—'
+  return `${Math.round(taux * 100)}%`
 }
 
 function getTrendIcon(direction: string | null) {
@@ -131,9 +161,19 @@ function CategoriesContent({ categories, loading, error, search }: {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <div
+                  className={`hidden rounded-full border px-2.5 py-1 text-[11px] font-medium sm:block ${
+                    (CONFIANCE[category.confidence] ?? CONFIANCE.insuffisant).classe
+                  }`}
+                  title={category.quality_note ?? undefined}
+                >
+                  {(CONFIANCE[category.confidence] ?? CONFIANCE.insuffisant).texte}
+                </div>
                 <div className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${getTrendTone(category.trend_direction)}`}>
                   {getTrendIcon(category.trend_direction)}
-                  {formatTrendValue(category.price_change_percent)}
+                  {category.trend_direction === 'inconnue'
+                    ? 'Tendance à venir'
+                    : formatTrendValue(category.price_change_percent)}
                 </div>
                 <ChevronDown className="h-4 w-4 flex-shrink-0 text-zinc-500 transition-transform duration-300 group-open:rotate-180" />
               </div>
@@ -154,9 +194,39 @@ function CategoriesContent({ categories, loading, error, search }: {
                   <p className="mt-1 text-lg font-semibold text-white tabular-nums">{category.volume_active}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Dernière analyse</p>
-                  <p className="mt-1 text-sm text-slate-300">{category.last_analyzed_at ? new Date(category.last_analyzed_at).toLocaleString('fr-FR') : '—'}</p>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Rotation 7 j</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">
+                    {formatRotation(category.sell_through_rate)}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {category.sell_through_rate === null
+                      ? `mesure en cours (${category.sell_through_sample ?? 0} annonces vérifiées)`
+                      : `n'étaient plus en vente, sur ${category.sell_through_sample} vérifiées une par une`}
+                  </p>
                 </div>
+              </div>
+
+              {/* Ce que vaut la mesure, écrit noir sur blanc. Un chiffre sans son
+                  degré de confiance invite à agir dessus comme s'il était sûr. */}
+              <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-400">
+                <p>{category.quality_note ?? 'Mesure en cours.'}</p>
+                <p className="mt-2 text-[12px] text-slate-500">
+                  {category.history_days} jour{category.history_days > 1 ? 's' : ''} de relevés
+                  {category.last_sweep_at
+                    ? ` • catalogue parcouru en entier le ${new Date(category.last_sweep_at).toLocaleDateString('fr-FR')}`
+                    : ' • catalogue pas encore parcouru en entier'}
+                  {category.median_days_to_disappear !== null
+                    ? ` • délai médian avant disparition ${category.median_days_to_disappear.toFixed(1)} j`
+                    : ''}
+                  {category.last_analyzed_at
+                    ? ` • dernière analyse ${new Date(category.last_analyzed_at).toLocaleString('fr-FR')}`
+                    : ''}
+                </p>
+                <p className="mt-2 text-[12px] text-slate-500">
+                  Prix demandés, jamais prix de vente : Vinted ne publie pas les transactions. La rotation est
+                  mesurée en relisant la page de chaque annonce sept jours après l'avoir vue ; « plus en vente »
+                  veut dire vendue ou retirée par le vendeur, impossible de trancher entre les deux.
+                </p>
               </div>
 
               <div className="overflow-x-auto">

@@ -335,4 +335,315 @@ export async function collecter(
   return { items: items.slice(0, cible), totalEntries, pagesLues }
 }
 
+/**
+ * Plafond de résultats par recherche, imposé par Vinted.
+ *
+ * Mesuré, pas supposé : la page 10 répond normalement, la page 11 répond
+ * HTTP 400, et `total_entries` vaut 960 quelle que soit la recherche — y
+ * compris sur « Sneakers », qui compte évidemment des centaines de milliers
+ * d'annonces. `total_entries` n'est donc pas un compte, c'est le plafond
+ * lui-même. Deux conséquences qu'on ne peut pas contourner :
+ *
+ *  - personne ne peut connaître la taille réelle d'une catégorie Vinted, nous
+ *    pas plus qu'un autre. Ce que l'application appelle « annonces suivies »
+ *    est son propre échantillon, et jamais la taille du marché ;
+ *  - une recherche large ne peut pas être parcourue en entier. Pour voir
+ *    au-delà des 960 premières, il faut découper par tranches de prix, chaque
+ *    tranche ayant son propre plafond de 960.
+ */
+export const PLAFOND_RESULTATS = 960
+export const PLAFOND_PAGES = 10
+
+/**
+ * Balayage complet d'une recherche.
+ *
+ * `collecter` s'arrête à un nombre d'annonces voulu ; ici on cherche l'inverse :
+ * parcourir *tout* le catalogue actif de la catégorie, jusqu'à la vraie fin de
+ * la pagination. C'est la seule façon d'obtenir deux choses qu'une seule page
+ * ne donnera jamais :
+ *
+ *  - des médianes calculées sur le marché entier, et pas sur les 96 dernières
+ *    mises en ligne, qui sont un échantillon biaisé vers la nouveauté ;
+ *  - la disparition d'une annonce. Vinted ne signale pas une vente : l'annonce
+ *    cesse simplement d'apparaître. Tant qu'on ne lit qu'une page, une annonce
+ *    absente peut aussi bien avoir été vendue qu'avoir glissé en page 4. Après
+ *    un balayage qui va au bout, l'absence veut dire quelque chose.
+ *
+ * L'ordre est `price_low_to_high` et non `newest_first`, et ce n'est pas un
+ * détail. Avec le tri par date, chaque annonce publiée pendant le balayage
+ * décale toutes les pages suivantes d'un cran : on relit des doublons et on
+ * saute des annonces, systématiquement, dans le même sens. Le prix, lui, ne
+ * bouge presque jamais — la pagination reste stable du début à la fin. Effet
+ * de bord utile : si le plafond de pages coupe le balayage, ce qui a été lu
+ * est la partie basse des prix, exactement celle qui intéresse un revendeur.
+ */
+export async function balayer(
+  options: OptionsRecherche & { maxPages?: number; pauseMs?: number } = {},
+): Promise<{
+  items: AnnonceVinted[]
+  totalEntries: number
+  pagesLues: number
+  /** Vrai si la pagination a été parcourue jusqu'à sa vraie fin. */
+  complet: boolean
+  /**
+   * Vrai quand la recherche a buté sur le plafond des 960 résultats.
+   *
+   * C'est la distinction qui décide de tout le reste : un balayage `complet`
+   * a vu la totalité de ce qui correspond à la recherche, donc une annonce
+   * absente a bel et bien disparu. Un balayage `sature` a vu les 960 moins
+   * chères et rien d'autre — l'absence n'y prouve rien, il faut redécouper.
+   */
+  sature: boolean
+  /** Prix le plus élevé effectivement observé. Sert de borne de couverture. */
+  prixMax: number | null
+  /** Renseignée si le balayage s'est arrêté sur une erreur. */
+  interrompuPar?: Error
+}> {
+  // Au-delà de dix pages Vinted répond 400 : demander plus ne ramène rien et
+  // ajoute une erreur à traiter.
+  const maxPages = Math.max(1, Math.min(PLAFOND_PAGES, options.maxPages ?? PLAFOND_PAGES))
+  const pause = options.pauseMs ?? 700
+  const SIMULTANEES = 2
+
+  const vues = new Set<string>()
+  const items: AnnonceVinted[] = []
+  let totalEntries = 0
+  let totalPages = maxPages
+  let pagesLues = 0
+  let prixMax: number | null = null
+  let complet = false
+  let interrompuPar: Error | undefined
+
+  for (let debut = 1; debut <= maxPages; debut += SIMULTANEES) {
+    if (debut > totalPages) {
+      // On a dépassé la dernière page annoncée par Vinted : la pagination est
+      // épuisée, donc le balayage est allé au bout.
+      complet = true
+      break
+    }
+    if (options.deadline && Date.now() > options.deadline) break
+
+    const numeros: number[] = []
+    for (let p = debut; p < debut + SIMULTANEES && p <= maxPages && p <= totalPages; p++) numeros.push(p)
+
+    const resultats = await Promise.allSettled(
+      numeros.map((p) =>
+        chercherPage({ ...options, page: p, perPage: ANNONCES_PAR_PAGE, order: options.order ?? 'price_low_to_high' }),
+      ),
+    )
+
+    let vide = false
+    for (const resultat of resultats) {
+      if (resultat.status === 'rejected') {
+        const erreur = resultat.reason instanceof Error ? resultat.reason : new Error(String(resultat.reason))
+        // Un blocage vaut pour tout le reste du balayage : insister aggrave le
+        // filtrage sans rien ramener.
+        if (erreur instanceof VintedBlockedError || erreur instanceof VintedAuthError) throw erreur
+        interrompuPar ??= erreur
+        continue
+      }
+      pagesLues += 1
+      totalEntries = Math.max(totalEntries, resultat.value.totalEntries)
+      if (resultat.value.totalPages > 0) totalPages = Math.min(resultat.value.totalPages, 500)
+      if (resultat.value.items.length === 0) vide = true
+      for (const annonce of resultat.value.items) {
+        if (annonce.price > (prixMax ?? -1)) prixMax = annonce.price
+        if (vues.has(annonce.id)) continue
+        vues.add(annonce.id)
+        items.push(annonce)
+      }
+    }
+
+    // Une erreur au milieu d'un balayage laisse un trou : les annonces de la
+    // page manquante seraient comptées absentes alors qu'elles sont bien là.
+    // On préfère un balayage incomplet, qui ne conclura rien, à un balayage
+    // troué qui conclurait faux.
+    if (interrompuPar) break
+
+    // Page renvoyée vide avant le plafond : Vinted n'a plus rien à donner.
+    if (vide) {
+      complet = true
+      break
+    }
+
+    if (debut + SIMULTANEES > totalPages) {
+      complet = true
+      break
+    }
+    if (debut + SIMULTANEES > maxPages) break
+
+    await attendre(pause)
+  }
+
+  // Saturée : dix pages pleines, c'est-à-dire le plafond de Vinted atteint. On
+  // n'a alors vu que la tranche basse de ce que la recherche recouvre.
+  const sature = items.length >= PLAFOND_RESULTATS - ANNONCES_PAR_PAGE && pagesLues >= PLAFOND_PAGES
+
+  return { items, totalEntries, pagesLues, complet: complet && !sature, sature, prixMax, interrompuPar }
+}
+
+export interface Tranche {
+  from: number
+  to: number
+}
+
+export interface ZoneCouverte extends Tranche {
+  /**
+   * Vrai si tout ce que Vinted expose dans cette tranche a été lu. C'est la
+   * seule condition sous laquelle l'absence d'une annonce veut dire quelque
+   * chose.
+   */
+  exhaustive: boolean
+  annonces: number
+}
+
+/**
+ * Découpage de départ, en euros.
+ *
+ * Resserré là où se trouvent les annonces et large ensuite : sur Vinted, la
+ * moitié du catalogue tient sous 15 €, et une tranche 0-50 € serait saturée
+ * dès la première requête pendant qu'une tranche 200-300 € reviendrait presque
+ * vide. Les tranches trop peuplées sont de toute façon redécoupées toutes
+ * seules par `balayerParTranches`.
+ */
+export const TRANCHES_PAR_DEFAUT: Tranche[] = [
+  { from: 0, to: 5 },
+  { from: 5, to: 10 },
+  { from: 10, to: 15 },
+  { from: 15, to: 22 },
+  { from: 22, to: 32 },
+  { from: 32, to: 50 },
+  { from: 50, to: 80 },
+  { from: 80, to: 140 },
+  { from: 140, to: 300 },
+  { from: 300, to: 5000 },
+]
+
+/**
+ * Nombre de pages lues au maximum par tranche.
+ *
+ * Sept pages sur les dix autorisées, et pas dix : le but n'est pas de vider une
+ * tranche mais de répartir un budget fixe sur toute l'échelle des prix. Mesuré
+ * sur « Sneakers » : en laissant le découpage s'enfoncer là où il y avait le
+ * plus d'annonces, les soixante-dix pages du budget sont parties dans les
+ * tranches 0-1 €, 1-2 € et 2-3 € — 3 707 annonces à moins de 3 €, et rien
+ * au-dessus. Techniquement un succès, pratiquement inutile : on avait un
+ * relevé très précis du fond de panier.
+ */
+const PAGES_PAR_TRANCHE = 7
+
+/**
+ * Parcourt une recherche tranche de prix par tranche de prix.
+ *
+ * C'est la seule façon de voir autre chose que les 960 annonces les moins
+ * chères d'une catégorie. Chaque tranche a son propre plafond de 960, donc dix
+ * tranches donnent dix fois plus de matière — mesuré : 3 707 annonces contre 96
+ * auparavant, sur la même catégorie.
+ *
+ * Ce que ce balayage produit est un **échantillon stratifié**, pas un
+ * inventaire, et la nuance est écrite ici parce qu'elle change ce qu'on a le
+ * droit d'en dire. Vinted ne laisse pas connaître la taille réelle d'une
+ * catégorie — `total_entries` vaut 960 partout, c'est le plafond et non un
+ * compte. On ne peut donc pas prétendre à une médiane du marché entier. En
+ * revanche, en lisant les mêmes tranches avec le même effort à chaque passage,
+ * on obtient une médiane *stable* : deux relevés successifs sont comparables,
+ * et c'est exactement ce qui manquait quand seules les 96 dernières mises en
+ * ligne étaient lues.
+ *
+ * Une tranche qui rend moins que le plafond a, elle, été vue en entier : dans
+ * cet intervalle de prix une annonce absente est réellement partie. Ça arrive
+ * sur les catégories étroites, jamais sur les grandes — d'où la vérification
+ * par échantillon dans `verification.ts`, qui ne dépend pas de cette condition.
+ *
+ * `depart` fait tourner le point d'entrée d'un balayage à l'autre. Sans lui, un
+ * budget épuisé signifierait que les tranches hautes ne sont jamais lues : les
+ * articles chers, c'est-à-dire ceux qui rapportent, seraient les seuls dont on
+ * ne saurait rien.
+ */
+export async function balayerParTranches(
+  options: OptionsRecherche & {
+    tranches?: Tranche[]
+    /** Plafond de pages pour l'ensemble du balayage. */
+    budgetPages?: number
+    /** Index de la tranche par laquelle commencer. */
+    depart?: number
+    pauseMs?: number
+  } = {},
+): Promise<{
+  items: AnnonceVinted[]
+  zones: ZoneCouverte[]
+  pagesLues: number
+  /** Index de la tranche à laquelle reprendre au prochain balayage. */
+  prochainDepart: number
+  interrompuPar?: Error
+}> {
+  const base = options.tranches ?? TRANCHES_PAR_DEFAUT
+  const budgetPages = options.budgetPages ?? 70
+  const depart = (((options.depart ?? 0) % base.length) + base.length) % base.length
+
+  // On commence à `depart` et on fait le tour : chaque tranche est visitée une
+  // fois par balayage, mais pas toujours dans le même ordre.
+  const ordre = [...base.slice(depart), ...base.slice(0, depart)]
+
+  const vues = new Set<string>()
+  const items: AnnonceVinted[] = []
+  const zones: ZoneCouverte[] = []
+  let pagesLues = 0
+  let traitees = 0
+  let interrompuPar: Error | undefined
+
+  for (const tranche of ordre) {
+    if (pagesLues >= budgetPages) break
+    if (options.deadline && Date.now() > options.deadline) break
+
+    let resultat: Awaited<ReturnType<typeof balayer>>
+    try {
+      resultat = await balayer({
+        ...options,
+        priceFrom: tranche.from,
+        priceTo: tranche.to,
+        order: 'price_low_to_high',
+        maxPages: Math.min(PAGES_PAR_TRANCHE, budgetPages - pagesLues),
+        pauseMs: options.pauseMs,
+      })
+    } catch (erreur) {
+      // Un blocage vaut pour toutes les tranches suivantes : insister pendant
+      // qu'on est filtré ne fait qu'allonger le filtrage.
+      if (erreur instanceof VintedBlockedError || erreur instanceof VintedAuthError) throw erreur
+      interrompuPar ??= erreur instanceof Error ? erreur : new Error(String(erreur))
+      break
+    }
+
+    pagesLues += resultat.pagesLues
+    traitees += 1
+    for (const annonce of resultat.items) {
+      if (vues.has(annonce.id)) continue
+      vues.add(annonce.id)
+      items.push(annonce)
+    }
+
+    zones.push({
+      from: tranche.from,
+      to: tranche.to,
+      // Vue en entier seulement si la tranche s'est épuisée d'elle-même, avant
+      // le plafond de Vinted comme avant le nôtre.
+      exhaustive: resultat.complet && !resultat.sature,
+      annonces: resultat.items.length,
+    })
+
+    if (resultat.interrompuPar) {
+      interrompuPar ??= resultat.interrompuPar
+      break
+    }
+  }
+
+  return {
+    items,
+    zones,
+    pagesLues,
+    prochainDepart: (depart + Math.max(1, traitees)) % base.length,
+    interrompuPar,
+  }
+}
+
 export { VintedAuthError, VintedBlockedError }

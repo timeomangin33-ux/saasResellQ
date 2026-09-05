@@ -19,6 +19,29 @@ interface Trend {
   medianPrice: number | null
   /** Nombre de points d'historique derrière la variation. */
   historyPoints: number
+  /** up | down | stable | inconnue — calculé sur fenêtres, avec zone morte. */
+  trendDirection?: string
+  historyDays?: number | null
+  /** Part des annonces suivies disparues en moins de 7 jours. */
+  sellThroughRate?: number | null
+  sellThroughSample?: number | null
+  medianDaysToDisappear?: number | null
+  confidence?: 'confirme' | 'en-mesure' | 'insuffisant' | string
+  qualityNote?: string | null
+  lastSweepAt?: string | null
+}
+
+/**
+ * Repère de fiabilité, identique à celui de la page Catégories.
+ *
+ * Volontairement le même vocabulaire aux deux endroits : deux mots différents
+ * pour la même notion obligent le lecteur à retenir une correspondance, et il
+ * finit par ignorer les deux.
+ */
+const CONFIANCE: Record<string, { texte: string; classe: string }> = {
+  confirme: { texte: 'confirmée', classe: 'text-emerald-400' },
+  'en-mesure': { texte: 'en cours', classe: 'text-amber-400' },
+  insuffisant: { texte: 'trop peu de recul', classe: 'text-muted-foreground/60' },
 }
 
 interface Report { title: string; summary: string; insights: string[]; createdAt: string }
@@ -147,6 +170,7 @@ export default function InsightsPage() {
                     <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Catégorie</th>
                     <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Variation prix</th>
                     <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Volume</th>
+                    <th className="text-right px-3 py-2.5 text-xs font-medium text-muted-foreground">Rotation 7 j</th>
                     <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Indice demande</th>
                   </tr>
                 </thead>
@@ -155,9 +179,15 @@ export default function InsightsPage() {
                     // Une variation inconnue n'est pas une variation nulle :
                     // deux jours d'historique ne disent rien d'une tendance, et
                     // afficher « 0 % » les ferait passer pour un marché stable.
-                    const inconnue = t.priceChange === null
-                    const up = !inconnue && t.priceChange! > 2
-                    const down = !inconnue && t.priceChange! < -2
+                    // La direction vient du calcul stabilisé côté serveur —
+                    // fenêtres de plusieurs jours et zone morte — et non d'un
+                    // seuil réappliqué ici sur la variation. Deux seuils pour
+                    // une même flèche, c'est la garantie qu'un jour l'un dira
+                    // « hausse » pendant que l'autre affiche du orange.
+                    const inconnue = t.priceChange === null || t.trendDirection === 'inconnue'
+                    const up = t.trendDirection === 'up'
+                    const down = t.trendDirection === 'down'
+                    const confiance = CONFIANCE[t.confidence ?? 'insuffisant'] ?? CONFIANCE.insuffisant
                     return (
                       <>
                         <tr key={i}
@@ -175,16 +205,44 @@ export default function InsightsPage() {
                             )}
                           </td>
                           <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{t.volume.toLocaleString('fr-FR')}</td>
+                          <td className="px-3 py-3 text-right tabular-nums">
+                            {t.sellThroughRate === null || t.sellThroughRate === undefined ? (
+                              <span className="text-xs text-muted-foreground/60">mesure en cours</span>
+                            ) : (
+                              <span
+                                className={`font-medium ${
+                                  t.sellThroughRate >= 0.35
+                                    ? 'text-emerald-400'
+                                    : t.sellThroughRate >= 0.15
+                                      ? 'text-amber-400'
+                                      : 'text-rose-400'
+                                }`}
+                              >
+                                {Math.round(t.sellThroughRate * 100)}%
+                              </span>
+                            )}
+                          </td>
                           <td className="px-5 py-3 text-right tabular-nums font-medium">
                             {t.demandIndex === null ? <span className="text-muted-foreground/40">—</span> : `${t.demandIndex}%`}
                           </td>
                         </tr>
                         {expanded === t.category && (
                           <tr key={`${i}-detail`} className="bg-emerald-500/[0.03]">
-                            <td colSpan={4} className="px-5 py-2.5 text-xs text-muted-foreground">
-                              Prix moyen {t.avgPrice?.toFixed(2) ?? '—'} € · médian {t.medianPrice?.toFixed(2) ?? '—'} € ·
-                              {' '}{t.volume.toLocaleString('fr-FR')} annonces actives ·
-                              {' '}variation calculée sur {t.historyPoints} jour{t.historyPoints > 1 ? 's' : ''} d'historique
+                            <td colSpan={5} className="space-y-1 px-5 py-2.5 text-xs text-muted-foreground">
+                              <p>
+                                Prix demandés moyen {t.avgPrice?.toFixed(2) ?? '—'} € · médian{' '}
+                                {t.medianPrice?.toFixed(2) ?? '—'} € · {t.volume.toLocaleString('fr-FR')} annonces actives ·
+                                fiabilité <span className={confiance.classe}>{confiance.texte}</span>
+                              </p>
+                              <p>{t.qualityNote ?? 'Mesure en cours.'}</p>
+                              <p className="text-muted-foreground/70">
+                                {t.medianDaysToDisappear != null
+                                  ? `Délai médian avant retrait ${t.medianDaysToDisappear.toFixed(1)} jour(s). `
+                                  : ''}
+                                Rotation vérifiée annonce par annonce, sept jours après la première vue. « Plus en
+                                vente » veut dire vendue ou retirée : Vinted ne publie pas les transactions, donc tous
+                                les prix affichés sont des prix demandés.
+                              </p>
                             </td>
                           </tr>
                         )}

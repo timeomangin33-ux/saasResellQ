@@ -212,10 +212,17 @@ model Product {
   profitMargin    Float?
   profitPotential Float?
   seller          String?
+  /// Identifiant numerique du vendeur, cote Vinted. Le pseudo ne suffit pas :
+  /// c'est l'identifiant qui permet d'appeler la penderie du vendeur, et donc
+  /// de savoir en une requete si l'annonce est encore en vente.
+  sellerId        String?
   location        String?
   imageUrl        String?
   url             String?
-  status          String   @default("active") // active, sold, archived
+  /// active   : revue lors du dernier balayage complet
+  /// gone     : absente de deux balayages complets consecutifs (vendue OU retiree)
+  /// stale    : plus revue depuis longtemps, sans balayage complet pour trancher
+  status          String   @default("active")
 
   // Signaux de demande, lus sur l'API Vinted. Le prix seul ne dit pas si un
   // article part : c'est le nombre de favoris rapporte au temps passe en ligne
@@ -225,6 +232,20 @@ model Product {
   viewCount       Int?
   listedAt        DateTime? // mise en ligne cote Vinted, pas cote base
   lastSeenAt      DateTime? // derniere fois que le robot a revu l'annonce
+
+  /// Nombre de balayages complets consecutifs ou l'annonce etait absente.
+  /// Un balayage peut manquer une annonce a cause du decalage de pagination :
+  /// on n'en conclut la disparition qu'a partir de deux absences de suite.
+  missedSweeps    Int      @default(0)
+  /// Horodatage de la disparition constatee. Vendue ou retiree : Vinted ne le
+  /// dit pas, et on ne l'invente pas.
+  disappearedAt   DateTime?
+  /// Date a laquelle la page de l'annonce a ete lue pour connaitre son sort.
+  /// Une seule fois par annonce, sept jours apres la premiere vue : c'est ce
+  /// qui donne une cohorte comparable d'une categorie a l'autre.
+  checkedAt       DateTime?
+  /// online | closed | hidden | deleted | unknown, lu sur la page de l'annonce.
+  finalState      String?
   
   // AI Scoring
   analysisScore   Float?   // 0-100 profitability score
@@ -246,6 +267,10 @@ model Product {
   @@index([profitMargin])
   @@index([createdAt])
   @@index([lastSeenAt])
+  @@index([category, status])
+  @@index([disappearedAt])
+  @@index([category, checkedAt])
+  @@index([sellerId])
   @@map("products")
 }
 
@@ -309,10 +334,35 @@ model CategoryMarket {
   priceChangePercent  Float? // % change in avgPrice since the previous refresh
   volumeChangePercent Float? // % change in volumeActive since the previous refresh
   lastAnalyzedAt  DateTime?
+
+  // --- Rotation reelle du stock, mesuree par balayage complet ---
+  /// Part des annonces d'une cohorte qui ont disparu dans les 7 jours suivant
+  /// leur premiere observation. Disparue = vendue ou retiree : Vinted ne
+  /// publie pas les transactions, donc on ne dit jamais "vendue".
+  sellThroughRate       Float?
+  /// Taille de la cohorte ayant servi au calcul. En dessous d'un seuil, le
+  /// taux n'est pas publie.
+  sellThroughSample     Int?
+  /// Delai median observe entre la premiere vue et la disparition, en jours.
+  medianDaysToDisappear Float?
+  /// Dernier balayage complet de la categorie.
+  lastSweepAt           DateTime?
+  /// Part du catalogue reellement parcourue au dernier balayage (0 a 1).
+  sweepCoverage         Float?
+  /// Nombre de jours d'historique disponibles dans CategoryMarketDaily.
+  historyDays           Int?
+  /// confirme | en-mesure | insuffisant
+  confidence            String?
+  /// La categorie est-elle assez fiable pour etre mise en avant ?
+  publishable           Boolean  @default(false)
+  /// Phrase courte expliquant pourquoi, affichable telle quelle.
+  qualityNote           String?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([category])
+  @@index([publishable])
   @@map("category_markets")
 
 }
@@ -430,6 +480,26 @@ model CollectTarget {
   lastStatus          String?
   lastError           String?
   lastItemCount       Int?
+
+  /// Delai souhaite entre deux balayages, en minutes.
+  /// Un balayage parcourt la categorie tranche de prix par tranche de prix au
+  /// lieu de la seule premiere page : c'est lui qui rafraichit lastSeenAt sur
+  /// les annonces anciennes et qui rend la disparition detectable.
+  sweepIntervalMinutes Int      @default(720)
+  /// Budget de pages pour un balayage entier. 96 annonces par page cote Vinted,
+  /// et 960 annonces au maximum par tranche de prix : c'est Vinted qui plafonne.
+  sweepMaxPages        Int      @default(70)
+  /// Tranche de prix par laquelle commencer le prochain balayage. Fait tourner
+  /// le point d'entree : sans lui, un budget trop court voudrait dire que les
+  /// tranches hautes ne sont jamais lues, donc que les articles chers - ceux
+  /// qui rapportent - seraient les seuls dont on ne sait rien.
+  sweepCursor          Int      @default(0)
+  lastSweepAt          DateTime?
+  lastSweepPages       Int?
+  /// Nombre de tranches de prix vues en entier au dernier balayage.
+  lastSweepZones       Int?
+  /// Vrai quand toutes les tranches parcourues l'ont ete en entier.
+  lastSweepComplete    Boolean  @default(false)
   /// Sert au recul automatique : une cible qui echoue est repoussee de plus en
   /// plus loin, au lieu de consommer le budget des cibles qui fonctionnent.
   consecutiveFailures Int       @default(0)

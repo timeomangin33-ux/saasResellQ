@@ -115,11 +115,15 @@ async function principal() {
     const bilan = await passerUnTour({ budgetMs: 5 * 60_000 })
 
     for (const cible of bilan.cibles) {
-      const marque = cible.statut === 'ok' ? '✓' : '✗'
-      const detail =
-        cible.statut === 'ok'
-          ? `${cible.annonces} annonces (${cible.source}), ${cible.notees} notée(s)`
-          : `${cible.statut} — ${cible.erreur ?? ''}`
+      const reussi = cible.statut === 'ok' || cible.statut === 'partiel'
+      const marque = cible.statut === 'ok' ? '✓' : cible.statut === 'partiel' ? '~' : '✗'
+      const detail = !reussi
+        ? `${cible.statut} — ${cible.erreur ?? ''}`
+        : cible.mode === 'balayage'
+          ? `BALAYAGE ${cible.annonces} annonces sur ${cible.pages} page(s), ` +
+            `${cible.zonesFiables ?? 0}/${cible.zones ?? 0} tranche(s) de prix vue(s) en entier, ` +
+            `${cible.verifiees ?? 0} annonce(s) vérifiée(s) dont ${cible.plusEnVente ?? 0} plus en vente`
+          : `${cible.annonces} annonces (${cible.source}), ${cible.notees} notée(s)`
       console.log(`${marque} ${cible.query} : ${detail} [${cible.dureeMs} ms]`)
     }
 
