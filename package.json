@@ -29,6 +29,8 @@
     "rotation:test": "tsx scripts/tester-verification.ts",
     "rotation:seed": "tsx scripts/amorcer-rotation.ts",
     "collect:once": "tsx scripts/un-tour.ts",
+    "history:reset": "tsx scripts/repartir-historique.ts",
+    "acces:offrir": "tsx scripts/offrir-acces.ts",
     "targets:seed": "tsx scripts/amorcer-cibles.ts",
     "collect:status": "tsx scripts/etat-collecte.ts",
     "deploy:prod": "npm run collect:pause && vercel pull --yes --environment=production && node scripts/completer-env.mjs && vercel build --prod && vercel deploy --prebuilt --prod && npm run collect:resume",

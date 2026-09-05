@@ -217,25 +217,73 @@ export async function persistVintedScanResults(
     data: { status: 'stale' },
   })
 
-  // Moyenne et médiane calculées par Postgres plutôt qu'en rapatriant toutes
-  // les lignes : un aller-retour au lieu d'un transfert qui grossit chaque
-  // jour. percentile_cont donne la vraie médiane, y compris sur un nombre pair
-  // de valeurs.
-  const [agregat] = await prisma.$queryRaw<
-    { avg_price: number | null; median_price: number | null; volume: bigint }[]
-  >`
-    SELECT AVG(price)::float8 AS avg_price,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS median_price,
-           COUNT(*) AS volume
-    FROM "products"
+  // Volume suivi : combien d'annonces de cette catégorie sont encore en ligne à
+  // notre connaissance. C'est un compte de ce qu'on suit, pas la taille du
+  // marché — Vinted ne la publie pas — et l'interface le dit ainsi.
+  const [compte] = await prisma.$queryRaw<{ volume: bigint }[]>`
+    SELECT COUNT(*) AS volume FROM "products"
     WHERE category = ${category} AND status = 'active'
   `
+  const volumeActif = Number(compte?.volume ?? 0)
 
-  const volumeActif = Number(agregat?.volume ?? 0)
-  const prixMoyen = agregat?.avg_price ?? null
-  const prixMedian = agregat?.median_price ?? null
+  // ------------------------------------------------------------------
+  // Les prix de référence viennent du balayage, jamais de la table.
+  // ------------------------------------------------------------------
+  //
+  // La table `products` est une accumulation : ce qu'on y trouve dépend de ce
+  // que le robot a croisé, dans l'ordre où il l'a croisé. Sa composition
+  // change donc à chaque évolution du collecteur, et sa médiane avec. Observé
+  // en conditions réelles : un passage lisant les moins chères d'abord y a
+  // déversé des milliers d'annonces à 1-3 €, et la médiane de toutes les
+  // catégories est tombée à 2 € — un chiffre parfaitement calculé sur un
+  // échantillon qui ne représentait rien.
+  //
+  // Le balayage, lui, est un échantillon défini : les mêmes tranches de prix,
+  // le même nombre de pages par tranche, à chaque passage. Sa médiane est
+  // comparable d'un jour à l'autre, ce qui est exactement la propriété qui
+  // manquait. On ne met donc à jour les prix de référence que lors d'un
+  // balayage ; un simple rafraîchissement des nouveautés écrit les annonces
+  // mais ne touche pas aux agrégats, parce que les nouveautés du jour ne sont
+  // pas le marché.
+  if (!balayage) {
+    await prisma.categoryMarket
+      .updateMany({ where: { category }, data: { volumeActive: volumeActif, lastAnalyzedAt: maintenant } })
+      .catch((err: unknown) => console.error('market-sync: volume non mis à jour', err))
 
-  if (volumeActif > 0 && prixMoyen !== null && prixMedian !== null) {
+    let notesRefresh = 0
+    try {
+      const marche = await prisma.categoryMarket.findUnique({ where: { category } })
+      const bilan = await noterCategorie(category, marche?.medianPrice ?? null, volumeActif)
+      notesRefresh = bilan.notes
+    } catch (err) {
+      console.error(`market-sync: notation impossible pour ${category}`, err)
+    }
+    return {
+      annoncesEcrites: ecrites,
+      perimees,
+      volumeActif,
+      prixMoyen: null,
+      prixMedian: null,
+      notees: notesRefresh,
+      absentes,
+      disparues,
+    }
+  }
+
+  const prixEchantillon = items.map((i) => i.price).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
+  const milieu = Math.floor(prixEchantillon.length / 2)
+  const prixMedian =
+    prixEchantillon.length === 0
+      ? null
+      : prixEchantillon.length % 2 === 1
+        ? prixEchantillon[milieu]
+        : (prixEchantillon[milieu - 1] + prixEchantillon[milieu]) / 2
+  const prixMoyen =
+    prixEchantillon.length === 0
+      ? null
+      : prixEchantillon.reduce((t, p) => t + p, 0) / prixEchantillon.length
+
+  if (prixEchantillon.length > 0 && prixMoyen !== null && prixMedian !== null) {
     // Le point du jour d'abord, la tendance ensuite : la tendance se lit dans
     // l'historique, et l'historique doit contenir la journée en cours, sinon on
     // compare les trois derniers jours à une fenêtre qui ignore aujourd'hui.
@@ -245,7 +293,10 @@ export async function persistVintedScanResults(
       avgPrice: prixMoyen,
       medianPrice: prixMedian,
       volumeActive: volumeActif,
-      sampleSize: volumeActif,
+      // Sur combien d'annonces la médiane du jour a été calculée. C'est la
+      // taille du balayage, pas celle de la table : deux nombres différents
+      // qu'il serait facile de confondre, et l'un des deux ne veut rien dire.
+      sampleSize: prixEchantillon.length,
     }
     await prisma.categoryMarketDaily.upsert({
       where: { category_day: { category, day: jour } },
