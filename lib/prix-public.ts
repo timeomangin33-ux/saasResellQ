@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/prisma'
 
 /**
@@ -17,6 +18,30 @@ import { prisma } from '@/prisma'
 
 /** En dessous, une médiane ne veut rien dire et la page ne se génère pas. */
 export const ANNONCES_MINIMUM = 25
+
+/**
+ * Fenêtre de fraîcheur des annonces retenues, en jours.
+ *
+ * Sans elle, la médiane d'une marque est celle de tout ce que le robot a
+ * accumulé depuis qu'il tourne, et sa composition dépend de la façon dont il a
+ * collecté — pas du marché. Le défaut a été constaté sur les catégories : un
+ * passage lisant les annonces les moins chères d'abord avait fait tomber toutes
+ * les médianes à 2 €, un chiffre parfaitement calculé sur un échantillon qui ne
+ * représentait rien.
+ *
+ * En ne gardant que les annonces publiées récemment, on mesure un flux plutôt
+ * qu'un stock : c'est bien défini, comparable d'une semaine à l'autre, et c'est
+ * la question qu'un revendeur se pose — « à combien ça se demande en ce
+ * moment », pas « à combien ça se demandait en moyenne depuis six mois ».
+ */
+export const FENETRE_FRAICHEUR_JOURS = 45
+
+/** Filtre commun à tous les relevés publics : actif, prix réel, récent. */
+const FRAICHEUR = Prisma.sql`
+  status = 'active'
+  AND price > 0
+  AND ("listedAt" IS NULL OR "listedAt" >= NOW() - (${FENETRE_FRAICHEUR_JOURS} * INTERVAL '1 day'))
+`
 
 /**
  * Ce que Vinted range dans le champ « marque » sans que ce soit une marque.
@@ -104,7 +129,7 @@ export async function marquesPubliables(): Promise<StatistiquesMarque[]> {
       PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY price)::float8 AS prix_bas,
       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY price)::float8 AS prix_haut
     FROM products
-    WHERE status = 'active' AND brand IS NOT NULL AND price > 0
+    WHERE ${FRAICHEUR} AND brand IS NOT NULL
     GROUP BY LOWER(brand)
     HAVING COUNT(*) >= ${ANNONCES_MINIMUM}
     ORDER BY COUNT(*) DESC
@@ -150,7 +175,7 @@ export async function statistiquesMarque(slug: string): Promise<StatistiquesMarq
              COUNT(*) AS annonces,
              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
       FROM products
-      WHERE status = 'active' AND price > 0 AND LOWER(brand) = LOWER(${nom})
+      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
       GROUP BY condition
     `,
     prisma.$queryRaw<{ category: string; annonces: bigint; prix_median: number | null }[]>`
@@ -158,7 +183,7 @@ export async function statistiquesMarque(slug: string): Promise<StatistiquesMarq
              COUNT(*) AS annonces,
              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
       FROM products
-      WHERE status = 'active' AND price > 0 AND LOWER(brand) = LOWER(${nom})
+      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
       GROUP BY category
       ORDER BY COUNT(*) DESC
       LIMIT 6
@@ -167,7 +192,7 @@ export async function statistiquesMarque(slug: string): Promise<StatistiquesMarq
       SELECT COUNT(*) FILTER (WHERE "favouriteCount" > 0) AS avec_favori,
              COUNT(*) FILTER (WHERE "favouriteCount" IS NOT NULL) AS total
       FROM products
-      WHERE status = 'active' AND LOWER(brand) = LOWER(${nom})
+      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
     `,
     prisma.product.findFirst({
       where: { status: 'active', brand: { equals: nom, mode: 'insensitive' }, lastSeenAt: { not: null } },
@@ -210,7 +235,19 @@ function arrondi(valeur: number | null) {
 /** Le total affiché en haut des pages, pour situer l'échantillon. */
 export async function ampleurDuReleve() {
   const [annonces, marches, derniere] = await Promise.all([
-    prisma.product.count({ where: { status: 'active' } }),
+    // Le même filtre que les médianes : afficher « 230 000 annonces » en haut
+    // d'une page dont les chiffres portent sur 90 000 ferait du total un
+    // argument publicitaire plutôt qu'une indication de taille d'échantillon.
+    prisma.product.count({
+      where: {
+        status: 'active',
+        price: { gt: 0 },
+        OR: [
+          { listedAt: null },
+          { listedAt: { gte: new Date(Date.now() - FENETRE_FRAICHEUR_JOURS * 86_400_000) } },
+        ],
+      },
+    }),
     prisma.categoryMarket.count(),
     prisma.product.findFirst({
       where: { lastSeenAt: { not: null } },

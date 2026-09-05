@@ -25,6 +25,7 @@
     "test:watch": "vitest",
     "collector": "tsx scripts/collector.ts",
     "bot:check": "tsx scripts/verifier-robot.ts",
+    "sweep": "tsx scripts/balayer.ts",
     "sweep:test": "tsx scripts/tester-balayage.ts",
     "rotation:test": "tsx scripts/tester-verification.ts",
     "rotation:seed": "tsx scripts/amorcer-rotation.ts",
