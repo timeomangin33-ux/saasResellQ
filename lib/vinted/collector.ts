@@ -220,7 +220,10 @@ export async function traiterCible(
       depart: cible.sweepCursor ?? 0,
       deadline: options.deadline,
     }).catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err)
+      // La pile compte ici : une exception remontée de l'écriture en base ne se
+      // distingue pas d'un refus de Vinted si on ne garde que le message.
+      console.error(`collecteur: balayage de « ${cible.query} » interrompu`, err)
+      const message = err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err)
       return {
         statut: 'network' as const,
         erreur: message,

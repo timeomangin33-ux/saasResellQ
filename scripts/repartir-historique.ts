@@ -40,7 +40,17 @@ async function main() {
   // Balayage dû immédiatement partout : c'est lui qui reconstruit les prix de
   // référence, et sans lui les catégories resteraient sans médiane.
   const { count: cibles } = await prisma.collectTarget.updateMany({
-    data: { lastSweepAt: null, nextRunAt: new Date(), sweepCursor: 0 },
+    data: {
+      lastSweepAt: null,
+      nextRunAt: new Date(),
+      sweepCursor: 0,
+      // Les cibles créées avant le découpage par tranches portaient un budget
+      // de 15 à 25 pages, pensé pour une pagination unique. Réparti sur dix
+      // tranches, ça ne fait plus que deux pages par tranche : on ne verrait
+      // que le haut de chaque intervalle et l'échantillon serait aussi biaisé
+      // qu'avant, pour une raison différente.
+      sweepMaxPages: 70,
+    },
   })
 
   console.log(`${points} point(s) d'historique effacé(s).`)

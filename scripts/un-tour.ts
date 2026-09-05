@@ -26,6 +26,8 @@ async function main() {
           `${c.verifiees} vérifiées (${c.plusEnVente} plus en vente)`
         : `${c.annonces} annonces`
     console.log(`${c.statut === 'ok' ? '✓' : '✗'} ${c.mode.padEnd(9)} ${c.query.padEnd(20)} ${detail}`)
+    // Un échec sans sa cause oblige à relancer pour apprendre quelque chose.
+    if (c.erreur) console.log(`   └─ ${c.statut} : ${c.erreur}`)
   }
   console.log(
     `\n${bilan.cibles.length} cible(s) · ${bilan.annoncesCollectees} annonces · ` +

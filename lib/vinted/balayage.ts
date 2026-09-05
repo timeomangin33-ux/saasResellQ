@@ -112,14 +112,20 @@ export async function balayerCategorie(options: {
     }
   }
 
-  const bilan = await persistVintedScanResults(
-    annonces,
-    categorie,
-    // On ne transmet que les tranches vues en entier. Les autres ont bien
-    // alimenté la base — c'est toujours ça de pris — mais rien n'y sera conclu
-    // sur une absence, puisqu'on sait qu'on n'a pas tout regardé.
-    fiables.length > 0 ? { zones: fiables.map((z) => ({ from: z.from, to: z.to })) } : undefined,
-  )
+  // Le contexte est transmis dès qu'un balayage a eu lieu, même sans aucune
+  // tranche exhaustive, et cette distinction a coûté un passage entier pour
+  // rien : sa présence signifie « ces annonces forment l'échantillon de
+  // référence », ce dont dépendent la médiane et le point du jour. Ne le
+  // transmettre qu'en cas de tranche exhaustive revenait à ne jamais écrire de
+  // prix sur les grandes catégories, où aucune tranche ne l'est — toutes les
+  // médianes sont alors restées vides.
+  //
+  // `zones` porte la seconde question, indépendante : dans quels intervalles de
+  // prix une absence prouve une disparition. Vide veut dire « nulle part », et
+  // c'est un état parfaitement normal.
+  const bilan = await persistVintedScanResults(annonces, categorie, {
+    zones: fiables.map((z) => ({ from: z.from, to: z.to })),
+  })
 
   return {
     categorie,

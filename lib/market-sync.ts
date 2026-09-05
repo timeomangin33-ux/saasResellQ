@@ -315,7 +315,7 @@ export async function persistVintedScanResults(
     // catégorie — `total_entries` vaut 960 partout, c'est le plafond et non un
     // compte.
     let couvertureDesZones: number | null = null
-    if (balayage && balayage.zones.length > 0 && volumeActif > 0) {
+    if (balayage.zones.length > 0 && volumeActif > 0) {
       const conditions = balayage.zones.map((z) => Prisma.sql`(price >= ${z.from} AND price < ${z.to})`)
       const [couverture] = await prisma.$queryRaw<{ dedans: bigint }[]>`
         SELECT COUNT(*) AS dedans
@@ -345,7 +345,8 @@ export async function persistVintedScanResults(
       publishable: qualite.publishable,
       qualityNote: qualite.note,
       lastAnalyzedAt: maintenant,
-      ...(balayage ? { lastSweepAt: maintenant, sweepCoverage: couvertureDesZones } : {}),
+      lastSweepAt: maintenant,
+      sweepCoverage: couvertureDesZones,
     }
 
     await prisma.categoryMarket.upsert({
