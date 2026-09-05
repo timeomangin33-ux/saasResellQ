@@ -36,7 +36,10 @@ interface TopCategory {
 export default function DealFinderPage() {
   const { data: session, status } = useSession()
   const planKey = normalizePlan(session?.user?.subscriptionPlan)
-  const [filters, setFilters] = useState({ minBudget: 20, maxBudget: 300, category: '', riskLevel: 'medium', minProfit: 30 })
+  // `riskLevel` valait « medium » par défaut, ce qui appliquait en douce un
+  // plancher de 40 % et un plafond de 60 % : le premier clic écartait les
+  // meilleures annonces. Par défaut, seule la marge minimale saisie s'applique.
+  const [filters, setFilters] = useState({ minBudget: 20, maxBudget: 300, category: '', riskLevel: 'low', minProfit: 30 })
   const [topCategories, setTopCategories] = useState<TopCategory[]>([])
   const [results, setResults] = useState<Deal[]>([])
   const [loading, setLoading] = useState(false)
@@ -80,6 +83,10 @@ export default function DealFinderPage() {
    * n'arrivait qu'en second recours, sans que l'utilisateur sache lequel des
    * deux il regardait. Une seule source, celle qui existe.
    */
+  // Le plancher effectivement envoyé à l'API : le plus haut des deux réglages.
+  const PLANCHERS_MARGE: Record<string, number> = { low: 0, medium: 40, high: 60 }
+  const margeRetenue = Math.max(filters.minProfit || 0, PLANCHERS_MARGE[filters.riskLevel] ?? 0)
+
   async function handleSearch() {
     setLoading(true)
     setError('')
@@ -158,15 +165,22 @@ export default function DealFinderPage() {
                   className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-emerald-400/50 outline-none transition-colors" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1.5">Risque</label>
+                <label className="text-xs text-muted-foreground block mb-1.5">Exigence de marge</label>
                 <select value={filters.riskLevel} onChange={e => setFilters({ ...filters, riskLevel: e.target.value })}
                   className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted/40 border border-border focus:border-emerald-400/50 outline-none transition-colors">
-                  <option value="low">Faible</option>
-                  <option value="medium">Modéré</option>
-                  <option value="high">Élevé</option>
+                  <option value="low">Votre marge minimale seulement</option>
+                  <option value="medium">Au moins 40 % de marge</option>
+                  <option value="high">Au moins 60 % de marge</option>
                 </select>
               </div>
             </div>
+            {/* Le seuil réellement appliqué, écrit en clair : c'est le plus haut
+                des deux réglages, et il n'y a aucun plafond. */}
+            <p className="mt-3 text-xs text-muted-foreground">
+              Marge retenue : au moins <strong className="text-foreground">{margeRetenue} %</strong> — les marges
+              supérieures ne sont jamais écartées. Marge estimée à partir du prix demandé médian de la marque dans sa
+              catégorie ; Vinted ne publie pas les prix de vente.
+            </p>
             <div className="mt-4 pt-4 border-t border-border">
               <Magnetic strength={0.15} className="inline-block">
                 <button onClick={handleSearch} disabled={loading}

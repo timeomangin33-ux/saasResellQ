@@ -33,9 +33,39 @@ function estAutorise(request: Request) {
 
 const REPOS_ALERTE_MS = 12 * 60 * 60 * 1000
 
+/**
+ * Solde les alertes « marge bénéficiaire » restées en base.
+ *
+ * Cette condition se comparait à `CategoryMarket.avgMargin`, colonne que rien
+ * n'alimente : les alertes concernées étaient affichées « Active » depuis leur
+ * création sans pouvoir se déclencher une seule fois. La condition n'est plus
+ * proposée à la création ; les anciennes lignes sont désactivées une fois, avec
+ * une notification, plutôt que laissées à tourner dans le vide.
+ */
+async function retirerAlertesMargeObsoletes() {
+  const obsoletes = await prisma.alert.findMany({ where: { active: true, condition: 'profit_margin' } })
+  for (const alerte of obsoletes) {
+    await prisma.alert.update({ where: { id: alerte.id }, data: { active: false } })
+    await prisma.notification
+      .create({
+        data: {
+          userId: alerte.userId,
+          title: `Alerte désactivée : ${alerte.category}`,
+          message:
+            "L'alerte « marge bénéficiaire » ne pouvait pas se déclencher : cette mesure n'est pas produite par la collecte. Elle a été désactivée. Les alertes « baisse de prix » et « pic de demande » restent disponibles.",
+          type: 'system',
+        },
+      })
+      .catch((err) => console.error('market-refresh: notification d\'alerte obsolète impossible', err))
+  }
+  return obsoletes.length
+}
+
 async function evaluerAlertes() {
+  const margesRetirees = await retirerAlertesMargeObsoletes()
+
   const alertes = await prisma.alert.findMany({ where: { active: true } })
-  if (alertes.length === 0) return { evaluees: 0, declenchees: 0 }
+  if (alertes.length === 0) return { evaluees: 0, declenchees: 0, margesRetirees }
 
   const categories = [...new Set(alertes.map((a) => a.category))]
   const marches = await prisma.categoryMarket.findMany({ where: { category: { in: categories } } })
@@ -53,10 +83,9 @@ async function evaluerAlertes() {
     let touche = false
     let detail = ''
 
-    if (alerte.condition === 'profit_margin' && marche.avgMargin !== null && marche.avgMargin !== undefined) {
-      touche = marche.avgMargin >= alerte.threshold
-      detail = `Marge moyenne : ${marche.avgMargin.toFixed(1)}%`
-    } else if (
+    // Prix demandés, jamais prix de vente : Vinted ne publie pas ses
+    // transactions, ces deux conditions portent sur les annonces en ligne.
+    if (
       alerte.condition === 'price_drop' &&
       marche.priceChangePercent !== null &&
       marche.priceChangePercent !== undefined
@@ -100,7 +129,7 @@ async function evaluerAlertes() {
     }
   }
 
-  return { evaluees: alertes.length, declenchees }
+  return { evaluees: alertes.length, declenchees, margesRetirees }
 }
 
 /** Une seule alerte de collecte arrêtée par demi-journée, pas une par passage. */

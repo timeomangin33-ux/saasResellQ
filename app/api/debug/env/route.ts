@@ -5,8 +5,13 @@ export async function GET(req: Request) {
   const provided = req.headers.get('x-debug-token') || ''
   const secret = process.env.DEBUG_TOKEN || ''
 
-  // In production require token match; in development allow without token.
-  if (process.env.NODE_ENV === 'production' && (!secret || provided !== secret)) {
+  // Le secret n'était exigé que si NODE_ENV valait 'production'. Les
+  // déploiements de préversion tournent en 'production' côté Next mais sont
+  // publics, et surtout toute instance lancée autrement exposait librement la
+  // liste des secrets configurés. Le jeton est donc exigé dans tous les
+  // environnements, et son absence de configuration ferme la route au lieu de
+  // l'ouvrir.
+  if (!secret || provided !== secret) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
@@ -37,5 +42,7 @@ export async function GET(req: Request) {
     dbCheck.error = err instanceof Error ? err.message : String(err)
   }
 
-  return NextResponse.json({ ok: true, env: envPresence, db: dbCheck })
+  // `ok: true` était écrit en dur : un diagnostic dont la seule vérification a
+  // échoué se déclarait sain. `ok` reflète maintenant le résultat du test.
+  return NextResponse.json({ ok: dbCheck.ok, env: envPresence, db: dbCheck }, { status: dbCheck.ok ? 200 : 503 })
 }

@@ -32,7 +32,14 @@ export async function GET() {
     }))
     return NextResponse.json({ invoices })
   } catch (err) {
+    // Le catch rendait `{ invoices: [] }` sans statut, donc en 200 : pendant une
+    // panne Stripe, un client qui paie voyait « aucune facture » — une absence
+    // de facture au lieu d'une absence de réponse. Le 502 laisse l'interface
+    // afficher l'erreur.
     console.error('[stripe/invoices] Error:', err instanceof Error ? err.message : err)
-    return NextResponse.json({ invoices: [], error: 'Impossible de charger les factures.' })
+    return NextResponse.json(
+      { invoices: null, error: 'Impossible de charger les factures pour le moment.', cause: 'stripe' },
+      { status: 502 },
+    )
   }
 }

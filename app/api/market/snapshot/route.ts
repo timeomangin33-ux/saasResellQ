@@ -78,24 +78,37 @@ export async function POST(request: Request) {
         const categoryName = normalizeCategoryName(category.name)
         if (!categoryName) return
 
+        // Seul l'horodatage est écrit ici. Cette route recevait une liste de
+        // noms de catégories et y ajoutait `trendDirection: 'stable'` et
+        // `trendStrength: 'moderate'` en dur : deux constantes qui écrasaient
+        // la tendance réellement calculée par lib/vinted/tendance.ts, laquelle
+        // écrit « inconnue » tant qu'il n'y a pas assez d'historique. Une
+        // catégorie jamais mesurée s'affichait donc « stable » à l'écran.
         await prisma.categoryMarket.upsert({
           where: { category: categoryName },
           update: {
             lastAnalyzedAt: new Date(),
-            trendDirection: 'stable',
-            trendStrength: 'moderate',
           },
           create: {
             category: categoryName,
             lastAnalyzedAt: new Date(),
-            trendDirection: 'stable',
-            trendStrength: 'moderate',
           },
         })
       })
     )
 
-    return NextResponse.json({ ok: true, received: categories.length, stored: categories.length })
+    // « stored » laissait croire que des mesures de marché avaient été
+    // enregistrées, alors que seul `lastAnalyzedAt` est écrit. On décrit ce qui
+    // s'est réellement passé.
+    return NextResponse.json({
+      ok: true,
+      received: categories.length,
+      categoriesTouched: categories.length,
+      written: 'lastAnalyzedAt',
+      message:
+        `${categories.length} catégorie(s) horodatée(s). Aucune mesure de marché n'est écrite par cette route : ` +
+        `les prix, volumes et tendances proviennent du collecteur.`,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({ ok: false, message }, { status: 500 })

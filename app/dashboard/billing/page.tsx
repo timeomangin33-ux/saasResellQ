@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { CheckCircle2, CreditCard, Download, ExternalLink, FileText, Loader2, Receipt, Sparkles } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CreditCard, Download, ExternalLink, FileText, Loader2, Receipt, Sparkles } from 'lucide-react'
 import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -56,6 +56,9 @@ export default function DashboardBillingPage() {
   const [invoicesLoading, setInvoicesLoading] = useState(true)
   const [openingPortal, setOpeningPortal] = useState(false)
   const [error, setError] = useState('')
+  // Distinct de `error` : une panne Stripe sur la liste des factures ne doit pas
+  // masquer le forfait, qui lui a bien été chargé.
+  const [invoicesError, setInvoicesError] = useState('')
 
   useEffect(() => {
     fetch('/api/subscription/info').then(async response => {
@@ -64,10 +67,21 @@ export default function DashboardBillingPage() {
       setSubscription(data)
     }).catch(err => setError(err instanceof Error ? err.message : 'Erreur inconnue')).finally(() => setLoading(false))
 
+    // Le statut HTTP était ignoré : sur une panne Stripe la route rend 502 avec
+    // `invoices: null`, et `data.invoices ?? []` transformait la panne en
+    // « Aucune facture pour le moment » — on annonçait à un client qui paie que
+    // son historique était vide alors que l'appel avait simplement échoué.
     fetch('/api/stripe/invoices').then(async response => {
-      const data = await response.json()
-      setInvoices(data.invoices ?? [])
-    }).catch(() => setInvoices([])).finally(() => setInvoicesLoading(false))
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !Array.isArray(data.invoices)) {
+        throw new Error(data.error || 'Impossible de charger vos factures pour le moment.')
+      }
+      setInvoices(data.invoices)
+      setInvoicesError('')
+    }).catch(err => {
+      setInvoices([])
+      setInvoicesError(err instanceof Error ? err.message : 'Impossible de charger vos factures pour le moment.')
+    }).finally(() => setInvoicesLoading(false))
   }, [])
 
   const openPortal = async () => {
@@ -202,6 +216,15 @@ export default function DashboardBillingPage() {
           </div>
           {invoicesLoading ? (
             <div className="flex items-center justify-center py-10 text-zinc-500"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : invoicesError ? (
+            <div className="px-6 py-10 text-center text-sm text-amber-200">
+              <AlertTriangle className="mx-auto mb-3 h-6 w-6 text-amber-300" />
+              <p>{invoicesError}</p>
+              <p className="mt-2 text-xs text-zinc-500">
+                Vos factures existent toujours : elles n'ont pas pu être récupérées à l'instant. Réessayez dans un
+                moment, ou ouvrez le portail Stripe ci-dessus pour les consulter.
+              </p>
+            </div>
           ) : invoices.length === 0 ? (
             <div className="px-6 py-10 text-center text-sm text-zinc-500">
               <FileText className="mx-auto mb-3 h-6 w-6 text-zinc-600" />

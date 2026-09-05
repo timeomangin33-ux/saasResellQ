@@ -73,6 +73,45 @@ export async function authorizeAuthenticatedUser(request?: Request): Promise<Aut
   return { user }
 }
 
+/**
+ * Rembourse des crédits IA déjà débités.
+ *
+ * `authorizeAIFeature` débite AVANT que l'agent ne soit contacté, et
+ * `callAgent` ne lève jamais : quand N8N_WEBHOOK_BASE_URL n'est pas
+ * configurée — c'est le cas de ce déploiement — il rend un repli. Le quota
+ * mensuel de l'utilisateur était donc consommé pour une réponse qu'aucun
+ * agent n'a produite. Les routes IA appellent cette fonction sur le chemin
+ * d'échec, juste avant de répondre 503.
+ */
+export async function rembourserCredits(userId: string, montant = 1, action = 'remboursement') {
+  if (!userId || montant <= 0) return
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, aiCreditsUsed: true },
+    })
+    // Un compte ADMIN n'est jamais débité (voir authorizeAIFeature) : le
+    // rembourser ferait passer le compteur sous zéro et offrirait un quota
+    // supplémentaire à tous les autres appels du mois.
+    if (!user || user.role === 'ADMIN') return
+
+    const remboursement = Math.min(montant, user.aiCreditsUsed)
+    if (remboursement <= 0) return
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { aiCreditsUsed: { decrement: remboursement } },
+    })
+    // Trace négative dans le journal d'usage : sans elle, la consommation
+    // journalisée et le compteur de l'utilisateur divergent silencieusement.
+    await prisma.aIUsageEvent.create({ data: { userId, action, credits: -remboursement } })
+  } catch (error) {
+    // Un remboursement raté ne doit pas transformer le 503 attendu en 500 :
+    // l'indisponibilité de l'agent reste l'information utile pour l'appelant.
+    console.error('rembourserCredits: remboursement impossible', error)
+  }
+}
+
 export async function authorizeAIFeature(request: Request, action: string, credits = 1, minimum: keyof typeof PLAN_RANK = 'STARTER'): Promise<AuthorizedAIFeatureResult> {
   const access = await authorizeFeature(request, minimum)
   if ('response' in access) return access

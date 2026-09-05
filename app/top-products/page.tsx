@@ -10,14 +10,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
+/**
+ * Le tableau affichait une colonne « Ventes » sans aucune source — Vinted ne
+ * publie pas les transactions, ce chiffre n'existe nulle part — et une colonne
+ * « Demande » que /api/vinted/top-products ne remplit jamais. Ne restent que
+ * les champs réellement renvoyés par la route.
+ */
 interface Product {
   title: string
-  brand?: string
-  price?: number
-  demandScore?: number
-  profitMargin?: number
-  sales?: number
-  url?: string
+  brand?: string | null
+  price?: number | null
+  profitMargin?: number | null
+  analysisScore?: number | null
+  url?: string | null
 }
 
 const RANK_STYLES = [
@@ -71,7 +76,7 @@ export default function TopProductsPage() {
             title="Top produits"
             kicker="Classement"
             icon={TrendingUp}
-            description="Analysez les meilleures opportunités Vinted listées par prix, demande et marge potentielle."
+            description="Les annonces Vinted collectées, classées par score d'analyse puis par marge estimée. Prix demandés uniquement : Vinted ne publie aucun prix de vente."
             actions={
               updatedAt ? (
                 <span className="chip border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
@@ -112,17 +117,16 @@ export default function TopProductsPage() {
                   <th className="px-4 py-3">#</th>
                   <th className="px-4 py-3">Produit</th>
                   <th className="px-4 py-3">Marque</th>
-                  <th className="px-4 py-3">Prix</th>
-                  <th className="px-4 py-3">Demande</th>
-                  <th className="px-4 py-3">Marge</th>
-                  <th className="px-4 py-3">Ventes</th>
+                  <th className="px-4 py-3">Prix demandé</th>
+                  <th className="px-4 py-3">Score d'analyse</th>
+                  <th className="px-4 py-3">Marge estimée</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   [...Array(8)].map((_, index) => (
                     <tr key={index}>
-                      <td colSpan={7} className="px-4 py-2">
+                      <td colSpan={6} className="px-4 py-2">
                         <div className="h-9 overflow-hidden rounded-lg bg-white/[0.03]">
                           <motion.div
                             className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent"
@@ -135,7 +139,7 @@ export default function TopProductsPage() {
                   ))
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">Aucun produit disponible. Vérifiez votre flux ou relancez la collecte.</td>
+                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">Aucun produit disponible. Vérifiez votre flux ou relancez la collecte.</td>
                   </tr>
                 ) : (
                   products.slice(0, 20).map((product, index) => (
@@ -154,16 +158,28 @@ export default function TopProductsPage() {
                       </td>
                       <td className="px-4 py-4 font-medium text-white transition-colors group-hover:text-emerald-200">{product.title}</td>
                       <td className="px-4 py-4 text-slate-300">{product.brand ?? '—'}</td>
-                      <td className="px-4 py-4 text-slate-300">{product.price != null ? `${product.price}€` : '—'}</td>
-                      <td className="px-4 py-4 text-slate-300">{product.demandScore != null ? `${product.demandScore}/100` : '—'}</td>
-                      <td className="px-4 py-4 font-medium text-emerald-300">{product.profitMargin != null ? `${product.profitMargin}%` : '—'}</td>
-                      <td className="px-4 py-4 text-slate-300">{product.sales ?? '—'}</td>
+                      <td className="px-4 py-4 text-slate-300 tabular-nums">{product.price != null ? `${Math.round(product.price)}€` : '—'}</td>
+                      <td className="px-4 py-4 text-slate-300 tabular-nums" title={product.analysisScore == null ? "Annonce pas encore passée par l'analyse IA." : undefined}>
+                        {product.analysisScore != null ? `${Math.round(product.analysisScore)}/100` : '—'}
+                      </td>
+                      <td className={`px-4 py-4 font-medium tabular-nums ${product.profitMargin == null ? 'text-slate-500' : 'text-emerald-300'}`}>
+                        {product.profitMargin != null ? (
+                          `${Math.round(product.profitMargin)}%`
+                        ) : (
+                          <span title="Marge non calculée : l'analyse IA n'a pas encore traité cette annonce.">—</span>
+                        )}
+                      </td>
                     </motion.tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+          <p className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-slate-500">
+            Un tiret dans « Score d'analyse » ou « Marge estimée » signifie que la passe IA n'a pas encore traité
+            l'annonce : rien n'est estimé à sa place. Les prix affichés sont les prix <strong className="font-medium text-slate-400">demandés</strong>
+            {' '}par les vendeurs, jamais des prix de vente.
+          </p>
         </Reveal>
       </div>
     </DashboardLayout>

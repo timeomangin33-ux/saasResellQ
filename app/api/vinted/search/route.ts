@@ -53,7 +53,13 @@ export async function GET(request: Request) {
         ],
       })),
     },
-    orderBy: [{ analysisScore: 'desc' }, { lastSeenAt: 'desc' }],
+    // Postgres place les NULL en tête sur un ORDER BY ... DESC, et Prisma émet
+    // un ORDER BY nu : les annonces jamais notées passaient devant les mieux
+    // notées, donc la première page de résultats était la moins informative.
+    orderBy: [
+      { analysisScore: { sort: 'desc', nulls: 'last' } },
+      { lastSeenAt: { sort: 'desc', nulls: 'last' } },
+    ],
     take: limite,
   })
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { authorizeAIFeature } from '@/lib/access-control'
+import { authorizeAIFeature, rembourserCredits } from '@/lib/access-control'
 import { runCreateWatchlists, runProductAnalysis, runProductSync, runNotifyUser } from '@/lib/automation-actions'
 import { z } from 'zod'
 
@@ -31,18 +31,37 @@ const actionSchema = z.object({
  * - "Notify me if Apple Watch drops below €50"
  */
 export async function POST(request: NextRequest) {
+  // Retenu hors du `try` : le bloc `catch` doit pouvoir rembourser, or `access`
+  // n'y est plus dans la portée.
+  let idUtilisateurCourant = ''
   try {
     const access = await authorizeAIFeature(request, 'automation_action', 2, 'PRO')
     if ('response' in access) return access.response
+    idUtilisateurCourant = access.user.id
     const parsed = actionSchema.safeParse(await request.json().catch(() => ({})))
-    if (!parsed.success) return NextResponse.json({ error: 'Paramètres d\'automatisation invalides.' }, { status: 400 })
+    if (!parsed.success) {
+      // Le débit a lieu avant la validation du corps de la requête : une
+      // requête mal formée coûtait 2 crédits sans rien déclencher.
+      await rembourserCredits(access.user.id, 2, 'automation_action')
+      return NextResponse.json({ error: 'Paramètres d\'automatisation invalides.' }, { status: 400 })
+    }
     const { action, query, filters } = parsed.data
 
     // Parse AI action and create corresponding job
     const result = await handleAIAction(access.user.id, action, query, filters, access.user.role === 'ADMIN' || access.user.subscriptionPlan === 'BUSINESS')
 
+    // Les 2 crédits sont débités avant l'exécution. Une action refusée (forfait
+    // insuffisant) ou non reconnue ne produit aucun travail : la facturer
+    // revenait à faire payer une erreur de saisie.
+    if (result.status === 'error') {
+      await rembourserCredits(access.user.id, 2, 'automation_action')
+      return NextResponse.json({ ...result }, { status: 422 })
+    }
+
     return NextResponse.json({ ...result, usage: access.usage })
   } catch (error) {
+    // Même raison : l'action a échoué, le crédit débité en amont est rendu.
+    await rembourserCredits(idUtilisateurCourant, 2, 'automation_action')
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Server error' },
       { status: 500 }
@@ -149,19 +168,34 @@ async function handleAIAction(
   // 5. Get Category Insights
   if (lowerAction.includes('categor') || lowerAction.includes('trend')) {
     const categories = await prisma.categoryMarket.findMany({
-      orderBy: [{ priceChangePercent: 'desc' }],
+      // Postgres place les NULL en tête sur un ORDER BY ... DESC, et Prisma
+      // émet un ORDER BY nu : les catégories sans variation mesurée arrivaient
+      // en tête et l'agent recevait cinq lignes vides comme « top tendances ».
+      orderBy: [{ priceChangePercent: { sort: 'desc', nulls: 'last' } }],
       take: 5,
     })
 
     return {
       status: 'success',
       action: 'category_insights',
+      // `volumeSold` n'est écrit par aucun code de ce dépôt : le champ valait
+      // donc toujours null, et l'agent recevait « sold: null » comme s'il
+      // s'agissait d'un nombre de ventes non encore calculé. Vinted ne publie
+      // aucune transaction : la seule rotation mesurable est la part des
+      // annonces qui ne sont plus en vente sept jours après leur première vue
+      // (vendues ou retirées, on ne sait pas laquelle). Les champs de
+      // confiance accompagnent le chiffre pour que l'agent sache s'il peut
+      // s'y fier.
       categories: categories.map((c) => ({
         name: c.category,
-        trend: c.trendDirection,
+        trend: c.trendDirection ?? 'inconnue',
         priceChangePercent: c.priceChangePercent,
         active: c.volumeActive,
-        sold: c.volumeSold,
+        partEnMoinsDe7Jours: c.sellThroughRate,
+        partEnMoinsDe7JoursEchantillon: c.sellThroughSample,
+        medianDaysToDisappear: c.medianDaysToDisappear,
+        confidence: c.confidence ?? 'insuffisant',
+        historyDays: c.historyDays,
       })),
     }
   }

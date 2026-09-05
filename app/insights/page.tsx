@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { TrendingUp, TrendingDown, Minus, RefreshCw, FileText, Loader2 } from 'lucide-react'
-import { useEffect, useState, useMemo } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 
 interface Trend {
   category: string
@@ -191,9 +191,11 @@ export default function InsightsPage() {
                     const up = t.trendDirection === 'up'
                     const down = t.trendDirection === 'down'
                     const confiance = CONFIANCE[t.confidence ?? 'insuffisant'] ?? CONFIANCE.insuffisant
+                    // La clé était portée par le <tr> intérieur au lieu du
+                    // fragment : React réclamait une clé par ligne rendue.
                     return (
-                      <>
-                        <tr key={i}
+                      <Fragment key={t.category || i}>
+                        <tr
                           className="cursor-pointer transition-colors hover:bg-emerald-500/[0.05]"
                           onClick={() => setExpanded(expanded === t.category ? null : t.category)}>
                           <td className="px-5 py-3 font-medium">{t.category}</td>
@@ -230,7 +232,7 @@ export default function InsightsPage() {
                           </td>
                         </tr>
                         {expanded === t.category && (
-                          <tr key={`${i}-detail`} className="bg-emerald-500/[0.03]">
+                          <tr className="bg-emerald-500/[0.03]">
                             <td colSpan={5} className="space-y-1 px-5 py-2.5 text-xs text-muted-foreground">
                               <p>
                                 Prix demandé médian {t.medianPrice?.toFixed(2) ?? '—'} €
@@ -253,7 +255,7 @@ export default function InsightsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>

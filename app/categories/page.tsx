@@ -212,10 +212,15 @@ function CategoriesContent({ categories, loading, error, search }: {
                   <p className="mt-1 text-lg font-semibold text-white tabular-nums">
                     {formatRotation(category.sell_through_rate)}
                   </p>
+                  {/* Le second cas rendait « sur null vérifiées » dès qu'un taux
+                      arrivait sans sa taille de cohorte : un mot de code lâché
+                      dans une phrase française, au milieu d'un chiffre. */}
                   <p className="text-[11px] text-slate-500">
                     {category.sell_through_rate === null
                       ? `mesure en cours (${category.sell_through_sample ?? 0} annonces vérifiées)`
-                      : `n'étaient plus en vente, sur ${category.sell_through_sample} vérifiées une par une`}
+                      : category.sell_through_sample
+                        ? `n'étaient plus en vente, sur ${category.sell_through_sample} vérifiées une par une`
+                        : "n'étaient plus en vente (taille de la cohorte non enregistrée)"}
                   </p>
                 </div>
               </div>

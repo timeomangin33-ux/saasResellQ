@@ -31,10 +31,28 @@ interface Product {
 interface CategoryStats {
   avg_price: number | null
   median_price: number | null
+  p25_price: number | null
+  p75_price: number | null
+  price_sample: number | null
   volume_active: number
   trend_direction: string | null
   price_change_percent: number | null
+  history_days: number
+  confidence: string
+  quality_note: string | null
   last_analyzed_at: string | null
+}
+
+/**
+ * Le repère de fiabilité, dans les mêmes mots que la page Catégories.
+ *
+ * Deux vocabulaires pour la même notion obligent le lecteur à retenir une
+ * correspondance, et il finit par ignorer les deux.
+ */
+const CONFIANCE: Record<string, { texte: string; classe: string }> = {
+  confirme: { texte: 'Mesure confirmée', classe: 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20' },
+  'en-mesure': { texte: 'Mesure en cours', classe: 'text-amber-300 bg-amber-500/10 border-amber-400/20' },
+  insuffisant: { texte: 'Trop peu de recul', classe: 'text-slate-400 bg-white/[0.03] border-white/10' },
 }
 
 function formatOrDash(value: number | null | undefined, suffix = '', digits = 0) {
@@ -56,16 +74,25 @@ function conditionLabel(condition: string | null) {
   return CONDITION_LABELS[condition] ?? condition
 }
 
+/**
+ * Le badge de tendance.
+ *
+ * Il n'avait pas de cas pour `inconnue` : une catégorie sans historique
+ * retombait sur le trait gris neutre, qui se lit « stable » — c'est-à-dire une
+ * affirmation sur un marché dont on n'a rien mesuré. Même traitement que la
+ * page Catégories : on dit que la tendance n'existe pas encore.
+ */
 function TrendBadge({ direction, percent }: { direction: string | null; percent: number | null }) {
-  const tone =
-    direction === 'up'
+  const inconnue = direction === 'inconnue' || direction === null || percent === null || !Number.isFinite(percent)
+  const tone = inconnue
+    ? 'text-slate-400 bg-white/[0.03] border-white/10'
+    : direction === 'up'
       ? 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20'
       : direction === 'down'
         ? 'text-rose-300 bg-rose-500/10 border-rose-400/20'
         : 'text-slate-300 bg-slate-500/10 border-slate-400/20'
-  const Icon = direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus
-  const label =
-    percent === null || !Number.isFinite(percent) ? '—' : `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`
+  const Icon = !inconnue && direction === 'up' ? TrendingUp : !inconnue && direction === 'down' ? TrendingDown : Minus
+  const label = inconnue ? 'Tendance à venir' : `${percent! > 0 ? '+' : ''}${percent!.toFixed(1)}%`
 
   return (
     <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${tone}`}>
@@ -84,6 +111,8 @@ export default function CategoryPage() {
   const [error, setError] = useState('')
 
   const category = VINTED_CATEGORIES.find((c) => c.slug === slug)
+  const confiance = CONFIANCE[stats?.confidence ?? 'insuffisant'] ?? CONFIANCE.insuffisant
+  const joursHistorique = stats?.history_days ?? 0
 
   useEffect(() => {
     let mounted = true
@@ -109,12 +138,18 @@ export default function CategoryPage() {
           )
           if (found) {
             matched = {
-              avg_price: found.avg_price,
-              median_price: found.median_price,
-              volume_active: found.volume_active,
-              trend_direction: found.trend_direction,
-              price_change_percent: found.price_change_percent,
-              last_analyzed_at: found.last_analyzed_at,
+              avg_price: found.avg_price ?? null,
+              median_price: found.median_price ?? null,
+              p25_price: found.p25_price ?? null,
+              p75_price: found.p75_price ?? null,
+              price_sample: found.price_sample ?? null,
+              volume_active: found.volume_active ?? 0,
+              trend_direction: found.trend_direction ?? null,
+              price_change_percent: found.price_change_percent ?? null,
+              history_days: found.history_days ?? 0,
+              confidence: found.confidence ?? 'insuffisant',
+              quality_note: found.quality_note ?? null,
+              last_analyzed_at: found.last_analyzed_at ?? null,
             }
           }
         }
@@ -170,31 +205,57 @@ export default function CategoryPage() {
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <h1 className="text-4xl font-bold">{category.name}</h1>
                 <TrendBadge direction={stats?.trend_direction ?? null} percent={stats?.price_change_percent ?? null} />
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${confiance.classe}`}
+                  title={stats?.quality_note ?? undefined}
+                >
+                  {confiance.texte}
+                </span>
               </div>
               <p className="mb-6 text-muted-foreground">
-                Annonces Vinted réellement collectées dans cette catégorie.
+                Annonces Vinted réellement collectées dans cette catégorie. Les prix affichés sont des prix{' '}
+                <strong className="font-medium text-foreground">demandés</strong> : Vinted ne publie aucune
+                transaction.
               </p>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Prix moyen</p>
-                  <p className="text-2xl font-bold tabular-nums">{formatOrDash(stats?.avg_price ?? null, '€')}</p>
+                  <p className="mb-1 text-xs text-muted-foreground">Prix demandé médian</p>
+                  <p className="text-2xl font-bold tabular-nums">{formatOrDash(stats?.median_price ?? null, '€')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {stats?.price_sample ? `sur ${stats.price_sample} annonces récentes` : 'relevé en cours'}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Prix médian</p>
-                  <p className="text-2xl font-bold tabular-nums">{formatOrDash(stats?.median_price ?? null, '€')}</p>
+                  <p className="mb-1 text-xs text-muted-foreground">Fourchette courante</p>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {stats?.p25_price === null || stats?.p25_price === undefined || stats?.p75_price === null || stats?.p75_price === undefined
+                      ? '—'
+                      : `${Math.round(stats.p25_price)} – ${Math.round(stats.p75_price)} €`}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">la moitié des annonces</p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Annonces suivies</p>
                   <p className="text-2xl font-bold tabular-nums">{stats?.volume_active ?? products.length}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    prix moyen {formatOrDash(stats?.avg_price ?? null, ' €')}
+                  </p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Dernière analyse</p>
                   <p className="text-sm text-muted-foreground">
                     {stats?.last_analyzed_at ? new Date(stats.last_analyzed_at).toLocaleString('fr-FR') : '—'}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {joursHistorique} jour{joursHistorique > 1 ? 's' : ''} de relevés
+                  </p>
                 </div>
               </div>
+
+              {/* Ce que vaut la mesure, écrit à côté du chiffre : un prix médian
+                  calculé sur un jour de relevés se lit sinon comme un prix établi. */}
+              <p className="mt-4 text-xs text-muted-foreground">{stats?.quality_note ?? 'Mesure en cours.'}</p>
             </div>
           </div>
         </motion.div>

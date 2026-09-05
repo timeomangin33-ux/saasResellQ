@@ -17,7 +17,18 @@ import { EtatCollecte } from '@/components/etat-collecte'
 const PLAN_RANK = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3 } as const
 const PLAN_LABEL: Record<keyof typeof PLAN_RANK, string> = { FREE: 'Découverte', STARTER: 'Starter', PRO: 'Pro', BUSINESS: 'Business' }
 
-type NavItem = { name: string; href: string; icon: typeof Home; minPlan?: keyof typeof PLAN_RANK }
+type NavItem = {
+  name: string
+  href: string
+  icon: typeof Home
+  minPlan?: keyof typeof PLAN_RANK
+  /**
+   * Clé de la fonction dont dépend cette entrée, telle que la renvoie
+   * /api/integrations. Une entrée dont la fonction n'est pas branchée est
+   * retirée du menu au lieu d'être proposée puis refusée.
+   */
+  requiert?: 'assistantIA' | 'comptesVinted'
+}
 
 const explorerNav: NavItem[] = [
   { name: 'Accueil', href: '/dashboard', icon: Home },
@@ -52,10 +63,14 @@ const PLAN_REQUIRED_ROUTES = [
 ]
 
 const toolsNav: NavItem[] = [
-  { name: 'Assistant IA', href: '/ai-agent', icon: Bot, minPlan: 'STARTER' },
-  { name: 'Rapports', href: '/reports', icon: FileText, minPlan: 'STARTER' },
-  { name: 'Historique', href: '/historique', icon: Clock3, minPlan: 'PRO' },
-  { name: 'Comptes Vinted', href: '/dashboard/accounts', icon: Layers3, minPlan: 'BUSINESS' },
+  // L'assistant et les rapports passent par des agents n8n. Quand l'adresse
+  // n'est pas configurée, chaque appel débite des crédits puis répond
+  // « momentanément indisponible » : le compteur descend et la réponse
+  // n'arrive jamais. Ces deux entrées disparaissent donc du menu tant que le
+  // service n'est pas branché, plutôt que d'être offertes et refusées.
+  { name: 'Assistant IA', href: '/ai-agent', icon: Bot, minPlan: 'STARTER', requiert: 'assistantIA' },
+  { name: 'Rapports', href: '/reports', icon: FileText, minPlan: 'STARTER', requiert: 'assistantIA' },
+  { name: 'Comptes Vinted', href: '/dashboard/accounts', icon: Layers3, minPlan: 'BUSINESS', requiert: 'comptesVinted' },
 ]
 
 const accountNav: NavItem[] = [
@@ -70,6 +85,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: session, status } = useSession()
   const [open, setOpen] = useState(false)
   const [usage, setUsage] = useState<{ remaining: number; limit: number; planLabel: string; active: boolean } | null>(null)
+  /**
+   * Quelles fonctions peuvent réellement répondre.
+   *
+   * `null` tant que la réponse n'est pas arrivée : on affiche alors le menu
+   * complet, parce que masquer une entrée le temps d'un aller-retour la ferait
+   * clignoter à chaque navigation. Une entrée n'est retirée que sur une
+   * réponse explicite disant que sa fonction n'est pas branchée.
+   */
+  const [fonctions, setFonctions] = useState<Record<string, boolean> | null>(null)
   const [clock, setClock] = useState('')
   const isAdmin = session?.user?.role === 'ADMIN'
   // An expired/inactive subscription must gate like FREE, otherwise the nav
@@ -80,6 +104,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (status === 'authenticated') fetch('/api/ai/usage').then(r => r.ok ? r.json() : null).then(setUsage).catch(() => undefined)
+  }, [status])
+
+  useEffect(() => {
+    if (status !== 'authenticated') return
+    fetch('/api/integrations')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setFonctions(d?.fonctions ?? null))
+      .catch(() => undefined)
   }, [status])
 
   useEffect(() => {
@@ -146,11 +178,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!session) return <>{children}</>
 
   const isActive = (href: string) => href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+  // Une entrée dont la fonction est explicitement absente est retirée. Tant que
+  // /api/integrations n'a pas répondu, tout reste affiché : masquer puis
+  // réafficher ferait clignoter le menu à chaque page.
+  const disponible = (item: NavItem) =>
+    !item.requiert || fonctions === null || fonctions[item.requiert] !== false
+
+  const outils = toolsNav.filter(disponible)
   const navSections = [
-    { title: 'Explorer', items: explorerNav },
-    { title: 'Outils & IA', items: [...toolsNav, ...(isAdmin ? [{ name: 'Administration', href: '/admin', icon: Activity }] : [])] },
+    { title: 'Explorer', items: explorerNav.filter(disponible) },
+    {
+      title: outils.length > 0 ? 'Outils & IA' : 'Outils',
+      items: [...outils, ...(isAdmin ? [{ name: 'Administration', href: '/admin', icon: Activity }] : [])],
+    },
     { title: 'Compte', items: accountNav },
-  ]
+  ].filter((section) => section.items.length > 0)
   const nav = navSections.flatMap((section) => section.items)
   const initials = (session.user?.name || session.user?.email || 'R').slice(0, 1).toUpperCase()
   const usagePct = usage?.active && usage.limit ? Math.max(3, (usage.remaining / usage.limit) * 100) : 0

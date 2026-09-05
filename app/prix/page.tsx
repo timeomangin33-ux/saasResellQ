@@ -15,14 +15,19 @@ import { ampleurDuReleve, marquesPubliables } from '@/lib/prix-public'
 // une page statique se sert instantanément à un visiteur venu de Google.
 export const revalidate = 86400
 
+// Le titre et le H1 annonçaient « combien se vend » / « prix réels », soit
+// exactement ce que l'encadré trois lignes plus bas dit être impossible : Vinted
+// ne publie pas le prix auquel les articles partent. Une page qui se contredit
+// entre son titre et son avertissement perd les deux. Le mot-clé reste
+// « prix Vinted » + la marque, la promesse devient tenable.
 export const metadata: Metadata = {
-  title: 'Prix réels sur Vinted par marque — ResellQ',
+  title: 'Prix demandés sur Vinted par marque — ResellQ',
   description:
-    'Les prix demandés sur Vinted, marque par marque, relevés chaque jour sur des milliers d\'annonces réelles. Prix médian, fourchette, répartition par état. Gratuit et sans inscription.',
+    'Les prix demandés sur Vinted, marque par marque, relevés chaque jour sur des milliers d\'annonces en ligne. Prix médian, fourchette, répartition par état. Gratuit et sans inscription.',
   alternates: { canonical: '/prix' },
   openGraph: {
-    title: 'Prix réels sur Vinted, marque par marque',
-    description: 'Relevés chaque jour sur des milliers d\'annonces. Gratuit, sans inscription.',
+    title: 'Prix demandés sur Vinted, marque par marque',
+    description: 'Relevés chaque jour sur des milliers d\'annonces en ligne. Gratuit, sans inscription.',
     type: 'website',
   },
 }
@@ -43,7 +48,7 @@ export default async function PagePrix() {
       <header className="max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">Gratuit, sans inscription</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Combien se vend une marque sur Vinted ?
+          À quel prix chaque marque est-elle proposée sur Vinted ?
         </h1>
         <p className="mt-5 text-lg text-muted-foreground">
           Les prix réellement demandés, relevés chaque jour sur{' '}

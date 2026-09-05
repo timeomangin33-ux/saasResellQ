@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AGENTS, callAgent } from '@/lib/n8n-agents'
-import { authorizeAIFeature, errorResponse } from '@/lib/access-control'
+import { authorizeAIFeature, errorResponse, rembourserCredits } from '@/lib/access-control'
 import { getPlanLimits } from '@/lib/plans'
 
 interface AgentReportResponse {
@@ -34,6 +34,10 @@ export async function POST(request: Request) {
     const data = await callAgent<AgentReportResponse>(AGENTS.reportGenerator, body)
 
     if (data.fallback) {
+    // Les crédits sont débités avant l'appel : un agent injoignable les
+    // consommerait sans rien rendre, et le compteur ne se recharge pas tout
+    // seul. On rembourse donc avant de répondre.
+    await rembourserCredits(access.user.id, 3, 'report_generation')
       return NextResponse.json({ error: data.error || 'Le service de génération de rapports est momentanément indisponible.' }, { status: 503 })
     }
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { AGENTS, callAgent } from '@/lib/n8n-agents'
 import { VINTED_CATEGORIES } from '@/vinted'
-import { authorizeAIFeature } from '@/lib/access-control'
+import { authorizeAIFeature, rembourserCredits } from '@/lib/access-control'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,11 +31,16 @@ export async function POST(request: Request) {
     const data = await callAgent(AGENTS.categoryAnalyzer, { category })
 
     if (estUnRepli(data)) {
+      // Les 2 crédits sont débités avant l'appel à l'agent. Quand l'agent
+      // n'est pas joignable, la réponse rendue est une relecture des tables du
+      // collecteur : aucune analyse IA n'a été produite, donc rien à facturer.
+      await rembourserCredits(access.user.id, 2, 'category_analysis')
       return repondreAvecLesDonneesCollectees(category)
     }
 
     return NextResponse.json({ ...(data as object), usage: access.usage })
   } catch (error) {
+    await rembourserCredits(access.user.id, 2, 'category_analysis')
     const reponse = await repondreAvecLesDonneesCollectees(category)
     console.error("ai/categories: agent injoignable, repli sur les données collectées", error)
     return reponse

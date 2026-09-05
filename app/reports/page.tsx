@@ -32,7 +32,12 @@ const TYPE_LABELS: Record<string, string> = { daily: 'Quotidien', weekly: 'Hebdo
 
 export default function ReportsPage() {
   const { data: session, status } = useSession()
-  const planKey = normalizePlan(session?.user?.subscriptionPlan)
+  // Le forfait seul ne suffit pas : un abonnement PRO expiré garde
+  // `subscriptionPlan = 'PRO'` et franchissait donc la porte plus bas, alors que
+  // la barre latérale (app/dashboard-layout.tsx) le traite déjà comme FREE. Deux
+  // verrous qui ne disent pas la même chose, c'est le second qui est faux.
+  const planActif = session?.user?.role === 'ADMIN' || session?.user?.subscriptionStatus === 'ACTIVE'
+  const planKey = planActif ? normalizePlan(session?.user?.subscriptionPlan) : 'FREE'
   const [generating, setGenerating] = useState(false)
   const [selectedType, setSelectedType] = useState('weekly')
   const [reports, setReports] = useState<Report[]>([])

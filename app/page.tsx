@@ -148,16 +148,26 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
 }
 
 export default function LandingPage() {
-  const [monthlyItems, setMonthlyItems] = useState(12)
-  const opportunityScore = Math.round(monthlyItems * 5 + 30)
   const { scrollYProgress } = useScroll()
   const navOpacity = useTransform(scrollYProgress, [0, 0.03], [0.4, 0.92])
   const [liveStats, setLiveStats] = useState<{ productsTracked: number; categoriesTracked: number } | null>(null)
 
   useEffect(() => {
+    // La route rend 503 avec des compteurs à `null` quand la base est
+    // injoignable. Sans ce contrôle, `liveStats` devenait un objet vérité dont
+    // les deux nombres étaient nuls, et la page affichait deux compteurs vides
+    // animés comme s'ils avaient été mesurés.
     fetch('/api/public/stats')
-      .then((res) => res.json())
-      .then((data) => setLiveStats(data))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (
+          data &&
+          Number.isFinite(data.productsTracked) &&
+          Number.isFinite(data.categoriesTracked)
+        ) {
+          setLiveStats({ productsTracked: data.productsTracked, categoriesTracked: data.categoriesTracked })
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -269,41 +279,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 pb-16">
-        <Reveal className="mx-auto max-w-6xl rounded-[28px] border border-white/10 bg-card/80 p-6 shadow-sm backdrop-blur">
-          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">Visualisation d'activité</p>
-              <h2 className="text-xl font-semibold">Suivez votre volume et priorisez vos actions</h2>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-right">
-              <p className="text-xs text-muted-foreground">Score d'opportunité</p>
-              <motion.p key={opportunityScore} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} className="text-2xl font-semibold text-accent">{opportunityScore}</motion.p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Estimation indicative selon votre activité.</p>
-            </div>
-          </div>
-
-          <div className="grid items-center gap-5 md:grid-cols-[1.3fr_0.7fr]">
-            <div>
-              <p className="text-sm font-medium">Articles vendus par mois</p>
-              <p className="mt-1 text-xs text-muted-foreground">Plus votre volume monte, plus votre base d'analyse se renforce.</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold">{monthlyItems} articles</p>
-              <p className="mt-1 text-xs text-muted-foreground">Niveau de priorité : {opportunityScore}.</p>
-            </div>
-          </div>
-
-          <input
-            type="range"
-            min={2}
-            max={40}
-            value={monthlyItems}
-            onChange={e => setMonthlyItems(Number(e.target.value))}
-            className="mt-5 w-full accent-primary"
-          />
-        </Reveal>
-      </section>
+      {/* La section « Visualisation d'activité » a été retirée : son curseur
+          « articles vendus par mois » alimentait un « Score d'opportunité » et un
+          « Niveau de priorité » qui valaient articles × 5 + 30. C'était une
+          opération arithmétique sur un curseur, présentée comme un signal produit,
+          sur la première page que voit un visiteur. Les chiffres qui suivent, eux,
+          sont comptés en base. */}
 
       <section className="border-y border-white/10 bg-background/40 px-6 py-12 backdrop-blur">
         <StaggerGroup className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4">
@@ -311,13 +292,17 @@ export default function LandingPage() {
             <p className="text-2xl font-semibold tabular-nums text-foreground">
               {liveStats ? <NumberTicker value={liveStats.productsTracked} className="text-foreground" /> : '—'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Annonces suivies en ce moment</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {liveStats ? 'Annonces suivies en ce moment' : 'Annonces suivies — comptage momentanément indisponible'}
+            </p>
           </motion.div>
           <motion.div variants={staggerItem} className="text-center">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
               {liveStats ? <NumberTicker value={liveStats.categoriesTracked} className="text-foreground" /> : '—'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Catégories scannées en continu</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {liveStats ? 'Catégories scannées en continu' : 'Catégories scannées — comptage momentanément indisponible'}
+            </p>
           </motion.div>
           {stats.slice(2).map(stat => (
             <motion.div key={stat.label} variants={staggerItem} className="text-center">

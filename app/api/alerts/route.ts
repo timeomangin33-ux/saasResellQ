@@ -4,7 +4,18 @@ import { prisma } from '@/prisma'
 import { authorizeFeature, authorizeAuthenticatedUser, errorResponse } from '@/lib/access-control'
 import { getPlanLimits } from '@/lib/plans'
 
-const CONDITIONS = ['profit_margin', 'price_drop', 'demand_spike'] as const
+/**
+ * Les conditions qu'une alerte peut réellement déclencher.
+ *
+ * `profit_margin` en a été retirée : elle était évaluée dans le cron contre
+ * `CategoryMarket.avgMargin`, une colonne que rien dans le dépôt n'écrit
+ * jamais. L'alerte était acceptée, affichée « Active », et ne pouvait
+ * mathématiquement jamais se déclencher. Mieux vaut ne pas la proposer que
+ * promettre une notification qui n'arrivera pas. Les alertes déjà enregistrées
+ * avec cette condition sont désactivées par le cron, qui prévient leur
+ * propriétaire.
+ */
+const CONDITIONS = ['price_drop', 'demand_spike'] as const
 
 const createAlertSchema = z.object({
   category: z.string().trim().min(1).max(100),
@@ -37,6 +48,22 @@ export async function POST(request: Request) {
     if (count >= limit) {
       return errorResponse(`Limite de ${limit} alerte(s) atteinte pour votre forfait. Passez à un forfait supérieur pour en créer davantage.`, 403)
     }
+  }
+
+  // Le cron cherche la catégorie par son nom exact dans `CategoryMarket` et
+  // passe son tour sans rien dire quand il ne la trouve pas : une faute de
+  // frappe donnait une alerte enregistrée, affichée « Active », et muette à vie.
+  // La liste des catégories suivies fait autorité. Si la table est vide (base
+  // fraîche, collecte pas encore passée), on n'a rien à opposer et on laisse
+  // créer.
+  const suivies = await prisma.categoryMarket.findMany({ select: { category: true } })
+  if (suivies.length > 0 && !suivies.some((c) => c.category === parsed.data.category)) {
+    return errorResponse(
+      `« ${parsed.data.category} » ne fait pas partie des catégories suivies. Choisissez-en une dans la liste : ${suivies
+        .map((c) => c.category)
+        .join(', ')}.`,
+      400,
+    )
   }
 
   const alert = await prisma.alert.create({

@@ -12,6 +12,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Zap, TrendingUp, AlertCircle, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
+/**
+ * Ce que l'agent renvoie.
+ *
+ * `futurePrediction` et `bestTimeToSell` en ont été retirés : ils étaient
+ * affichés sous « 🔮 Prédiction future » et « ⏰ Meilleur moment pour vendre »,
+ * une annonce de l'avenir alors qu'aucune donnée ne le porte — Vinted ne publie
+ * pas ses transactions, et rien ici ne mesure le futur. Le reste est une
+ * estimation du modèle sur ce qui est saisi, présentée comme telle.
+ */
 interface Analysis {
   title: string
   brand: string
@@ -22,8 +31,6 @@ interface Analysis {
   demandScore: number
   riskLevel: string
   recommendation: string
-  futurePrediction: string
-  bestTimeToSell: string
   competitionLevel: string
   insights: string[]
 }
@@ -80,7 +87,7 @@ export default function ProductAnalyzerPage() {
             title="Product Analyzer"
             kicker="Analyse IA"
             icon={Zap}
-            description="Analyse approfondie d'un produit — rentabilité, demande, prédictions futures"
+            description="Estimation IA à partir des informations que vous saisissez — rentabilité, demande, concurrence"
           />
 
           <SpotlightCard spotlightColor="rgba(16,185,129,0.14)">
@@ -138,7 +145,7 @@ export default function ProductAnalyzerPage() {
                 <StaggerGroup className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     { label: 'Prix achat', value: `€${analysis.price}`, color: 'bg-muted/50' },
-                    { label: 'Prix revente', value: `€${analysis.estimatedResalePrice}`, color: 'bg-emerald-500/10 text-emerald-300' },
+                    { label: 'Revente estimée', value: `€${analysis.estimatedResalePrice}`, color: 'bg-emerald-500/10 text-emerald-300' },
                     { label: 'Marge', value: `${analysis.profitMargin}%`, color: 'bg-cyan-500/10 text-cyan-300' },
                     { label: 'Demande', value: `${analysis.demandScore}%`, color: 'bg-violet-500/10 text-violet-300' },
                   ].map(stat => (
@@ -149,6 +156,13 @@ export default function ProductAnalyzerPage() {
                   ))}
                 </StaggerGroup>
 
+                {/* Ces quatre chiffres sortent du modèle, pas du relevé du
+                    marché : sans cette ligne ils se lisent comme des mesures. */}
+                <p className="text-xs text-muted-foreground">
+                  Estimations produites par le modèle à partir des informations saisies. Les prix relevés sur Vinted
+                  sont des prix demandés : Vinted ne publie pas ses transactions.
+                </p>
+
                 {/* Recommandation */}
                 <SpotlightCard spotlightColor="rgba(16,185,129,0.12)">
                   <Reveal className="panel p-6">
@@ -158,19 +172,6 @@ export default function ProductAnalyzerPage() {
                     <p className="text-muted-foreground">{analysis.recommendation}</p>
                   </Reveal>
                 </SpotlightCard>
-
-                {/* Prédiction future */}
-                {analysis.futurePrediction && (
-                  <Reveal delay={0.05} className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-6">
-                    <h3 className="text-lg font-bold mb-3 text-amber-400">🔮 Prédiction future</h3>
-                    <p className="text-muted-foreground">{analysis.futurePrediction}</p>
-                    {analysis.bestTimeToSell && (
-                      <p className="mt-2 text-sm font-semibold text-amber-400">
-                        ⏰ Meilleur moment pour vendre : {analysis.bestTimeToSell}
-                      </p>
-                    )}
-                  </Reveal>
-                )}
 
                 {/* Insights */}
                 {analysis.insights && analysis.insights.length > 0 && (

@@ -40,7 +40,12 @@ interface Category {
   name: string
   topItems?: Array<{ title: string }>
   trend_direction?: string | null
-  trend_strength?: number | string | null
+  /** Prix demandé médian du relevé le plus récent. Jamais un prix de vente : Vinted ne publie pas ses transactions. */
+  median_price?: number | null
+  p25_price?: number | null
+  p75_price?: number | null
+  price_sample?: number | null
+  confidence?: string | null
 }
 
 interface NotificationItem {
@@ -79,10 +84,22 @@ function timeAgo(iso: string) {
   return `il y a ${d} j`
 }
 
-function formatTrendStrength(value: number | string | null | undefined) {
-  const strength = typeof value === 'string' ? Number(value) : value
-  if (strength === null || strength === undefined || !Number.isFinite(strength)) return '—'
-  return `${strength.toFixed(1)}%`
+/**
+ * Le panneau « Dernières analyses » affichait `formatTrendStrength(c.trend_strength)`,
+ * or /api/vinted/top-categories ne renvoie aucun champ `trend_strength` : sa seule
+ * colonne chiffrée montrait donc « — » en permanence. On affiche à la place le prix
+ * demandé médian et la fourchette p25–p75, qui sont mesurés dès aujourd'hui.
+ */
+function formatPrix(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—'
+  return `${Math.round(value)} €`
+}
+
+/** Même vocabulaire que la page Catégories : deux mots pour la même notion se perdent. */
+const CONFIANCE: Record<string, { texte: string; classe: string }> = {
+  confirme: { texte: 'Mesure confirmée', classe: 'text-emerald-300' },
+  'en-mesure': { texte: 'Mesure en cours', classe: 'text-amber-300' },
+  insuffisant: { texte: 'Trop peu de recul', classe: 'text-zinc-500' },
 }
 
 const pageStagger: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } }
@@ -435,21 +452,36 @@ export default function DashboardPage() {
           <SpotlightCard spotlightColor="rgba(16,185,129,0.14)">
             <GlassPanel accent="emerald" className="h-full p-5">
               <div className="flex items-center gap-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-white"><Radar className="h-4 w-4 text-emerald-300" /> Dernières analyses</p>
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-white"><Radar className="h-4 w-4 text-emerald-300" /> Dernières analyses</p>
+                  <p className="mt-0.5 text-xs text-zinc-500">Prix demandé médian par catégorie</p>
+                </div>
               </div>
               <div className="mt-4 space-y-3">
                 {loading ? (
                   [...Array(3)].map((_, i) => <SkeletonLine key={i} />)
                 ) : latestAnalyses.length > 0 ? (
-                  latestAnalyses.map((c, i) => (
-                    <div key={`${c.name}-${i}`} className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-white">{c.name}</p>
-                        <p className="truncate text-xs text-zinc-500">{c.topItems?.[0]?.title ?? 'Tendance en cours'}</p>
+                  latestAnalyses.map((c, i) => {
+                    const confiance = CONFIANCE[c.confidence ?? 'insuffisant'] ?? CONFIANCE.insuffisant
+                    const fourchette =
+                      c.p25_price !== null && c.p25_price !== undefined && c.p75_price !== null && c.p75_price !== undefined
+                        ? `moitié des annonces entre ${Math.round(c.p25_price)} et ${Math.round(c.p75_price)} €`
+                        : c.price_sample
+                          ? `relevé sur ${c.price_sample} annonces récentes`
+                          : 'relevé en cours'
+                    return (
+                      <div key={`${c.name}-${i}`} className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">{c.name}</p>
+                          <p className="truncate text-xs text-zinc-500">{fourchette}</p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-sm font-medium text-emerald-300 tabular-nums">{formatPrix(c.median_price)}</p>
+                          <p className={`text-[11px] ${confiance.classe}`}>{confiance.texte}</p>
+                        </div>
                       </div>
-                      <span className="flex-shrink-0 text-sm font-medium text-emerald-300">{formatTrendStrength(c.trend_strength)}</span>
-                    </div>
-                  ))
+                    )
+                  })
                 ) : (
                   <p className="py-4 text-center text-sm text-zinc-500">Aucune analyse disponible.</p>
                 )}

@@ -35,7 +35,10 @@ export async function POST(request: Request) {
   const debutFenetre = new Date(Date.now() - jours * 86_400_000)
 
   const marches = await prisma.categoryMarket.findMany({
-    orderBy: { volumeActive: 'desc' },
+    // Postgres place les NULL en tête sur un ORDER BY ... DESC, et Prisma émet
+    // un ORDER BY nu : les catégories dont le volume n'a jamais été mesuré
+    // occupaient les premières lignes du tableau des tendances.
+    orderBy: { volumeActive: { sort: 'desc', nulls: 'last' } },
     take: 30,
   })
 

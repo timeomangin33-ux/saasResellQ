@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AGENTS, callAgent } from '@/lib/n8n-agents'
-import { authorizeAIFeature } from '@/lib/access-control'
+import { authorizeAIFeature, rembourserCredits } from '@/lib/access-control'
 
 export async function POST(request: Request) {
   try {
@@ -21,7 +21,20 @@ export async function POST(request: Request) {
       message: lastMessage,
       session_id: sessionId,
       messages: messages.map(m => ({ role: m.role ?? 'user', content: m.content ?? '' })),
-    })) as Record<string, unknown>
+    })) as Record<string, unknown> & { fallback?: boolean; error?: string }
+
+    // `callAgent` ne lève jamais : sans agent joignable il rend
+    // `{ fallback: true, response: "L'agent IA est momentanément
+    // indisponible…" }`. Cette route rendait cette phrase en 200 dans le champ
+    // `result`, et l'interface l'affichait comme la réponse de l'assistant.
+    // Le crédit débité avant l'appel est rendu : rien n'a été analysé.
+    if (data.fallback) {
+      await rembourserCredits(access.user.id, 1, 'chat_message')
+      return NextResponse.json(
+        { error: data.error || "L'assistant IA est momentanément indisponible.", cause: 'agent_indisponible' },
+        { status: 503 },
+      )
+    }
 
     const result = typeof data?.response === 'string'
       ? data.response

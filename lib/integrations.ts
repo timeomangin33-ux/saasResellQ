@@ -26,9 +26,19 @@ export function etatDesIntegrations(): Integration[] {
     },
     {
       cle: 'OPENAI_API_KEY',
-      nom: 'Analyse IA',
+      nom: 'Notation des annonces',
       configuree: Boolean(process.env.OPENAI_API_KEY),
-      consequence: "L'assistant et les scores de rentabilité ne peuvent pas s'exécuter.",
+      consequence: "Les notes d'opportunité et les marges estimees ne se calculent pas.",
+    },
+    {
+      // Les fonctions IA passent par des agents n8n, pas par OpenAI en direct.
+      // Sans cette adresse, chaque appel repond « momentanement indisponible »
+      // apres avoir debite des credits : l'assistant et les rapports sont donc
+      // masques dans le menu plutot que proposes puis refuses.
+      cle: 'N8N_WEBHOOK_BASE_URL',
+      nom: 'Assistant IA et rapports',
+      configuree: Boolean(process.env.N8N_WEBHOOK_BASE_URL),
+      consequence: "L'assistant, les rapports et l'analyse d'annonce sont indisponibles.",
     },
     {
       cle: 'VINTED_COOKIE_SECRET',
@@ -43,4 +53,16 @@ export function etatDesIntegrations(): Integration[] {
 
 export function integrationConfiguree(cle: string) {
   return etatDesIntegrations().find((i) => i.cle === cle)?.configuree ?? false
+}
+
+/**
+ * Les fonctions IA sont-elles utilisables ?
+ *
+ * Elles passent toutes par des agents n8n. Sans `N8N_WEBHOOK_BASE_URL`, chaque
+ * appel debite des credits puis repond « momentanement indisponible » : le
+ * compteur descend, la reponse n'arrive jamais. Mieux vaut ne pas proposer la
+ * fonction que la proposer et la refuser.
+ */
+export function assistantIADisponible() {
+  return Boolean(process.env.N8N_WEBHOOK_BASE_URL)
 }

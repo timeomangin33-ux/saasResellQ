@@ -9,13 +9,27 @@ import { SpotlightCard } from '@/components/ui/spotlight-card'
 import { Magnetic } from '@/components/ui/magnetic'
 import { BellDot, Plus, Trash2, Loader2, X } from 'lucide-react'
 import Link from 'next/link'
+import { VINTED_CATEGORIES } from '@/vinted'
 
 interface AlertRule {
   id: string
   category: string
-  condition: 'profit_margin' | 'price_drop' | 'demand_spike'
+  /**
+   * `condition` reste une chaîne libre côté lecture : la base contient encore
+   * des alertes « profit_margin », une condition retirée parce qu'elle ne
+   * pouvait jamais se déclencher. Les afficher telles quelles vaut mieux que
+   * les faire disparaître de la liste sans explication.
+   */
+  condition: string
   threshold: number
   active: boolean
+}
+
+/** Une catégorie réellement suivie, telle que la collecte la nomme en base. */
+interface CategorieSuivie {
+  name: string
+  history_days: number
+  confidence: string
 }
 
 interface TriggeredSignal {
@@ -25,10 +39,18 @@ interface TriggeredSignal {
   createdAt: string
 }
 
-const CONDITION_LABELS: Record<AlertRule['condition'], string> = {
-  profit_margin: 'Marge bénéficiaire',
-  price_drop: 'Baisse de prix',
+const CONDITION_LABELS: Record<string, string> = {
+  profit_margin: 'Marge bénéficiaire (condition retirée)',
+  price_drop: 'Baisse du prix demandé',
   demand_spike: 'Pic de demande',
+}
+
+/** Ce que chaque condition compare, dit dans les mots de la donnée réelle. */
+const CONDITION_EXPLICATIONS: Record<string, string> = {
+  price_drop:
+    "Se déclenche quand le prix demandé médian de la catégorie recule d'au moins ce pourcentage d'un relevé à l'autre.",
+  demand_spike:
+    "Se déclenche quand le nombre d'annonces en ligne dans la catégorie augmente d'au moins ce pourcentage d'un relevé à l'autre.",
 }
 
 export default function AlertesPage() {
@@ -40,10 +62,11 @@ export default function AlertesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [form, setForm] = useState<{ category: string; condition: AlertRule['condition']; threshold: string }>({
+  const [categoriesSuivies, setCategoriesSuivies] = useState<CategorieSuivie[]>([])
+  const [form, setForm] = useState<{ category: string; condition: string; threshold: string }>({
     category: '',
-    condition: 'profit_margin',
-    threshold: '40',
+    condition: 'price_drop',
+    threshold: '10',
   })
 
   useEffect(() => {
@@ -71,11 +94,51 @@ export default function AlertesPage() {
     load()
   }, [])
 
+  /**
+   * Les catégories proposées viennent de la collecte, pas d'une saisie libre.
+   *
+   * Le champ était un champ texte : le cron cherche la catégorie par son nom
+   * exact dans `CategoryMarket` et passe son tour sans rien dire dès qu'il ne la
+   * trouve pas. « chaussure », « Chaussures  » ou « Sneakers » donnaient une
+   * alerte enregistrée, affichée active, et muette à vie.
+   */
+  useEffect(() => {
+    let monte = true
+    async function chargerCategories() {
+      try {
+        const res = await fetch('/api/vinted/top-categories')
+        if (!res.ok) throw new Error('indisponible')
+        const data = await res.json()
+        const liste: CategorieSuivie[] = (data.categories ?? []).map((c: Record<string, unknown>) => ({
+          name: String(c.name),
+          history_days: Number(c.history_days ?? 0),
+          confidence: String(c.confidence ?? 'insuffisant'),
+        }))
+        if (monte && liste.length > 0) setCategoriesSuivies(liste)
+      } catch {
+        // Repli sur la liste de référence : mieux vaut une liste fermée que la
+        // saisie libre qui a créé le problème.
+        if (monte) {
+          setCategoriesSuivies(
+            VINTED_CATEGORIES.map((c) => ({ name: c.name, history_days: 0, confidence: 'insuffisant' })),
+          )
+        }
+      }
+    }
+    void chargerCategories()
+    return () => {
+      monte = false
+    }
+  }, [])
+
+  const categorieChoisie = categoriesSuivies.find((c) => c.name === form.category) ?? null
+  const conditionHistorique = form.condition === 'price_drop' || form.condition === 'demand_spike'
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
     if (!form.category.trim()) {
-      setFormError('La catégorie est requise.')
+      setFormError('Choisissez une catégorie suivie dans la liste.')
       return
     }
     setSubmitting(true)
@@ -92,7 +155,7 @@ export default function AlertesPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Échec de la création.')
       setAlerts((prev) => [data.alert, ...prev])
-      setForm({ category: '', condition: 'profit_margin', threshold: '40' })
+      setForm({ category: '', condition: 'price_drop', threshold: '10' })
       setShowForm(false)
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Erreur inconnue.')
@@ -165,19 +228,24 @@ export default function AlertesPage() {
               className="panel mt-6 overflow-hidden p-6"
             >
               <div className="grid gap-3 sm:grid-cols-3">
-                <input
+                <select
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  placeholder="Catégorie (ex : Chaussures)"
-                  className="input-field"
-                />
-                <select
-                  value={form.condition}
-                  onChange={(e) => setForm((f) => ({ ...f, condition: e.target.value as AlertRule['condition'] }))}
                   className="input-field"
                 >
-                  <option value="profit_margin">Marge bénéficiaire</option>
-                  <option value="price_drop">Baisse de prix</option>
+                  <option value="">Choisir une catégorie suivie</option>
+                  {categoriesSuivies.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={form.condition}
+                  onChange={(e) => setForm((f) => ({ ...f, condition: e.target.value }))}
+                  className="input-field"
+                >
+                  <option value="price_drop">Baisse du prix demandé</option>
                   <option value="demand_spike">Pic de demande</option>
                 </select>
                 <div className="flex gap-2">
@@ -197,6 +265,21 @@ export default function AlertesPage() {
                   </button>
                 </div>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground">{CONDITION_EXPLICATIONS[form.condition]}</p>
+
+              {/* Ces deux conditions se comparent à un historique de relevés. Sur
+                  une catégorie suivie depuis un ou deux jours, la comparaison
+                  n'existe pas encore : l'alerte est bien enregistrée mais elle
+                  restera muette quelques jours, et le dire ici évite de le
+                  laisser découvrir par le silence. */}
+              {conditionHistorique && categorieChoisie && (
+                <p className="mt-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-200">
+                  {categorieChoisie.confidence === 'confirme'
+                    ? `« ${categorieChoisie.name} » compte ${categorieChoisie.history_days} jour(s) de relevés : cette alerte peut se déclencher dès le prochain passage du robot.`
+                    : `« ${categorieChoisie.name} » ne compte que ${categorieChoisie.history_days} jour(s) de relevés. Cette alerte compare deux périodes : elle sera enregistrée maintenant et commencera à surveiller dès que la catégorie aura assez d'historique — comptez quelques jours.`}
+                </p>
+              )}
+
               {formError && <p className="mt-3 text-sm text-red-400">{formError}</p>}
             </motion.form>
           )}
@@ -235,13 +318,22 @@ export default function AlertesPage() {
                       <div>
                         <p className="text-sm font-medium">{alert.category}</p>
                         <p className="text-xs text-muted-foreground">
-                          {CONDITION_LABELS[alert.condition]} — seuil {alert.threshold}%
+                          {CONDITION_LABELS[alert.condition] ?? alert.condition} — seuil {alert.threshold}%
                         </p>
+                        {alert.condition === 'profit_margin' && (
+                          <p className="mt-0.5 text-xs text-amber-300/80">
+                            Cette condition ne peut pas se déclencher : la marge moyenne par catégorie n'est pas
+                            mesurée. L'alerte a été désactivée, vous pouvez la supprimer.
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
+                        {/* Une alerte « marge » ne peut pas être réactivée :
+                            elle serait aussitôt remise hors service par le cron. */}
                         <button
                           onClick={() => toggleActive(alert)}
-                          disabled={busyId === alert.id}
+                          disabled={busyId === alert.id || alert.condition === 'profit_margin'}
+                          title={alert.condition === 'profit_margin' ? 'Condition retirée : cette alerte ne peut plus être activée.' : undefined}
                           className={`text-xs px-2 py-0.5 rounded-full font-medium transition disabled:opacity-60 ${alert.active ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'}`}
                         >
                           {alert.active ? 'Actif' : 'Inactif'}

@@ -30,21 +30,23 @@ export async function GET(request: Request) {
     analysisScore: { not: null },
   }
 
-  // Le « risque » se lit dans la marge : une marge énorme sur une seule marque
-  // est plus fragile qu'une marge correcte et régulière.
-  const marge: Prisma.FloatNullableFilter = {}
-  if (niveauRisque === 'low') {
-    if (margeMinimum > 0) marge.gte = margeMinimum
-    marge.lt = 40
-  } else if (niveauRisque === 'medium') {
-    marge.gte = Math.max(margeMinimum, 40)
-    marge.lt = 60
-  } else if (niveauRisque === 'high') {
-    marge.gte = Math.max(margeMinimum, 60)
-  } else if (margeMinimum > 0) {
-    marge.gte = margeMinimum
-  }
-  if (Object.keys(marge).length > 0) where.profitMargin = marge
+  /**
+   * `riskLevel` est un plancher de marge, jamais une tranche.
+   *
+   * Il découpait la marge en bandes fermées : « medium » valait
+   * `gte 40, lt 60`. Le Deal Finder partant sur « medium » par défaut, le
+   * premier clic écartait toutes les annonces au-dessus de 60 % de marge — les
+   * meilleures trouvailles — et remontait au passage la marge minimale demandée
+   * par l'utilisateur sans le lui dire. Un plafond n'a de toute façon aucun sens
+   * ici : personne ne cherche à exclure une trop bonne affaire.
+   *
+   * On ne filtre pas non plus sur la colonne `riskLevel` des annonces : elle
+   * n'est écrite que par la passe IA, donc nulle sur la quasi-totalité du stock,
+   * et filtrer dessus ne renverrait presque rien.
+   */
+  const PLANCHERS_MARGE: Record<string, number> = { low: 0, medium: 40, high: 60 }
+  const plancher = Math.max(margeMinimum, PLANCHERS_MARGE[niveauRisque] ?? 0)
+  if (plancher > 0) where.profitMargin = { gte: plancher } satisfies Prisma.FloatNullableFilter
 
   if (categorie && categorie.toLowerCase() !== 'toutes') {
     where.OR = [
