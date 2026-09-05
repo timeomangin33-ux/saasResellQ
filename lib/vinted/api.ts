@@ -355,6 +355,20 @@ export const PLAFOND_RESULTATS = 960
 export const PLAFOND_PAGES = 10
 
 /**
+ * Souffle entre deux paquets de pages, et entre deux tranches de prix.
+ *
+ * Calé sur une mesure, pas sur une intuition : à 700 ms, onze balayages
+ * enchaînés en quarante minutes — environ sept cents pages — se sont terminés
+ * sur un HTTP 429. En exploitation normale le collecteur étale ses passages sur
+ * la journée et n'approche jamais ce rythme ; c'est l'enchaînement forcé qui a
+ * franchi la limite. La marge est prise ici plutôt que dans une consigne à
+ * retenir, parce qu'une consigne se perd et qu'un blocage coûte une journée de
+ * données.
+ */
+const PAUSE_ENTRE_PAQUETS = 1100
+const PAUSE_ENTRE_TRANCHES = 2500
+
+/**
  * Balayage complet d'une recherche.
  *
  * `collecter` s'arrête à un nombre d'annonces voulu ; ici on cherche l'inverse :
@@ -402,7 +416,7 @@ export async function balayer(
   // Au-delà de dix pages Vinted répond 400 : demander plus ne ramène rien et
   // ajoute une erreur à traiter.
   const maxPages = Math.max(1, Math.min(PLAFOND_PAGES, options.maxPages ?? PLAFOND_PAGES))
-  const pause = options.pauseMs ?? 700
+  const pause = options.pauseMs ?? PAUSE_ENTRE_PAQUETS
   const SIMULTANEES = 2
 
   const vues = new Set<string>()
@@ -630,6 +644,11 @@ export async function balayerParTranches(
       exhaustive: resultat.complet && !resultat.sature,
       annonces: resultat.items.length,
     })
+
+    // Une pause plus franche entre deux tranches qu'entre deux pages : c'est
+    // l'endroit où un lecteur humain reprendrait son souffle, et c'est ce que
+    // le filtre anti-robot regarde.
+    await attendre(PAUSE_ENTRE_TRANCHES)
 
     if (resultat.interrompuPar) {
       interrompuPar ??= resultat.interrompuPar

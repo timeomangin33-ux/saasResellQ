@@ -95,6 +95,24 @@ export interface ResultatCible {
 const BUDGET_BALAYAGE_MS = 90_000
 
 /**
+ * Délai minimum entre deux balayages, toutes catégories confondues.
+ *
+ * Sans lui, un démarrage à froid enchaîne les quinze catégories : aucune n'a
+ * encore de date de dernier balayage, donc toutes sont dues en même temps.
+ * Mesuré, c'est exactement ce qui a fait tomber un HTTP 429 — onze balayages en
+ * quarante minutes, environ sept cents pages. Étalés d'un quart d'heure, les
+ * quinze catégories sont couvertes en moins de quatre heures, deux fois par
+ * jour, sans jamais faire de pic.
+ *
+ * Le repère est en mémoire et non en base, volontairement : il protège d'une
+ * rafale au sein d'un même processus, ce qui est le seul cas où elle se
+ * produit. Le cron Vercel, lui, ne lance jamais de balayage — il n'en a pas le
+ * budget de temps.
+ */
+const ESPACEMENT_BALAYAGES_MS = 15 * 60_000
+let dernierBalayage = 0
+
+/**
  * Crée les cibles de départ à partir des catégories Vinted connues, si la
  * table est vide. Idempotent : relancer n'écrase aucun réglage existant.
  */
@@ -191,6 +209,7 @@ export interface CibleACollecter {
  */
 function balayageDu(cible: CibleACollecter, budgetRestantMs: number) {
   if (budgetRestantMs < BUDGET_BALAYAGE_MS) return false
+  if (Date.now() - dernierBalayage < ESPACEMENT_BALAYAGES_MS) return false
   const intervalle = (cible.sweepIntervalMinutes ?? 720) * 60_000
   if (!cible.lastSweepAt) return true
   return Date.now() - cible.lastSweepAt.getTime() >= intervalle
@@ -215,6 +234,11 @@ export async function traiterCible(
   // Balayage complet : tout le catalogue de la catégorie, tri par prix.
   // ------------------------------------------------------------------
   if (mode === 'balayage') {
+    // Marqué avant et non après : un balayage qui échoue a quand même consommé
+    // des requêtes, et c'est justement quand Vinted refuse qu'il ne faut pas
+    // enchaîner.
+    dernierBalayage = Date.now()
+
     const bilan = await balayerCategorie({
       query: cible.query,
       category: cible.query,
