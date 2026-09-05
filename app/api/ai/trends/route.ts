@@ -98,6 +98,9 @@ export async function POST(request: Request) {
         demandIndex: indiceDemande,
         avgPrice: marche.avgPrice,
         medianPrice: marche.medianPrice,
+        p25Price: marche.p25Price,
+        p75Price: marche.p75Price,
+        priceSample: marche.priceSample,
         // Rotation vérifiée : part des annonces dont la page, relue sept jours
         // après la première vue, n'était plus une annonce en vente. Vendue ou
         // retirée ; Vinted ne publie pas les transactions, donc jamais « vendue ».
@@ -133,7 +136,7 @@ export async function POST(request: Request) {
     // Ce que le tableau montre et ce qu'il ne montre pas, en une phrase
     // reprise telle quelle par l'interface.
     lecture:
-      'Prix demandés, jamais prix de vente : Vinted ne publie aucune transaction. ' +
+      'Prix demandés sur les annonces récentes, jamais prix de vente : Vinted ne publie aucune transaction. ' +
       'La rotation est vérifiée annonce par annonce : part de celles qui ne sont plus en vente ' +
       'sept jours après leur première vue (vendues ou retirées, Vinted ne dit pas laquelle).',
   })

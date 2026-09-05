@@ -324,8 +324,20 @@ model CategoryMarketDaily {
 model CategoryMarket {
   id              String   @id @default(cuid())
   category        String   @unique
+  /// Prix demandes sur les annonces recemment mises en ligne, pas sur tout le
+  /// stock : Vinted plafonne chaque recherche a 960 resultats et repond
+  /// toujours « 960 » a la question du nombre total, donc la mediane du stock
+  /// entier n'est calculable par personne. Celle du flux recent l'est
+  /// exactement, et c'est de toute facon celle qui interesse un revendeur.
   avgPrice        Float?
   medianPrice     Float?
+  /// Premier et troisieme quartile du meme releve. La mediane seule ne dit pas
+  /// si une categorie est homogene ou etalee, et c'est cet ecart qui decide
+  /// d'un achat : entre p25 et p75 tient la moitie des annonces.
+  p25Price        Float?
+  p75Price        Float?
+  /// Nombre d'annonces recentes derriere ces chiffres.
+  priceSample     Int?
   avgMargin        Float?
   volumeSold      Int?     // Products sold this week
   volumeActive    Int?     // Currently listed

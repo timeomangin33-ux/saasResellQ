@@ -66,6 +66,8 @@ export interface ResultatCible {
   zones?: number
   /** Tranches parcourues *en entier*, les seules où une absence prouve quelque chose. */
   zonesFiables?: number
+  /** Annonces récentes lues, sur lesquelles reposent les prix de référence. */
+  recentes?: number
   /** Annonces dont la page a été relue pour connaître leur sort. */
   verifiees?: number
   /** Parmi elles, celles qui n'étaient plus en vente. */
@@ -233,6 +235,7 @@ export async function traiterCible(
         annoncesEcrites: 0,
         zones: [],
         zonesFiables: 0,
+        recentes: 0,
         prochainDepart: cible.sweepCursor ?? 0,
         absentes: 0,
         disparues: 0,
@@ -299,6 +302,7 @@ export async function traiterCible(
       disparues: bilan.disparues,
       zones: bilan.zones.length,
       zonesFiables: bilan.zonesFiables,
+      recentes: bilan.recentes,
       verifiees: verification?.verifiees ?? 0,
       plusEnVente: verification?.parties ?? 0,
       source: reussi ? 'api' : 'failed',

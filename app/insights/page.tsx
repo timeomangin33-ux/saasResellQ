@@ -17,6 +17,9 @@ interface Trend {
   demandIndex: number | null
   avgPrice: number | null
   medianPrice: number | null
+  p25Price?: number | null
+  p75Price?: number | null
+  priceSample?: number | null
   /** Nombre de points d'historique derrière la variation. */
   historyPoints: number
   /** up | down | stable | inconnue — calculé sur fenêtres, avec zone morte. */
@@ -230,9 +233,13 @@ export default function InsightsPage() {
                           <tr key={`${i}-detail`} className="bg-emerald-500/[0.03]">
                             <td colSpan={5} className="space-y-1 px-5 py-2.5 text-xs text-muted-foreground">
                               <p>
-                                Prix demandés moyen {t.avgPrice?.toFixed(2) ?? '—'} € · médian{' '}
-                                {t.medianPrice?.toFixed(2) ?? '—'} € · {t.volume.toLocaleString('fr-FR')} annonces actives ·
-                                fiabilité <span className={confiance.classe}>{confiance.texte}</span>
+                                Prix demandé médian {t.medianPrice?.toFixed(2) ?? '—'} €
+                                {t.p25Price != null && t.p75Price != null
+                                  ? ` · moitié des annonces entre ${Math.round(t.p25Price)} et ${Math.round(t.p75Price)} €`
+                                  : ''}
+                                {t.priceSample ? ` · relevé sur ${t.priceSample} annonces récentes` : ''} ·{' '}
+                                {t.volume.toLocaleString('fr-FR')} annonces suivies · fiabilité{' '}
+                                <span className={confiance.classe}>{confiance.texte}</span>
                               </p>
                               <p>{t.qualityNote ?? 'Mesure en cours.'}</p>
                               <p className="text-muted-foreground/70">

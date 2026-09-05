@@ -73,6 +73,30 @@ export interface BilanPersistance {
  */
 export interface ContexteBalayage {
   zones: { from: number; to: number }[]
+  /**
+   * Prix des annonces récemment mises en ligne, sur lesquels sont calculés les
+   * prix de référence.
+   *
+   * Ce n'est pas l'échantillon du balayage par tranches, et la distinction est
+   * le cœur du sujet. Le balayage par tranches lit le même nombre d'annonces
+   * dans chaque tranche de prix : sa médiane atterrit donc mécaniquement à la
+   * frontière de la tranche du milieu, quelle que soit la catégorie. Observé —
+   * Enfants, Électronique, Chaussures et Accessoires affichaient tous 32 €, au
+   * centime près. Un chiffre identique sur quatre marchés qui n'ont rien à voir
+   * ne décrit pas les marchés, il décrit l'outil de mesure.
+   *
+   * Pondérer les tranches par leur taille réelle corrigerait ça, mais Vinted ne
+   * la donne pas : `total_entries` vaut 960 pour toute recherche, y compris une
+   * tranche 1000-5000 €. C'est le plafond, pas un compte. La médiane du stock
+   * entier d'une catégorie n'est donc calculable par personne.
+   *
+   * Celle des annonces récentes, elle, l'est exactement : les 960 dernières
+   * mises en ligne sont un échantillon complet et non biaisé du flux. Et c'est
+   * la mesure la plus utile des deux — « à combien les gens demandent en ce
+   * moment » vaut mieux qu'une moyenne de stock où dorment des annonces de
+   * l'an dernier.
+   */
+  recentes: number[]
 }
 
 /**
@@ -270,14 +294,25 @@ export async function persistVintedScanResults(
     }
   }
 
-  const prixEchantillon = items.map((i) => i.price).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
-  const milieu = Math.floor(prixEchantillon.length / 2)
-  const prixMedian =
-    prixEchantillon.length === 0
-      ? null
-      : prixEchantillon.length % 2 === 1
-        ? prixEchantillon[milieu]
-        : (prixEchantillon[milieu - 1] + prixEchantillon[milieu]) / 2
+  const prixEchantillon = balayage.recentes
+    .filter((p) => Number.isFinite(p) && p > 0)
+    .sort((a, b) => a - b)
+
+  const quantile = (part: number) => {
+    if (prixEchantillon.length === 0) return null
+    const rang = (prixEchantillon.length - 1) * part
+    const bas = Math.floor(rang)
+    const haut = Math.ceil(rang)
+    if (bas === haut) return prixEchantillon[bas]
+    // Interpolation entre les deux valeurs encadrantes : sans elle, la médiane
+    // d'un échantillon pair serait la valeur du dessus, ce qui décale tout vers
+    // le haut sur les catégories où les prix sont très groupés.
+    return prixEchantillon[bas] + (prixEchantillon[haut] - prixEchantillon[bas]) * (rang - bas)
+  }
+
+  const prixMedian = quantile(0.5)
+  const prixP25 = quantile(0.25)
+  const prixP75 = quantile(0.75)
   const prixMoyen =
     prixEchantillon.length === 0
       ? null
@@ -333,6 +368,9 @@ export async function persistVintedScanResults(
     const instantane = {
       avgPrice: prixMoyen,
       medianPrice: prixMedian,
+      p25Price: prixP25,
+      p75Price: prixP75,
+      priceSample: prixEchantillon.length,
       volumeActive: volumeActif,
       trendDirection: tendance.direction,
       priceChangePercent: tendance.variation,

@@ -26,6 +26,9 @@ interface Category {
   price_change_percent: number | null
   avg_price: number | null
   median_price: number | null
+  p25_price: number | null
+  p75_price: number | null
+  price_sample: number | null
   avg_margin: number | null
   volume_active: number
   product_count: number
@@ -156,7 +159,10 @@ function CategoriesContent({ categories, loading, error, search }: {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-400">
-                    Prix moyen {formatOrDash(category.avg_price, '€')} • médian {formatOrDash(category.median_price, '€')}
+                    Prix demandé médian {formatOrDash(category.median_price, '€')}
+                    {category.p25_price !== null && category.p75_price !== null
+                      ? ` • la moitié des annonces entre ${Math.round(category.p25_price)} € et ${Math.round(category.p75_price)} €`
+                      : ''}
                   </p>
                 </div>
               </div>
@@ -182,12 +188,20 @@ function CategoriesContent({ categories, loading, error, search }: {
             <div className="border-t border-white/10 bg-black/20 p-4">
               <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Prix moyen</p>
-                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{formatOrDash(category.avg_price, '€')}</p>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Prix demandé médian</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{formatOrDash(category.median_price, '€')}</p>
+                  <p className="text-[11px] text-slate-500">
+                    {category.price_sample ? `sur ${category.price_sample} annonces récentes` : 'relevé en cours'}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Prix médian</p>
-                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">{formatOrDash(category.median_price, '€')}</p>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Fourchette courante</p>
+                  <p className="mt-1 text-lg font-semibold text-white tabular-nums">
+                    {category.p25_price === null || category.p75_price === null
+                      ? '—'
+                      : `${Math.round(category.p25_price)} – ${Math.round(category.p75_price)} €`}
+                  </p>
+                  <p className="text-[11px] text-slate-500">la moitié des annonces</p>
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Annonces suivies</p>
@@ -223,9 +237,11 @@ function CategoriesContent({ categories, loading, error, search }: {
                     : ''}
                 </p>
                 <p className="mt-2 text-[12px] text-slate-500">
-                  Prix demandés, jamais prix de vente : Vinted ne publie pas les transactions. La rotation est
-                  mesurée en relisant la page de chaque annonce sept jours après l'avoir vue ; « plus en vente »
-                  veut dire vendue ou retirée par le vendeur, impossible de trancher entre les deux.
+                  Prix <strong className="font-medium text-slate-400">demandés</strong>, jamais prix de vente : Vinted
+                  ne publie aucune transaction. Ils portent sur les annonces récemment mises en ligne, pas sur tout le
+                  stock — Vinted plafonne chaque recherche à 960 résultats, la médiane du stock entier n'est
+                  calculable par personne. La rotation, elle, est vérifiée annonce par annonce sept jours après la
+                  première vue ; « plus en vente » veut dire vendue ou retirée, impossible de trancher entre les deux.
                 </p>
               </div>
 

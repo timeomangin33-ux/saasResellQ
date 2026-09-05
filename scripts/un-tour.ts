@@ -22,8 +22,8 @@ async function main() {
   for (const c of bilan.cibles) {
     const detail =
       c.mode === 'balayage'
-        ? `${c.annonces} annonces · ${c.pages} pages · ${c.zonesFiables}/${c.zones} tranches entières · ` +
-          `${c.verifiees} vérifiées (${c.plusEnVente} plus en vente)`
+        ? `${c.annonces} annonces · ${c.pages} pages · ${c.recentes} récentes · ` +
+          `${c.zonesFiables}/${c.zones} tranches entières · ${c.verifiees} vérifiées (${c.plusEnVente} plus en vente)`
         : `${c.annonces} annonces`
     console.log(`${c.statut === 'ok' ? '✓' : '✗'} ${c.mode.padEnd(9)} ${c.query.padEnd(20)} ${detail}`)
     // Un échec sans sa cause oblige à relancer pour apprendre quelque chose.
@@ -37,20 +37,21 @@ async function main() {
   const marches = await prisma.categoryMarket.findMany({
     orderBy: { volumeActive: 'desc' },
     select: {
-      category: true, medianPrice: true, volumeActive: true, trendDirection: true,
-      priceChangePercent: true, historyDays: true, confidence: true, publishable: true,
-      sellThroughRate: true, sellThroughSample: true,
+      category: true, medianPrice: true, p25Price: true, p75Price: true, volumeActive: true,
+      trendDirection: true, priceChangePercent: true, historyDays: true, confidence: true,
+      publishable: true, sellThroughRate: true, sellThroughSample: true,
     },
   })
-  console.log('\nCatégorie              médian  actives  tendance     hist  fiabilité     publiable  rotation')
+  console.log('\nCatégorie              médian   fourchette   suivies  tendance  hist  fiabilité     rotation')
   for (const m of marches) {
+    const fourchette =
+      m.p25Price === null || m.p75Price === null ? '—' : `${Math.round(m.p25Price)}-${Math.round(m.p75Price)} €`
     console.log(
       `${m.category.padEnd(22)} ${String(Math.round(m.medianPrice ?? 0)).padStart(5)}€ ` +
-        `${String(m.volumeActive ?? 0).padStart(7)}  ${(m.trendDirection ?? '-').padEnd(9)} ` +
-        `${String(m.priceChangePercent === null ? '' : m.priceChangePercent.toFixed(1)).padStart(5)} ` +
-        `${String(m.historyDays ?? 0).padStart(4)}j ${(m.confidence ?? '-').padEnd(12)} ` +
-        `${m.publishable ? 'oui' : 'non'}        ` +
-        `${m.sellThroughRate === null ? `— (${m.sellThroughSample ?? 0})` : Math.round(m.sellThroughRate * 100) + '%'}`,
+        `${fourchette.padStart(12)} ${String(m.volumeActive ?? 0).padStart(8)}  ` +
+        `${(m.trendDirection ?? '-').padEnd(9)} ${String(m.historyDays ?? 0).padStart(2)}j ` +
+        `${(m.confidence ?? '-').padEnd(13)} ` +
+        `${m.sellThroughRate === null ? `— (${m.sellThroughSample ?? 0} vérif.)` : Math.round(m.sellThroughRate * 100) + '%'}`,
     )
   }
   await prisma.$disconnect()

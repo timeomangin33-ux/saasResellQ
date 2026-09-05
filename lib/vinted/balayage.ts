@@ -32,7 +32,7 @@
  * publie aucune transaction.
  */
 
-import { balayerParTranches, VintedAuthError, VintedBlockedError, type ZoneCouverte } from './api'
+import { balayer, balayerParTranches, PLAFOND_PAGES, VintedAuthError, VintedBlockedError, type ZoneCouverte } from './api'
 import { persistVintedScanResults } from '@/lib/market-sync'
 import type { CauseEchec } from '@/lib/vinted-bot'
 
@@ -46,6 +46,8 @@ export interface BilanBalayage {
   zones: ZoneCouverte[]
   /** Nombre de tranches vues en entier. */
   zonesFiables: number
+  /** Annonces récentes lues pour établir les prix de référence. */
+  recentes: number
   /** Index de tranche par lequel commencer au prochain balayage. */
   prochainDepart: number
   absentes: number
@@ -79,6 +81,7 @@ export async function balayerCategorie(options: {
     annoncesEcrites: 0,
     zones: [] as ZoneCouverte[],
     zonesFiables: 0,
+    recentes: 0,
     prochainDepart: options.depart ?? 0,
     absentes: 0,
     disparues: 0,
@@ -97,7 +100,36 @@ export async function balayerCategorie(options: {
     return { ...vide, statut: cause, erreur: detail, dureeMs: Date.now() - debut }
   }
 
-  const annonces = resultat.items.map((a) => ({ ...a, category: categorie }))
+  // Second relevé, court et d'une autre nature : les dernières annonces mises en
+  // ligne, dans l'ordre où elles sont arrivées. C'est lui qui donne les prix de
+  // référence, parce que c'est le seul échantillon complet qu'on puisse obtenir
+  // — les 960 dernières publications de la catégorie, sans trou ni pondération
+  // à deviner. Le balayage par tranches, lui, sert à la couverture du stock :
+  // il alimente les opportunités et les notes, mais sa médiane ne décrirait que
+  // la façon dont on l'a découpé.
+  let recentes: typeof resultat.items = []
+  try {
+    const flux = await balayer({
+      searchText: options.query,
+      order: 'newest_first',
+      maxPages: PLAFOND_PAGES,
+      deadline: options.deadline,
+    })
+    recentes = flux.items
+  } catch (erreur) {
+    // Le relevé du flux peut manquer sans que le balayage soit perdu : les
+    // annonces des tranches sont déjà lues. On repart sans prix de référence
+    // plutôt que de tout jeter.
+    console.error(`balayage: relevé des annonces récentes impossible pour ${categorie}`, erreur)
+  }
+
+  // Dédoublonnage : une annonce récente et bon marché figure dans les deux
+  // relevés, et l'écrire deux fois n'apporte rien.
+  const vues = new Set(resultat.items.map((a) => a.id))
+  const annonces = [...resultat.items, ...recentes.filter((a) => !vues.has(a.id))].map((a) => ({
+    ...a,
+    category: categorie,
+  }))
   const fiables = resultat.zones.filter((z) => z.exhaustive)
 
   if (annonces.length === 0) {
@@ -125,6 +157,7 @@ export async function balayerCategorie(options: {
   // c'est un état parfaitement normal.
   const bilan = await persistVintedScanResults(annonces, categorie, {
     zones: fiables.map((z) => ({ from: z.from, to: z.to })),
+    recentes: recentes.map((a) => a.price),
   })
 
   return {
@@ -135,6 +168,7 @@ export async function balayerCategorie(options: {
     annoncesEcrites: bilan.annoncesEcrites,
     zones: resultat.zones,
     zonesFiables: fiables.length,
+    recentes: recentes.length,
     prochainDepart: resultat.prochainDepart,
     absentes: bilan.absentes,
     disparues: bilan.disparues,

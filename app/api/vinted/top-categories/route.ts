@@ -31,6 +31,9 @@ export async function GET(request: Request) {
           category: true,
           avgPrice: true,
           medianPrice: true,
+          p25Price: true,
+          p75Price: true,
+          priceSample: true,
           avgMargin: true,
           volumeActive: true,
           trendDirection: true,
@@ -93,6 +96,12 @@ export async function GET(request: Request) {
           price_change_percent: market?.priceChangePercent ?? null,
           avg_price: market?.avgPrice ?? group?._avg.price ?? null,
           median_price: market?.medianPrice ?? null,
+          // Entre p25 et p75 tient la moitié des annonces. C'est l'écart, plus
+          // que la médiane seule, qui dit si une catégorie se négocie dans une
+          // fourchette serrée ou si tout et n'importe quoi s'y vend.
+          p25_price: market?.p25Price ?? null,
+          p75_price: market?.p75Price ?? null,
+          price_sample: market?.priceSample ?? null,
           avg_margin: market?.avgMargin ?? null,
           volume_active: market?.volumeActive ?? group?._count.category ?? 0,
           product_count: group?._count.category ?? 0,
