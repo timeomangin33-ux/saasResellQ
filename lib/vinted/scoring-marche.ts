@@ -69,6 +69,13 @@ const PLAFOND_REFERENCE_P75 = 3
  * et un ordinateur à 900 €, et rien dans les données ne dit lequel on regarde.
  * En deçà de ce rapport, l'écart entre l'annonce et la médiane s'explique
  * bien plus probablement par la nature de l'objet que par une bonne affaire.
+ *
+ * Le test porte sur la référence réellement utilisée, marque ou catégorie, et
+ * pas seulement sur celle de la marque. La première version ne gardait que le
+ * cas des marques bien représentées, et laissait donc passer exactement ce
+ * qu'elle visait : « Collier Neuf Plage », 1 €, 746 % de marge, noté 92 sur
+ * 100 en tête du classement — la marque « Plage » comptant trop peu d'annonces
+ * pour déclencher le moindre garde-fou.
  */
 const RAPPORT_MINIMUM_MARQUE = 0.3
 
@@ -154,8 +161,11 @@ export async function noterCategorie(
           -- 82 €, soit +67 € de gain annoncé. Le rapport de prix est le seul
           -- signal disponible pour distinguer l'accessoire du produit
           -- principal, faute de pouvoir lire ce qu'est réellement l'objet.
-          WHEN rm.n >= ${ECHANTILLON_MARQUE}
-           AND COALESCE(NULLIF(p."totalPrice", 0), p.price) < rm.mediane * ${RAPPORT_MINIMUM_MARQUE}::float8
+          WHEN COALESCE(NULLIF(p."totalPrice", 0), p.price) <
+               (CASE
+                  WHEN rm.n >= ${ECHANTILLON_MARQUE} THEN rm.mediane
+                  ELSE ${medianePrix}::float8
+                END) * ${RAPPORT_MINIMUM_MARQUE}::float8
           THEN 0.4
           ELSE 1.0
         END AS facteur_anomalie,

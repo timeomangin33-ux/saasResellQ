@@ -348,7 +348,7 @@ export default function CategoriesPage() {
             <div className="max-w-2xl">
               <PageHeader
                 title="Catégories & marché"
-                description="Chaque catégorie que le robot suit sur Vinted : prix moyen, prix médian, volume d'annonces et évolution des prix depuis la dernière analyse."
+                description="Chaque catégorie que le robot suit sur Vinted : prix demandé médian, fourchette où tient la moitié des annonces, volume suivi, et tendance dès que dix jours de relevés sont disponibles."
               />
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-400">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
@@ -363,7 +363,7 @@ export default function CategoriesPage() {
                 <Sparkles className="h-4 w-4 text-emerald-300" />
                 Comment lire cette page
               </div>
-              <p className="mt-2 max-w-xs text-slate-400">Prix et volumes proviennent des annonces réellement collectées. Les colonnes Score et Marge restent vides tant que l'analyse IA n'a pas tourné sur le lot.</p>
+              <p className="mt-2 max-w-xs text-slate-400">Prix et volumes proviennent des annonces réellement collectées. Score et marge sont calculés à partir des prix relevés dans la même catégorie : ils restent vides tant qu'une annonce vient d'être collectée.</p>
             </div>
           </div>
         </motion.div>

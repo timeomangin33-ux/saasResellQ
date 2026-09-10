@@ -159,14 +159,14 @@ export default function TopProductsPage() {
                       <td className="px-4 py-4 font-medium text-white transition-colors group-hover:text-emerald-200">{product.title}</td>
                       <td className="px-4 py-4 text-slate-300">{product.brand ?? '—'}</td>
                       <td className="px-4 py-4 text-slate-300 tabular-nums">{product.price != null ? `${Math.round(product.price)}€` : '—'}</td>
-                      <td className="px-4 py-4 text-slate-300 tabular-nums" title={product.analysisScore == null ? "Annonce pas encore passée par l'analyse IA." : undefined}>
+                      <td className="px-4 py-4 text-slate-300 tabular-nums" title={product.analysisScore == null ? "Annonce pas encore notée : elle vient d'être collectée." : undefined}>
                         {product.analysisScore != null ? `${Math.round(product.analysisScore)}/100` : '—'}
                       </td>
                       <td className={`px-4 py-4 font-medium tabular-nums ${product.profitMargin == null ? 'text-slate-500' : 'text-emerald-300'}`}>
                         {product.profitMargin != null ? (
                           `${Math.round(product.profitMargin)}%`
                         ) : (
-                          <span title="Marge non calculée : l'analyse IA n'a pas encore traité cette annonce.">—</span>
+                          <span title="Marge non calculée : l'annonce vient d'être collectée, ou sa catégorie compte trop peu d'annonces pour servir de référence.">—</span>
                         )}
                       </td>
                     </motion.tr>
@@ -176,9 +176,10 @@ export default function TopProductsPage() {
             </table>
           </div>
           <p className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-slate-500">
-            Un tiret dans « Score d'analyse » ou « Marge estimée » signifie que la passe IA n'a pas encore traité
-            l'annonce : rien n'est estimé à sa place. Les prix affichés sont les prix <strong className="font-medium text-slate-400">demandés</strong>
-            {' '}par les vendeurs, jamais des prix de vente.
+            Le score compare le prix demandé à la médiane relevée dans la même catégorie, pondérée par le gain en euros.
+            Un tiret signifie que l'annonce n'a pas encore été notée — elle vient d'être collectée, ou sa catégorie compte
+            trop peu d'annonces pour servir de référence — et rien n'est estimé à sa place. Les prix affichés sont les
+            prix <strong className="font-medium text-slate-400">demandés</strong> par les vendeurs, jamais des prix de vente.
           </p>
         </Reveal>
       </div>
