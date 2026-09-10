@@ -13,6 +13,11 @@ export const dynamic = 'force-dynamic'
  * recalculés à chaque passage du robot contre la médiane réelle de la marque
  * dans la catégorie (voir `lib/vinted/scoring-marche.ts`).
  */
+/** Places maximum accordées à une même marque dans la liste rendue. */
+const MAX_PAR_MARQUE = 2
+/** Facteur de lecture au-delà de la limite, pour absorber les doublons écartés. */
+const MARGE_DE_LECTURE = 6
+
 export async function GET(request: Request) {
   const access = await authorizeFeature(request, 'STARTER')
   if ('response' in access) return access.response
@@ -58,7 +63,9 @@ export async function GET(request: Request) {
   const lignes = await prisma.product.findMany({
     where,
     orderBy: [{ analysisScore: 'desc' }, { profitMargin: 'desc' }],
-    take: limite,
+    // On lit plus large que demandé pour pouvoir écarter les répétitions de
+    // marque juste après, sans se retrouver avec une liste trop courte.
+    take: Math.min(limite * MARGE_DE_LECTURE, 400),
     select: {
       id: true,
       vintedId: true,
@@ -83,7 +90,22 @@ export async function GET(request: Request) {
 
   const maintenant = Date.now()
 
-  const opportunities = lignes.map((p) => {
+  // La note vient de la médiane de la marque : deux annonces de la même marque
+  // au même prix reçoivent donc exactement la même note et le même gain. En
+  // tête de liste, ça donnait trois lignes Apple affichant « +57 € · 177 % »
+  // pour une coque d'iPhone, une souris et un iPhone 7 — trois fois le même
+  // chiffre, aucune information. On limite chaque marque à deux places : une
+  // liste d'opportunités sert à comparer, pas à répéter.
+  const parMarque = new Map<string, number>()
+  const retenues = lignes.filter((p) => {
+    const marque = (p.brand ?? 'sans marque').toLowerCase()
+    const vues = parMarque.get(marque) ?? 0
+    if (vues >= MAX_PAR_MARQUE) return false
+    parMarque.set(marque, vues + 1)
+    return true
+  })
+
+  const opportunities = retenues.slice(0, limite).map((p) => {
     const cout = p.totalPrice ?? p.price
     const marge = p.profitMargin ?? 0
     // Le gain en euros, pas seulement en pourcentage : c'est ce qu'on met dans

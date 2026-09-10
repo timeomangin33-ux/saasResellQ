@@ -280,8 +280,23 @@ export default function DashboardPage() {
    * les articles à deux euros.
    */
   const opportunites = useMemo<Opportunity[]>(() => {
-    if (opportunitesApi.length > 0) return opportunitesApi.slice(0, 3)
-    return products
+    // Une même marque au même prix reçoit la même note et le même gain : sans
+    // garde, le panneau affichait trois lignes Apple à « +57 € · 177 % » pour
+    // une coque, une souris et un iPhone 7. Trois fois le même chiffre
+    // n'apprend rien ; on garde au plus une annonce par marque ici, où il n'y a
+    // que trois places.
+    const unePlaceParMarque = (liste: Opportunity[]) => {
+      const vues = new Set<string>()
+      return liste.filter((o) => {
+        const marque = (o.brand ?? 'sans marque').toLowerCase()
+        if (vues.has(marque)) return false
+        vues.add(marque)
+        return true
+      })
+    }
+
+    if (opportunitesApi.length > 0) return unePlaceParMarque(opportunitesApi).slice(0, 3)
+    return unePlaceParMarque(products
       .map((p) => ({
         title: p.title,
         brand: p.brand,
@@ -298,8 +313,7 @@ export default function DashboardPage() {
         if (a.estimatedProfit === null) return 1
         if (b.estimatedProfit === null) return -1
         return b.estimatedProfit - a.estimatedProfit
-      })
-      .slice(0, 3)
+      })).slice(0, 3)
   }, [opportunitesApi, products])
 
   // Le marché tient la tête de page quand il n'y a pas de compte lié : on en
