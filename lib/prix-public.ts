@@ -119,7 +119,42 @@ interface LigneMarque {
  * et « Adidas » selon l'annonce, et deux pages pour la même marque se
  * cannibaliseraient dans les résultats de recherche.
  */
+/**
+ * Mémoire courte du relevé complet des marques.
+ *
+ * `statistiquesMarque` commence par appeler `marquesPubliables`, et la
+ * construction du site rend cent vingt pages de marques : sans mémoire, c'est
+ * cent vingt fois le même agrégat sur trois cent mille annonces, en parallèle,
+ * à travers un pool de trois connexions. Le déploiement s'est arrêté là-dessus
+ * — « Timed out fetching a new connection from the connection pool », sur
+ * /prix/silver.
+ *
+ * La promesse est mémorisée, pas seulement son résultat : deux pages rendues en
+ * même temps attendent alors le même calcul au lieu d'en lancer deux. La durée
+ * est courte parce que ces pages se régénèrent chaque jour ; elle sert à tenir
+ * le temps d'une construction, pas à faire du cache applicatif.
+ */
+const MEMOIRE_MS = 60_000
+let memoire: { promesse: Promise<StatistiquesMarque[]>; expire: number } | null = null
+
+export function oublierMarques() {
+  memoire = null
+}
+
 export async function marquesPubliables(): Promise<StatistiquesMarque[]> {
+  if (memoire && Date.now() < memoire.expire) return memoire.promesse
+
+  const promesse = calculerMarquesPubliables()
+  memoire = { promesse, expire: Date.now() + MEMOIRE_MS }
+  // Un échec ne doit pas rester en mémoire : la requête suivante doit pouvoir
+  // réessayer plutôt que de recevoir la même erreur pendant une minute.
+  promesse.catch(() => {
+    if (memoire?.promesse === promesse) memoire = null
+  })
+  return promesse
+}
+
+async function calculerMarquesPubliables(): Promise<StatistiquesMarque[]> {
   const lignes = await prisma.$queryRaw<LigneMarque[]>`
     SELECT
       MIN(brand) AS marque,
