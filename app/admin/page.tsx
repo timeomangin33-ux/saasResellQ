@@ -205,6 +205,14 @@ export default function AdminPanelPage() {
                       </Magnetic>
                       <Magnetic strength={0.08} className="block w-full">
                         <Link
+                          href="/admin/parrainage"
+                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:border-emerald-400/30 hover:bg-muted/50"
+                        >
+                          Parrainage et commissions <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                        </Link>
+                      </Magnetic>
+                      <Magnetic strength={0.08} className="block w-full">
+                        <Link
                           href="/pricing"
                           className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/50 px-4 py-3 text-left font-semibold transition hover:border-emerald-400/30 hover:bg-muted/50"
                         >

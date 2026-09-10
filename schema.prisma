@@ -24,6 +24,10 @@ model User {
   aiCreditsResetAt      DateTime?
   twoFactorEnabled      Boolean   @default(false)
   preferences           Json      @default("{}")
+  /// Code du partenaire qui a amené ce compte, figé à l'inscription : il sert
+  /// à savoir à qui revient la commission sur chaque facture payée ensuite.
+  referralCode          String?
+  referredAt            DateTime?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -37,9 +41,11 @@ model User {
   automationConfig      AutomationConfig?
   automationJobs        AutomationJob[]
   alerts                Alert[]
+  referral              Referral? @relation(fields: [referralCode], references: [code], onDelete: SetNull)
 
   @@index([email])
   @@index([createdAt])
+  @@index([referralCode])
   @@map("users")
 }
 
@@ -539,4 +545,64 @@ model CollectTarget {
   @@index([enabled, nextRunAt])
   @@index([priority])
   @@map("collect_targets")
+}
+
+/// Un partenaire (influenceur, apporteur d'affaires) et son code de parrainage.
+/// `beneficiaire` est le nom humain de la personne à payer : le code seul ne
+/// suffit pas à savoir à qui envoyer le virement, des mois plus tard.
+model Referral {
+  id            String   @id @default(cuid())
+  /// Ce qui est écrit dans ?ref=... — toujours en majuscules pour qu'un lien
+  /// recopié en minuscules par un partenaire attribue quand même la vente.
+  code          String   @unique
+  beneficiaire  String
+  email         String?
+  commissionPct Float    @default(30)
+  actif         Boolean  @default(true)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  filleuls    User[]
+  commissions ReferralCommission[]
+
+  @@index([actif])
+  @@map("referrals")
+}
+
+/// Une ligne par facture Stripe réellement encaissée pour un filleul.
+///
+/// Cette table n'est qu'un registre de dettes : ResellQ n'envoie jamais
+/// d'argent. `statut` passe à "paye" quand l'exploitant a fait le virement de
+/// sa main et vient le déclarer ici.
+model ReferralCommission {
+  id         String @id @default(cuid())
+  referralId String
+  /// Nullable : le compte du filleul peut être supprimé après coup, la dette
+  /// envers le partenaire reste due.
+  userId     String?
+  /// Unique : une même facture ne doit jamais engendrer deux commissions, y
+  /// compris quand Stripe rejoue son webhook.
+  stripeInvoiceId String @unique
+  /// En centimes, ce que Stripe a réellement collecté (`amount_paid`), remises
+  /// déduites — pas le prix affiché du forfait.
+  montantEncaisse Int
+  devise          String @default("eur")
+  /// Recopié depuis Referral au moment du calcul : changer le taux d'un
+  /// partenaire plus tard ne doit pas réécrire ce qui lui était dû avant.
+  commissionPct   Float
+  /// En centimes.
+  montantDu       Int
+  /// "du" | "paye" | "annule"
+  statut          String    @default("du")
+  payeLe          DateTime?
+  createdAt       DateTime  @default(now())
+
+  // Restrict et pas Cascade : supprimer un partenaire effacerait l'historique
+  // de ce qui lui a été dû et versé. La base refuse donc la suppression tant
+  // que des commissions existent.
+  referral Referral @relation(fields: [referralId], references: [id], onDelete: Restrict)
+
+  @@index([referralId, statut])
+  @@map("referral_commissions")
 }

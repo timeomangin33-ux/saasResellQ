@@ -11,6 +11,13 @@ const securityHeaders = {
   'X-XSS-Protection': '1; mode=block'
 }
 
+// Fenêtre d'attribution du parrainage. Un visiteur qui découvre ResellQ par la
+// vidéo d'un partenaire ne s'abonne presque jamais le jour même : il revient
+// après avoir comparé, parfois plusieurs semaines plus tard. 60 jours couvrent
+// ce délai de décision sans attribuer une vente indéfiniment à un lien oublié.
+const FENETRE_ATTRIBUTION_JOURS = 60
+const COOKIE_PARRAINAGE = 'resellq_ref'
+
 export function middleware(request: NextRequest) {
   const { hostname, protocol } = request.nextUrl
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
@@ -41,6 +48,27 @@ export function middleware(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+  }
+
+  // Parrainage : le code arrive dans l'URL (?ref=CODE) sur n'importe quelle
+  // page, et doit survivre jusqu'à l'inscription, qui se fait plus tard et
+  // ailleurs. On ne vérifie pas ici que le code existe : le middleware tourne
+  // sur l'Edge, sans accès à la base. La validation est faite à l'inscription,
+  // qui ignore purement et simplement un code inconnu ou désactivé.
+  const codeBrut = request.nextUrl.searchParams.get('ref')
+  if (codeBrut) {
+    const code = codeBrut.trim().toUpperCase().slice(0, 40)
+    // Filtre de forme uniquement : un cookie ne doit pas transporter n'importe
+    // quelle chaîne venue de l'URL.
+    if (/^[A-Z0-9_-]+$/.test(code)) {
+      response.cookies.set(COOKIE_PARRAINAGE, code, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: FENETRE_ATTRIBUTION_JOURS * 24 * 60 * 60,
+      })
+    }
   }
 
   return response
