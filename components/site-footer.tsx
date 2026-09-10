@@ -22,7 +22,7 @@ export function SiteFooter() {
             ResellQ
           </div>
           <p className="text-sm leading-7 text-slate-400">
-            Une plateforme premium pour analyser les opportunités Vinted, prioriser les deals et gagner en marge sans perdre de temps. Support 24h direct.
+            Une plateforme pour analyser les prix demandés sur Vinted, repérer les annonces sous leur marché et gagner du temps. Réponse au support sous 24 h ouvrées.
           </p>
         </div>
 
