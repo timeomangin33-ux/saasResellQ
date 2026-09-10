@@ -536,15 +536,19 @@ export const TRANCHES_PAR_DEFAUT: Tranche[] = [
 /**
  * Nombre de pages lues au maximum par tranche.
  *
- * Sept pages sur les dix autorisées, et pas dix : le but n'est pas de vider une
- * tranche mais de répartir un budget fixe sur toute l'échelle des prix. Mesuré
- * sur « Sneakers » : en laissant le découpage s'enfoncer là où il y avait le
- * plus d'annonces, les soixante-dix pages du budget sont parties dans les
- * tranches 0-1 €, 1-2 € et 2-3 € — 3 707 annonces à moins de 3 €, et rien
- * au-dessus. Techniquement un succès, pratiquement inutile : on avait un
- * relevé très précis du fond de panier.
+ * Le but n'est pas de vider une tranche mais de répartir un budget fixe sur
+ * toute l'échelle des prix. Mesuré sur « Sneakers » : en laissant le découpage
+ * s'enfoncer là où il y avait le plus d'annonces, les soixante-dix pages du
+ * budget sont parties dans les tranches 0-1 €, 1-2 € et 2-3 € — 3 707 annonces
+ * à moins de 3 €, et rien au-dessus. Techniquement un succès, pratiquement
+ * inutile : on avait un relevé très précis du fond de panier.
+ *
+ * Trois pages et non sept : la base est plafonnée à 512 Mo et la collecte l'a
+ * saturée. Les prix de référence ne viennent de toute façon pas d'ici mais des
+ * 960 annonces les plus récentes ; ces pages-ci alimentent les opportunités et
+ * les pages marques, où trois cents annonces par tranche suffisent largement.
  */
-const PAGES_PAR_TRANCHE = 7
+const PAGES_PAR_TRANCHE = 3
 
 /**
  * Parcourt une recherche tranche de prix par tranche de prix.

@@ -40,7 +40,37 @@ import { prisma } from '@/prisma'
 const ECHANTILLON_MINIMUM = 20
 
 /** Nombre d'annonces d'une marque à partir duquel sa médiane devient utilisable. */
-const ECHANTILLON_MARQUE = 8
+const ECHANTILLON_MARQUE = 25
+
+/**
+ * Plafond de la référence de revente, exprimé en multiples du troisième
+ * quartile de la catégorie.
+ *
+ * Le champ « marque » de Vinted est saisi par le vendeur, jamais vérifié. En
+ * tête des opportunités du tableau de bord figurait « Versage H&M
+ * Absatzschuhe », marque déclarée Versace : une chaussure H&M à 50 €, évaluée
+ * contre la médiane des Versace de la catégorie, donc annoncée à +232 € de gain
+ * et 464 % de marge. Le calcul était exact, la prémisse était fausse.
+ *
+ * On ne peut pas vérifier une marque à partir d'un titre. On peut en revanche
+ * refuser de promettre un gain que la catégorie entière ne justifie pas : dans
+ * « Chaussures », dont la moitié des annonces tient entre 8 et 35 €, une
+ * revente estimée à 282 € n'est pas défendable, quelle que soit l'étiquette.
+ * Le plafond coûte quelques vraies affaires de luxe ; l'inverse coûte la
+ * crédibilité de toute la liste.
+ */
+const PLAFOND_REFERENCE_P75 = 3
+
+/**
+ * Rapport minimum entre le prix d'une annonce et la médiane de sa marque
+ * au-dessous duquel on cesse de la présenter comme une opportunité.
+ *
+ * Une marque n'est pas une gamme de prix : « Apple » recouvre un câble à 15 €
+ * et un ordinateur à 900 €, et rien dans les données ne dit lequel on regarde.
+ * En deçà de ce rapport, l'écart entre l'annonce et la médiane s'explique
+ * bien plus probablement par la nature de l'objet que par une bonne affaire.
+ */
+const RAPPORT_MINIMUM_MARQUE = 0.3
 
 /** Gain en euros à partir duquel la marge compte pour tous ses points. */
 const GAIN_DE_REFERENCE = 10
@@ -62,7 +92,12 @@ export async function noterCategorie(
   }
 
   const notes = await prisma.$executeRaw`
-    WITH reference_marque AS (
+    WITH reference_categorie AS (
+      SELECT PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price)::float8 AS p75
+      FROM products
+      WHERE category = ${categorie} AND status = 'active' AND price > 0
+    ),
+    reference_marque AS (
       SELECT brand,
              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS mediane,
              PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY price)::float8 AS plancher,
@@ -82,12 +117,20 @@ export async function noterCategorie(
         -- Ce que l'acheteur paie réellement. Sans total connu, le prix nu est
         -- une approximation basse mais honnête.
         COALESCE(NULLIF(p."totalPrice", 0), p.price) AS cout,
-        -- La médiane de la marque quand elle existe, celle de la catégorie
-        -- sinon.
-        CASE
-          WHEN rm.n >= ${ECHANTILLON_MARQUE} THEN rm.mediane
-          ELSE ${medianePrix}::float8
-        END AS reference,
+        -- La médiane de la marque quand son échantillon est assez grand, celle
+        -- de la catégorie sinon — le tout plafonné par la dispersion de la
+        -- catégorie. Le seuil d'échantillon est passé de 8 à 25 annonces :
+        -- une médiane tirée de huit annonces d'une marque de luxe, dont une
+        -- partie sont des contrefaçons ou des erreurs d'étiquetage, n'est pas
+        -- une médiane, c'est du bruit avec deux décimales.
+        LEAST(
+          CASE
+            WHEN rm.n >= ${ECHANTILLON_MARQUE} THEN rm.mediane
+            ELSE ${medianePrix}::float8
+          END,
+          -- Le plafond n'a de sens que si la catégorie a une dispersion connue.
+          COALESCE(rc.p75 * ${PLAFOND_REFERENCE_P75}::float8, ${medianePrix}::float8 * 4)
+        ) AS reference,
         CASE
           WHEN rm.n >= ${ECHANTILLON_MARQUE} THEN 15
           WHEN p.brand IS NOT NULL AND p.brand <> 'Sans marque' THEN 7
@@ -104,6 +147,16 @@ export async function noterCategorie(
           WHEN rm.n >= ${ECHANTILLON_MARQUE}
            AND COALESCE(NULLIF(p."totalPrice", 0), p.price) < rm.plancher
           THEN 0.25
+          -- Un article vendu très en dessous du niveau habituel de sa marque
+          -- n'est probablement pas le même genre d'article. Une marque large
+          -- couvre des objets sans rapport : « Apple » va du câble USB-C à
+          -- 15 € au MacBook, et la médiane de la marque valorisait ce câble à
+          -- 82 €, soit +67 € de gain annoncé. Le rapport de prix est le seul
+          -- signal disponible pour distinguer l'accessoire du produit
+          -- principal, faute de pouvoir lire ce qu'est réellement l'objet.
+          WHEN rm.n >= ${ECHANTILLON_MARQUE}
+           AND COALESCE(NULLIF(p."totalPrice", 0), p.price) < rm.mediane * ${RAPPORT_MINIMUM_MARQUE}::float8
+          THEN 0.4
           ELSE 1.0
         END AS facteur_anomalie,
         -- Jours passés en ligne. Une annonce sans date connue est traitée comme
@@ -116,6 +169,7 @@ export async function noterCategorie(
         COALESCE(p."favouriteCount", 0) AS favoris
       FROM products p
       LEFT JOIN reference_marque rm ON rm.brand = p.brand
+      CROSS JOIN reference_categorie rc
       WHERE p.category = ${categorie} AND p.status = 'active'
     ),
     calcul AS (

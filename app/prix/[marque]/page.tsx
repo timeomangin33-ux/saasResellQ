@@ -19,9 +19,23 @@ import { marquesPubliables, statistiquesMarque } from '@/lib/prix-public'
 export const revalidate = 86400
 export const dynamicParams = true
 
+/**
+ * Nombre de pages marques construites d'avance.
+ *
+ * Les construire toutes coûtait vingt minutes de build pour 450 marques, chacune
+ * interrogeant la base — un temps qui grandit avec le catalogue et se paie sur
+ * les minutes de build du forfait. Les marques absentes de cette liste ne
+ * disparaissent pas : `dynamicParams` les fait construire à la première visite,
+ * puis elles sont mises en cache comme les autres. La différence ne se voit que
+ * pour le tout premier visiteur d'une marque rare.
+ */
+const MARQUES_PRECONSTRUITES = 120
+
 export async function generateStaticParams() {
   const marques = await marquesPubliables()
-  return marques.map((m) => ({ marque: m.slug }))
+  // `marquesPubliables` trie déjà par nombre d'annonces : les plus fournies
+  // sont aussi les plus cherchées, et ce sont elles qui méritent d'être prêtes.
+  return marques.slice(0, MARQUES_PRECONSTRUITES).map((m) => ({ marque: m.slug }))
 }
 
 export async function generateMetadata({

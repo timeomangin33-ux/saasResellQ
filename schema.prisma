@@ -259,16 +259,26 @@ model Product {
   updatedAt       DateTime @updatedAt
   expiresAt       DateTime? // For data retention
 
-  @@index([category])
-  @@index([subcategory])
+  /// Les index de cette table pesaient 237 Mo pour 243 Mo de donnees, sur une
+  /// base plafonnee a 512 Mo — et la collecte s'est arretee sur « could not
+  /// extend file because project size limit has been exceeded ». Cinq d'entre
+  /// eux ont ete retires apres lecture de pg_stat_user_indexes, qui compte les
+  /// lectures reelles :
+  ///
+  ///   profitMargin   38 Mo pour 3 lectures    - le tri se fait sur analysisScore
+  ///   category       20 Mo, redondant         - couvert par [category, status]
+  ///   status          6 Mo, redondant         - idem
+  ///   subcategory     4,6 Mo pour 4 lectures  - la colonne n'est jamais remplie
+  ///   disappearedAt   4,7 Mo pour 2 lectures  - la cohorte se lit par checkedAt
+  ///
+  /// Un index qui n'est pas lu ne fait pas gagner de temps : il coute de la
+  /// place et ralentit chaque ecriture, et cette table est reecrite deux cent
+  /// mille fois par jour.
   @@index([brand])
-  @@index([status])
   @@index([analysisScore])
-  @@index([profitMargin])
   @@index([createdAt])
   @@index([lastSeenAt])
   @@index([category, status])
-  @@index([disappearedAt])
   @@index([category, checkedAt])
   @@index([sellerId])
   @@map("products")
@@ -500,7 +510,15 @@ model CollectTarget {
   sweepIntervalMinutes Int      @default(720)
   /// Budget de pages pour un balayage entier. 96 annonces par page cote Vinted,
   /// et 960 annonces au maximum par tranche de prix : c'est Vinted qui plafonne.
-  sweepMaxPages        Int      @default(70)
+  ///
+  /// Ramene de 70 a 30. Le balayage profond avait ete dimensionne pour conclure
+  /// les disparitions par absence du catalogue ; cette methode a ete abandonnee
+  /// au profit de la lecture de la penderie du vendeur, qui ne depend pas de la
+  /// profondeur. Les soixante pages supplementaires ne servaient donc plus qu'a
+  /// grossir le stock d'annonces - jusqu'a saturer les 512 Mo de la base et
+  /// arreter toute ecriture. Trente pages couvrent toujours les dix tranches de
+  /// prix, donc l'echantillon reste reparti sur toute l'echelle.
+  sweepMaxPages        Int      @default(30)
   /// Tranche de prix par laquelle commencer le prochain balayage. Fait tourner
   /// le point d'entree : sans lui, un budget trop court voudrait dire que les
   /// tranches hautes ne sont jamais lues, donc que les articles chers - ceux

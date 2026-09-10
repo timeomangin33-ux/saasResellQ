@@ -20,6 +20,15 @@ import { verifierCohorte } from '@/lib/vinted/verification'
 import { scoreProducts } from '@/lib/ai-scoring'
 import { VINTED_CATEGORIES } from '@/vinted'
 
+/**
+ * Au-delà de ce délai sans avoir été revue, une annonce est supprimée.
+ *
+ * Dix jours : assez pour couvrir la fenêtre de sept jours dont la mesure de
+ * rotation a besoin, avec trois jours de marge si un balayage prend du retard,
+ * et assez court pour que la base tienne dans ses 512 Mo.
+ */
+const RETENTION_JOURS = 10
+
 /** Le scoring IA coûte des crédits par produit : on ne score que les nouveautés. */
 const MAX_SCORING_PAR_PASSAGE = 12
 
@@ -111,6 +120,27 @@ const BUDGET_BALAYAGE_MS = 90_000
  */
 const ESPACEMENT_BALAYAGES_MS = 15 * 60_000
 let dernierBalayage = 0
+
+/**
+ * Entretien de la base, une fois par jour.
+ *
+ * La collecte s'est arrêtée net sur « could not extend file because project
+ * size limit (512 MB) has been exceeded » : plus une seule annonce écrite, plus
+ * une seule note recalculée, et rien dans l'interface pour le dire — les
+ * chiffres affichés étaient simplement ceux de la veille.
+ *
+ * Deux causes, et la seconde est la vraie. D'abord les annonces s'accumulaient
+ * sans limite. Ensuite, et surtout, chaque balayage réécrit ses milliers de
+ * lignes : Postgres n'écrase pas une ligne, il en écrit une nouvelle version et
+ * abandonne l'ancienne. Sans nettoyage régulier, le fichier grossit alors que
+ * le nombre de lignes ne bouge pas.
+ *
+ * L'entretien fait donc partie de la collecte, au même titre que la lecture.
+ * Le laisser à une commande qu'on lance à la main, c'est le laisser à l'oubli,
+ * et le prix de l'oubli est un arrêt silencieux.
+ */
+const ENTRETIEN_MS = 24 * 60 * 60_000
+let dernierEntretien = 0
 
 /**
  * Crée les cibles de départ à partir des catégories Vinted connues, si la
@@ -428,6 +458,47 @@ export interface BilanPassage {
  * Un blocage Vinted arrête le tour immédiatement : insister catégorie après
  * catégorie pendant qu'on est filtré ne fait qu'aggraver le filtrage.
  */
+/**
+ * Supprime les annonces trop anciennes et rend réutilisable l'espace des
+ * versions mortes.
+ *
+ * `VACUUM` ordinaire et non `VACUUM FULL` : ce dernier recopie toute la table,
+ * ce qui demande autant d'espace libre qu'elle en occupe — précisément ce qui
+ * manque au moment où l'on en aurait besoin.
+ */
+async function entretenirLaBase() {
+  if (Date.now() - dernierEntretien < ENTRETIEN_MS) return
+  dernierEntretien = Date.now()
+
+  try {
+    const supprimees = await prisma.$executeRaw`
+      DELETE FROM products WHERE id IN (
+        SELECT id FROM products
+        WHERE (
+          ("lastSeenAt" IS NOT NULL AND "lastSeenAt" < NOW() - (${RETENTION_JOURS} * INTERVAL '1 day'))
+          OR ("lastSeenAt" IS NULL AND "createdAt" < NOW() - (${RETENTION_JOURS} * INTERVAL '1 day'))
+        )
+        AND ("checkedAt" IS NULL OR "checkedAt" < NOW() - INTERVAL '30 days')
+        LIMIT 20000
+      )`
+    const bilans = await prisma.$executeRaw`
+      DELETE FROM automation_jobs WHERE "lastRunAt" < NOW() - INTERVAL '7 days'`
+
+    // Le nettoyage compte plus que la suppression : c'est lui qui rend l'espace
+    // des lignes mortes réutilisable, et donc les écritures à nouveau possibles.
+    await prisma.$executeRawUnsafe('VACUUM (ANALYZE) products')
+
+    console.log(
+      `collecteur: entretien — ${Number(supprimees)} annonce(s) périmée(s), ` +
+        `${Number(bilans)} bilan(s) supprimé(s), espace récupéré.`,
+    )
+  } catch (err) {
+    // Un entretien raté ne doit pas empêcher la collecte : les annonces
+    // continuent d'arriver, et le prochain tour réessaiera.
+    console.error('collecteur: entretien impossible', err)
+  }
+}
+
 export async function passerUnTour(options: { budgetMs?: number; scoring?: boolean } = {}): Promise<BilanPassage> {
   const budget = options.budgetMs ?? 45_000
   // Une cible entamée mais non finie est une cible perdue pour ce tour : on
@@ -438,6 +509,7 @@ export async function passerUnTour(options: { budgetMs?: number; scoring?: boole
   let raison: BilanPassage['raison'] = 'budget'
 
   await amorcerCibles()
+  await entretenirLaBase()
 
   while (Date.now() < fin) {
     const cible = await reserverCible()
