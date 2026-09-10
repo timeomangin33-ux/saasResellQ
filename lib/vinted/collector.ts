@@ -480,10 +480,27 @@ export async function passerUnTour(options: { budgetMs?: number; scoring?: boole
   // ramène des centaines d'annonces et fausserait la moyenne dans l'autre sens.
   const rafraichissements = cibles.filter((c) => c.mode === 'refresh')
   const volumeRafraichi = rafraichissements.reduce((t, c) => t + c.annonces, 0)
+
+  // Une file vide n'est pas une panne : c'est le cas normal quand aucune cible
+  // n'est encore due, et le collecteur permanent y passe plusieurs fois par
+  // heure. Le compter comme dégradé écrivait un échec en base à chaque fois —
+  // observé cinq fois dans le journal — ce qui remonte dans /api/health et
+  // déclenche les alertes administrateur. Une alerte qui se déclenche quand
+  // tout va bien finit par être ignorée le jour où quelque chose ne va pas.
+  const rienAFaire = cibles.length === 0 && raison === 'file-vide'
+
   const degrade =
-    cibles.length === 0 ||
-    echecs > cibles.length / 3 ||
-    (rafraichissements.length > 0 && volumeRafraichi < rafraichissements.length * 20)
+    !rienAFaire &&
+    (cibles.length === 0 ||
+      echecs > cibles.length / 3 ||
+      (rafraichissements.length > 0 && volumeRafraichi < rafraichissements.length * 20))
+
+  // Un passage à vide n'a rien à raconter : l'écrire noierait les vrais bilans
+  // sous des lignes sans contenu, et c'est la fraîcheur de la dernière écriture
+  // réelle qui sert de signal de santé.
+  if (rienAFaire) {
+    return { cibles, annoncesCollectees, annoncesEcrites, balayages: balayages.length, disparues, echecs, degrade, raison }
+  }
 
   await prisma.automationJob
     .create({
