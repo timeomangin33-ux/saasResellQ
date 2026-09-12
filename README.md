@@ -36,6 +36,17 @@ npm run collect:status  # qu'y a-t-il en base, qu'est-ce qui échoue ?
 npm run collector       # collecte en continu
 ```
 
+## Le parrainage
+
+Comment un partenaire est attribué, payé et vérifié, et ce qui doit être fait à
+la main pour que ça existe : **[PARTENARIAT.md](./PARTENARIAT.md)**.
+
+```bash
+npm run parrainage:creer    -- CODE "Son nom" 30   # crée le code, affiche ses deux liens
+npm run parrainage:verifier -- CODE                # le lien attribue-t-il, en production ?
+npm run parrainage:tester   -- CODE                # une facture produit-elle la bonne dette ?
+```
+
 ## Required environment variables
 Set these in `.env.local` before running in production:
 
