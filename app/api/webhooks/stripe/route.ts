@@ -28,7 +28,16 @@ async function enregistrerCommission(userId: string, referralCode: string | null
   const invoiceId = typeof invoice?.id === 'string' ? invoice.id : null
   if (!invoiceId) return
 
-  const referral = await prisma.referral.findFirst({ where: { code: referralCode, actif: true } })
+  // `select` explicite, et pas un chargement de la ligne entière : sans lui,
+  // Prisma réclame toutes les colonnes du modèle, et une colonne ajoutée au
+  // schéma mais pas encore appliquée à la base ferait échouer cette requête.
+  // L'échec se paierait ici en commission perdue sur une facture déjà
+  // encaissée — le seul endroit du parrainage où une panne coûte de l'argent
+  // à quelqu'un d'autre que nous.
+  const referral = await prisma.referral.findFirst({
+    where: { code: referralCode, actif: true },
+    select: { id: true, commissionPct: true },
+  })
   // Partenariat terminé ou code supprimé : plus rien n'est dû sur les
   // renouvellements qui suivent.
   if (!referral) return

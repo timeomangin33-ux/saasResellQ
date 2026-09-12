@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import type { NextRequest, NextFetchEvent } from 'next/server'
 
 const securityHeaders = {
   'X-Frame-Options': 'DENY',
@@ -18,7 +18,7 @@ const securityHeaders = {
 const FENETRE_ATTRIBUTION_JOURS = 60
 const COOKIE_PARRAINAGE = 'resellq_ref'
 
-export function middleware(request: NextRequest) {
+export function middleware(request: NextRequest, event: NextFetchEvent) {
   const { hostname, protocol } = request.nextUrl
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
 
@@ -61,6 +61,12 @@ export function middleware(request: NextRequest) {
     // Filtre de forme uniquement : un cookie ne doit pas transporter n'importe
     // quelle chaîne venue de l'URL.
     if (/^[A-Z0-9_-]+$/.test(code)) {
+      // Quelqu'un qui arrive pour la première fois par ce lien, ou qui revient
+      // par un autre. Un rechargement de la même page, lui, porte déjà le
+      // cookie et ne compte pas : la mesure doit dire « untel a amené tant de
+      // personnes », pas « tant de pages ont été vues ».
+      const dejaAttribue = request.cookies.get(COOKIE_PARRAINAGE)?.value
+
       response.cookies.set(COOKIE_PARRAINAGE, code, {
         httpOnly: true,
         sameSite: 'lax',
@@ -68,6 +74,22 @@ export function middleware(request: NextRequest) {
         path: '/',
         maxAge: FENETRE_ATTRIBUTION_JOURS * 24 * 60 * 60,
       })
+
+      if (dejaAttribue !== code) {
+        // Le middleware tourne sur l'Edge, sans Prisma : le comptage passe donc
+        // par une route Node. `waitUntil` la laisse finir après que la réponse
+        // est partie — le visiteur n'attend pas son propre comptage, et un
+        // compteur en panne ne retarde ni ne casse la page qu'il demandait.
+        event.waitUntil(
+          fetch(new URL('/api/parrainage/visite', request.nextUrl.origin), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ code }),
+          }).catch(() => {
+            // Volontairement muet : voir ci-dessus.
+          }),
+        )
+      }
     }
   }
 

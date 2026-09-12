@@ -68,6 +68,7 @@ async function main() {
   const publique = configuree && !/localhost|127\.0\.0\.1/.test(configuree)
   const base = publique ? configuree : 'https://www.resellq.com'
   const lien = `${base}/?ref=${referral.code}`
+  const releve = `${base}/partenaire/${referral.jeton}`
 
   if (existant) {
     console.log(`Code « ${referral.code} » mis à jour.`)
@@ -79,10 +80,15 @@ async function main() {
   }
 
   console.log(`\nLien à partager :\n${lien}`)
+  console.log(`\nRelevé de ${referral.beneficiaire}, à lui donner :\n${releve}`)
   console.log(
     `\nCe lien attribue à ${referral.beneficiaire} toute inscription faite dans les 60 jours suivant le clic.\n` +
-      `Les commissions apparaîtront sur /admin/parrainage au fil des factures Stripe réellement encaissées.\n` +
-      `ResellQ ne fait qu'enregistrer ce qui est dû : aucun virement n'est envoyé automatiquement, vous payez ${referral.beneficiaire} vous-même.`,
+      `Le relevé lui montre ses propres visiteurs, inscriptions et commissions, sans compte ni mot de passe :\n` +
+      `l'adresse est le secret, elle ne se publie pas.\n` +
+      `Les commissions apparaissent aussi sur /admin/parrainage, au fil des factures Stripe réellement encaissées.\n` +
+      `ResellQ ne fait qu'enregistrer ce qui est dû : aucun virement n'est envoyé automatiquement, vous payez ${referral.beneficiaire} vous-même.\n\n` +
+      `Pour vérifier que le lien attribue vraiment, avant d'en dépendre :\n` +
+      `  npm run parrainage:verifier -- ${referral.code}`,
   )
 
   await prisma.$disconnect()

@@ -46,6 +46,7 @@ interface Totaux {
 interface LignePartenaire {
   id: string
   code: string
+  jeton: string
   beneficiaire: string
   email: string | null
   commissionPct: number
@@ -59,6 +60,12 @@ interface LignePartenaire {
 function lienParrainage(code: string) {
   const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.resellq.com').replace(/\/+$/, '')
   return `${base}/?ref=${code}`
+}
+
+/** Le relevé que le partenaire consulte lui-même, sans compte ni mot de passe. */
+function lienReleve(jeton: string) {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.resellq.com').replace(/\/+$/, '')
+  return `${base}/partenaire/${jeton}`
 }
 
 async function exigerAdmin(request: Request) {
@@ -95,7 +102,7 @@ export async function GET(request: Request) {
   const garde = await exigerAdmin(request)
   if ('reponse' in garde) return garde.reponse
 
-  const [referrals, commissions, inscriptions] = await Promise.all([
+  const [referrals, commissions, inscriptions, visites] = await Promise.all([
     prisma.referral.findMany({ orderBy: { createdAt: 'desc' } }),
     prisma.referralCommission.findMany({
       select: {
@@ -120,7 +127,19 @@ export async function GET(request: Request) {
       where: { referralCode: { not: null } },
       _count: { _all: true },
     }),
+    // Toléré absent : tant que docs/sql/2026-09-12-parrainage-visites.sql n'a
+    // pas été appliqué, la table n'existe pas. Le registre des commissions,
+    // lui, doit rester lisible — c'est le seul écran qui dise ce qui est dû.
+    prisma.referralVisite
+      .groupBy({ by: ['code'], _sum: { visiteurs: true } })
+      .catch((erreur: unknown) => {
+        console.error('[admin/referrals] visiteurs indisponibles:', erreur)
+        return [] as { code: string; _sum: { visiteurs: number | null } }[]
+      }),
   ])
+
+  const visiteursParCode = new Map<string, number>()
+  for (const ligne of visites) visiteursParCode.set(ligne.code, ligne._sum.visiteurs ?? 0)
 
   const inscriptionsParCode = new Map<string, number>()
   for (const ligne of inscriptions) {
@@ -151,6 +170,11 @@ export async function GET(request: Request) {
       notes: referral.notes,
       createdAt: referral.createdAt,
       lien: lienParrainage(referral.code),
+      lienReleve: lienReleve(referral.jeton),
+      // Zéro visiteur avec des inscriptions n'est pas une contradiction : le
+      // comptage n'existe que depuis sa mise en place, les inscriptions
+      // d'avant lui sont antérieures.
+      visiteurs: visiteursParCode.get(referral.code) ?? 0,
       inscriptions: inscriptionsParCode.get(referral.code) ?? 0,
       clientsPayants,
       nbFactures: facturees.length,

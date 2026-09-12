@@ -38,6 +38,8 @@ interface Partenaire {
   actif: boolean
   notes: string | null
   lien: string
+  lienReleve: string
+  visiteurs: number
   inscriptions: number
   clientsPayants: number
   nbFactures: number
@@ -236,6 +238,7 @@ export default function ParrainagePage() {
                         <th className="px-3 py-3 text-left font-semibold">Code</th>
                         <th className="px-3 py-3 text-left font-semibold">Bénéficiaire</th>
                         <th className="px-3 py-3 text-right font-semibold">Taux</th>
+                        <th className="px-3 py-3 text-right font-semibold">Visiteurs</th>
                         <th className="px-3 py-3 text-right font-semibold">Inscrits</th>
                         <th className="px-3 py-3 text-right font-semibold">Clients payants</th>
                         <th className="px-3 py-3 text-right font-semibold">Encaissé</th>
@@ -248,7 +251,7 @@ export default function ParrainagePage() {
                     <tbody>
                       {donnees.partenaires.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
+                          <td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">
                             Aucun partenaire pour l&apos;instant.
                           </td>
                         </tr>
@@ -263,12 +266,22 @@ export default function ParrainagePage() {
                                 </span>
                               )}
                               <div className="text-[11px] text-muted-foreground">{p.lien}</div>
+                              {/* Le relevé que le partenaire consulte lui-même. Le
+                                  jeton qu'il contient ouvre la page : il se donne
+                                  au partenaire, et à personne d'autre. */}
+                              <div className="text-[11px] text-muted-foreground">
+                                relevé :{' '}
+                                <a href={p.lienReleve} className="underline decoration-dotted hover:text-foreground">
+                                  {p.lienReleve}
+                                </a>
+                              </div>
                             </td>
                             <td className="px-3 py-3">
                               {p.beneficiaire}
                               {p.email && <div className="text-[11px] text-muted-foreground">{p.email}</div>}
                             </td>
                             <td className="px-3 py-3 text-right">{p.commissionPct} %</td>
+                            <td className="px-3 py-3 text-right">{p.visiteurs}</td>
                             <td className="px-3 py-3 text-right">{p.inscriptions}</td>
                             <td className="px-3 py-3 text-right">{p.clientsPayants}</td>
                             <td className="px-3 py-3 text-right">{euros(p.totalEncaisseCents)}</td>

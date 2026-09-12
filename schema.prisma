@@ -8,40 +8,40 @@ datasource db {
 }
 
 model User {
-  id                    String    @id @default(cuid())
-  email                 String    @unique
-  emailVerifiedAt       DateTime?
-  name                  String?
-  password              String?
-  image                 String?
-  role                  String    @default("USER")
-  stripeCustomerId      String?   @unique
-  subscriptionId        String?   @unique
-  subscriptionStatus    String    @default("INACTIVE")
-  subscriptionPlan      String    @default("FREE")
-  subscriptionEnd       DateTime?
-  aiCreditsUsed         Int       @default(0)
-  aiCreditsResetAt      DateTime?
-  twoFactorEnabled      Boolean   @default(false)
-  preferences           Json      @default("{}")
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  emailVerifiedAt    DateTime?
+  name               String?
+  password           String?
+  image              String?
+  role               String    @default("USER")
+  stripeCustomerId   String?   @unique
+  subscriptionId     String?   @unique
+  subscriptionStatus String    @default("INACTIVE")
+  subscriptionPlan   String    @default("FREE")
+  subscriptionEnd    DateTime?
+  aiCreditsUsed      Int       @default(0)
+  aiCreditsResetAt   DateTime?
+  twoFactorEnabled   Boolean   @default(false)
+  preferences        Json      @default("{}")
   /// Code du partenaire qui a amené ce compte, figé à l'inscription : il sert
   /// à savoir à qui revient la commission sur chaque facture payée ensuite.
-  referralCode          String?
-  referredAt            DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  referralCode       String?
+  referredAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  accounts              Account[]
-  vintedAccounts        VintedAccount[]
-  sessions              Session[]
-  conversations         Conversation[]
-  watchlists            Watchlist[]
-  notifications         Notification[]
-  searches              SavedSearch[]
-  automationConfig      AutomationConfig?
-  automationJobs        AutomationJob[]
-  alerts                Alert[]
-  referral              Referral? @relation(fields: [referralCode], references: [code], onDelete: SetNull)
+  accounts         Account[]
+  vintedAccounts   VintedAccount[]
+  sessions         Session[]
+  conversations    Conversation[]
+  watchlists       Watchlist[]
+  notifications    Notification[]
+  searches         SavedSearch[]
+  automationConfig AutomationConfig?
+  automationJobs   AutomationJob[]
+  alerts           Alert[]
+  referral         Referral?         @relation(fields: [referralCode], references: [code], onDelete: SetNull)
 
   @@index([email])
   @@index([createdAt])
@@ -118,17 +118,18 @@ model Conversation {
   updatedAt DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([createdAt])
   @@map("conversations")
 }
 
 model Message {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   role           String
   content        String
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -149,6 +150,7 @@ model Watchlist {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([createdAt])
   @@map("watchlists")
@@ -173,15 +175,15 @@ model Notification {
 
 // User-configured alert rules (trigger real Notification rows when matched)
 model Alert {
-  id         String   @id @default(cuid())
-  userId     String
-  category   String
-  condition  String   // profit_margin, price_drop, demand_spike
-  threshold  Float
-  active     Boolean  @default(true)
+  id              String    @id @default(cuid())
+  userId          String
+  category        String
+  condition       String // profit_margin, price_drop, demand_spike
+  threshold       Float
+  active          Boolean   @default(true)
   lastTriggeredAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -204,17 +206,17 @@ model SavedSearch {
 
 // Products scraped from Vinted
 model Product {
-  id              String   @id @default(cuid())
-  vintedId        String   @unique
+  id              String  @id @default(cuid())
+  vintedId        String  @unique
   title           String
   description     String?
   price           Float
-  currency        String   @default("EUR")
+  currency        String  @default("EUR")
   category        String
   subcategory     String?
   brand           String?
   size            String?
-  condition       String   // new, like_new, good, fair, poor
+  condition       String // new, like_new, good, fair, poor
   profitMargin    Float?
   profitPotential Float?
   seller          String?
@@ -228,42 +230,42 @@ model Product {
   /// active   : revue lors du dernier balayage complet
   /// gone     : absente de deux balayages complets consecutifs (vendue OU retiree)
   /// stale    : plus revue depuis longtemps, sans balayage complet pour trancher
-  status          String   @default("active")
+  status          String  @default("active")
 
   // Signaux de demande, lus sur l'API Vinted. Le prix seul ne dit pas si un
   // article part : c'est le nombre de favoris rapporte au temps passe en ligne
   // qui distingue une bonne affaire d'une annonce qui dort depuis trois mois.
-  totalPrice      Float?   // prix protection acheteurs incluse
-  favouriteCount  Int?
-  viewCount       Int?
-  listedAt        DateTime? // mise en ligne cote Vinted, pas cote base
-  lastSeenAt      DateTime? // derniere fois que le robot a revu l'annonce
+  totalPrice     Float? // prix protection acheteurs incluse
+  favouriteCount Int?
+  viewCount      Int?
+  listedAt       DateTime? // mise en ligne cote Vinted, pas cote base
+  lastSeenAt     DateTime? // derniere fois que le robot a revu l'annonce
 
   /// Nombre de balayages complets consecutifs ou l'annonce etait absente.
   /// Un balayage peut manquer une annonce a cause du decalage de pagination :
   /// on n'en conclut la disparition qu'a partir de deux absences de suite.
-  missedSweeps    Int      @default(0)
+  missedSweeps  Int       @default(0)
   /// Horodatage de la disparition constatee. Vendue ou retiree : Vinted ne le
   /// dit pas, et on ne l'invente pas.
-  disappearedAt   DateTime?
+  disappearedAt DateTime?
   /// Date a laquelle la page de l'annonce a ete lue pour connaitre son sort.
   /// Une seule fois par annonce, sept jours apres la premiere vue : c'est ce
   /// qui donne une cohorte comparable d'une categorie a l'autre.
-  checkedAt       DateTime?
+  checkedAt     DateTime?
   /// online | closed | hidden | deleted | unknown, lu sur la page de l'annonce.
-  finalState      String?
-  
+  finalState    String?
+
   // AI Scoring
-  analysisScore   Float?   // 0-100 profitability score
-  riskLevel       String?  // low, medium, high
-  recommendation  String?  // sell, hold, skip
-  
+  analysisScore  Float? // 0-100 profitability score
+  riskLevel      String? // low, medium, high
+  recommendation String? // sell, hold, skip
+
   // Metadata
-  aiProcessed     Boolean  @default(false)
-  notified        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  expiresAt       DateTime? // For data retention
+  aiProcessed Boolean   @default(false)
+  notified    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime? // For data retention
 
   /// Les index de cette table pesaient 237 Mo pour 243 Mo de donnees, sur une
   /// base plafonnee a 512 Mo — et la collecte s'est arretee sur « could not
@@ -292,21 +294,21 @@ model Product {
 
 // Automation Jobs tracking
 model AutomationJob {
-  id            String   @id @default(cuid())
-  userId        String?
-  jobType       String   // sync, analyze, notify, create-watchlist
-  status        String   @default("pending") // pending, running, completed, failed
-  input         String?  // JSON payload
-  result        String?  // JSON result
-  error         String?
-  retries       Int      @default(0)
-  maxRetries    Int      @default(3)
-  lastRunAt     DateTime?
-  nextRunAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String    @id @default(cuid())
+  userId     String?
+  jobType    String // sync, analyze, notify, create-watchlist
+  status     String    @default("pending") // pending, running, completed, failed
+  input      String? // JSON payload
+  result     String? // JSON result
+  error      String?
+  retries    Int       @default(0)
+  maxRetries Int       @default(3)
+  lastRunAt  DateTime?
+  nextRunAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([jobType])
@@ -324,44 +326,44 @@ model AutomationJob {
 /// répondre à la seule question qui intéresse un revendeur : est-ce que cette
 /// catégorie monte ou descend depuis un mois ?
 model CategoryMarketDaily {
-  id             String   @id @default(cuid())
-  category       String
-  day            DateTime @db.Date
-  avgPrice       Float?
-  medianPrice    Float?
-  volumeActive   Int?
-  sampleSize     Int?
-  createdAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  category     String
+  day          DateTime @db.Date
+  avgPrice     Float?
+  medianPrice  Float?
+  volumeActive Int?
+  sampleSize   Int?
+  createdAt    DateTime @default(now())
 
   @@unique([category, day])
   @@index([category, day])
 }
 
 model CategoryMarket {
-  id              String   @id @default(cuid())
-  category        String   @unique
+  id                  String    @id @default(cuid())
+  category            String    @unique
   /// Prix demandes sur les annonces recemment mises en ligne, pas sur tout le
   /// stock : Vinted plafonne chaque recherche a 960 resultats et repond
   /// toujours « 960 » a la question du nombre total, donc la mediane du stock
   /// entier n'est calculable par personne. Celle du flux recent l'est
   /// exactement, et c'est de toute facon celle qui interesse un revendeur.
-  avgPrice        Float?
-  medianPrice     Float?
+  avgPrice            Float?
+  medianPrice         Float?
   /// Premier et troisieme quartile du meme releve. La mediane seule ne dit pas
   /// si une categorie est homogene ou etalee, et c'est cet ecart qui decide
   /// d'un achat : entre p25 et p75 tient la moitie des annonces.
-  p25Price        Float?
-  p75Price        Float?
+  p25Price            Float?
+  p75Price            Float?
   /// Nombre d'annonces recentes derriere ces chiffres.
-  priceSample     Int?
-  avgMargin        Float?
-  volumeSold      Int?     // Products sold this week
-  volumeActive    Int?     // Currently listed
-  trendDirection  String?  // up, down, stable
-  trendStrength   String?  // strong, moderate, weak
+  priceSample         Int?
+  avgMargin           Float?
+  volumeSold          Int? // Products sold this week
+  volumeActive        Int? // Currently listed
+  trendDirection      String? // up, down, stable
+  trendStrength       String? // strong, moderate, weak
   priceChangePercent  Float? // % change in avgPrice since the previous refresh
   volumeChangePercent Float? // % change in volumeActive since the previous refresh
-  lastAnalyzedAt  DateTime?
+  lastAnalyzedAt      DateTime?
 
   // --- Rotation reelle du stock, mesuree par balayage complet ---
   /// Part des annonces d'une cohorte qui ont disparu dans les 7 jours suivant
@@ -382,53 +384,53 @@ model CategoryMarket {
   /// confirme | en-mesure | insuffisant
   confidence            String?
   /// La categorie est-elle assez fiable pour etre mise en avant ?
-  publishable           Boolean  @default(false)
+  publishable           Boolean   @default(false)
   /// Phrase courte expliquant pourquoi, affichable telle quelle.
   qualityNote           String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([publishable])
   @@map("category_markets")
-
 }
+
 // Vinted integration models
 model VintedAccount {
-  id             String   @id @default(cuid())
-  userId         String
-  provider       String   @default("vinted")
-  displayName    String?
-  username       String?
-  profileUrl     String?
-  cookieJar      String?  // serialized cookie jar or session token (encrypted in env recommended)
-  lastSyncAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String    @id @default(cuid())
+  userId      String
+  provider    String    @default("vinted")
+  displayName String?
+  username    String?
+  profileUrl  String?
+  cookieJar   String? // serialized cookie jar or session token (encrypted in env recommended)
+  lastSyncAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   listings VintedListing[]
-  sales VintedSale[]
-  syncs VintedSync[]
+  sales    VintedSale[]
+  syncs    VintedSync[]
 
   @@index([userId])
 }
 
 model VintedListing {
-  id            String   @id @default(cuid())
-  accountId     String
-  vintedId      String   @unique
-  title         String
-  price         Float
-  currency      String   @default("EUR")
-  category      String?
-  brand         String?
-  sold          Boolean  @default(false)
-  soldAt        DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String    @id @default(cuid())
+  accountId String
+  vintedId  String    @unique
+  title     String
+  price     Float
+  currency  String    @default("EUR")
+  category  String?
+  brand     String?
+  sold      Boolean   @default(false)
+  soldAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
@@ -437,41 +439,39 @@ model VintedListing {
 }
 
 model VintedSale {
-  id          String   @id @default(cuid())
-  accountId   String
-  listingId   String?
-  price       Float
-  currency    String   @default("EUR")
-  soldAt      DateTime
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  accountId String
+  listingId String?
+  price     Float
+  currency  String   @default("EUR")
+  soldAt    DateTime
+  createdAt DateTime @default(now())
 
   account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 }
 
 model VintedSync {
-  id         String   @id @default(cuid())
-  accountId  String
-  syncedAt   DateTime @default(now())
-  summary    String?  // JSON summary snapshot
+  id        String   @id @default(cuid())
+  accountId String
+  syncedAt  DateTime @default(now())
+  summary   String? // JSON summary snapshot
 
   account VintedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-
- 
 }
 
 // Automation Settings per User
 model AutomationConfig {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  enabled           Boolean  @default(true)
-  autoCreateWatchlist Boolean @default(true)
-  autoAnalyze       Boolean  @default(true)
-  autoNotify        Boolean  @default(true)
-  minProfitMargin   Float    @default(25.0)
-  maxRiskLevel      String   @default("medium") // low, medium, high
-  checkInterval     Int      @default(3600) // seconds
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  enabled             Boolean  @default(true)
+  autoCreateWatchlist Boolean  @default(true)
+  autoAnalyze         Boolean  @default(true)
+  autoNotify          Boolean  @default(true)
+  minProfitMargin     Float    @default(25.0)
+  maxRiskLevel        String   @default("medium") // low, medium, high
+  checkInterval       Int      @default(3600) // seconds
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -490,30 +490,30 @@ model AutomationConfig {
 /// la suivante. Ajouter une recherche, c'est une ligne ; changer une frequence,
 /// c'est un UPDATE. Rien a redeployer.
 model CollectTarget {
-  id                  String    @id @default(cuid())
+  id              String    @id @default(cuid())
   /// Le texte cherche sur Vinted. Unique : deux lignes identiques feraient
   /// deux fois le meme trafic pour le meme resultat.
-  query               String    @unique
-  label               String?
+  query           String    @unique
+  label           String?
   /// Nombre d'annonces visees par passage. 96 = une page Vinted exactement.
-  targetItems         Int       @default(96)
+  targetItems     Int       @default(96)
   /// Delai souhaite entre deux passages, en minutes.
-  intervalMinutes     Int       @default(60)
+  intervalMinutes Int       @default(60)
   /// A priorite egale, c'est le plus en retard qui passe en premier.
-  priority            Int       @default(0)
-  enabled             Boolean   @default(true)
-  lastRunAt           DateTime?
-  nextRunAt           DateTime?
+  priority        Int       @default(0)
+  enabled         Boolean   @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
   /// ok | empty | blocked | auth | network | format | timeout
-  lastStatus          String?
-  lastError           String?
-  lastItemCount       Int?
+  lastStatus      String?
+  lastError       String?
+  lastItemCount   Int?
 
   /// Delai souhaite entre deux balayages, en minutes.
   /// Un balayage parcourt la categorie tranche de prix par tranche de prix au
   /// lieu de la seule premiere page : c'est lui qui rafraichit lastSeenAt sur
   /// les annonces anciennes et qui rend la disparition detectable.
-  sweepIntervalMinutes Int      @default(720)
+  sweepIntervalMinutes Int       @default(720)
   /// Budget de pages pour un balayage entier. 96 annonces par page cote Vinted,
   /// et 960 annonces au maximum par tranche de prix : c'est Vinted qui plafonne.
   ///
@@ -524,23 +524,23 @@ model CollectTarget {
   /// grossir le stock d'annonces - jusqu'a saturer les 512 Mo de la base et
   /// arreter toute ecriture. Trente pages couvrent toujours les dix tranches de
   /// prix, donc l'echantillon reste reparti sur toute l'echelle.
-  sweepMaxPages        Int      @default(30)
+  sweepMaxPages        Int       @default(30)
   /// Tranche de prix par laquelle commencer le prochain balayage. Fait tourner
   /// le point d'entree : sans lui, un budget trop court voudrait dire que les
   /// tranches hautes ne sont jamais lues, donc que les articles chers - ceux
   /// qui rapportent - seraient les seuls dont on ne sait rien.
-  sweepCursor          Int      @default(0)
+  sweepCursor          Int       @default(0)
   lastSweepAt          DateTime?
   lastSweepPages       Int?
   /// Nombre de tranches de prix vues en entier au dernier balayage.
   lastSweepZones       Int?
   /// Vrai quand toutes les tranches parcourues l'ont ete en entier.
-  lastSweepComplete    Boolean  @default(false)
+  lastSweepComplete    Boolean   @default(false)
   /// Sert au recul automatique : une cible qui echoue est repoussee de plus en
   /// plus loin, au lieu de consommer le budget des cibles qui fonctionnent.
-  consecutiveFailures Int       @default(0)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  consecutiveFailures  Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([enabled, nextRunAt])
   @@index([priority])
@@ -560,11 +560,21 @@ model Referral {
   commissionPct Float    @default(30)
   actif         Boolean  @default(true)
   notes         String?
+  /// Ce qui ouvre la page /partenaire : le partenaire n'a pas de compte sur
+  /// ResellQ, et lui en créer un l'obligerait à un mot de passe pour consulter
+  /// un tableau qui ne le concerne que lui. Le jeton tient ce rôle.
+  ///
+  /// Produit par Postgres et non par Prisma : la colonne s'ajoute à une table
+  /// qui a déjà des lignes, et un `cuid()` côté client ne remplit que les
+  /// lignes créées ensuite — les partenaires existants seraient restés sans
+  /// jeton, donc sans page.
+  jeton         String   @unique @default(dbgenerated("gen_random_uuid()::text"))
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   filleuls    User[]
   commissions ReferralCommission[]
+  visites     ReferralVisite[]
 
   @@index([actif])
   @@map("referrals")
@@ -576,18 +586,18 @@ model Referral {
 /// d'argent. `statut` passe à "paye" quand l'exploitant a fait le virement de
 /// sa main et vient le déclarer ici.
 model ReferralCommission {
-  id         String @id @default(cuid())
-  referralId String
+  id              String    @id @default(cuid())
+  referralId      String
   /// Nullable : le compte du filleul peut être supprimé après coup, la dette
   /// envers le partenaire reste due.
-  userId     String?
+  userId          String?
   /// Unique : une même facture ne doit jamais engendrer deux commissions, y
   /// compris quand Stripe rejoue son webhook.
-  stripeInvoiceId String @unique
+  stripeInvoiceId String    @unique
   /// En centimes, ce que Stripe a réellement collecté (`amount_paid`), remises
   /// déduites — pas le prix affiché du forfait.
   montantEncaisse Int
-  devise          String @default("eur")
+  devise          String    @default("eur")
   /// Recopié depuis Referral au moment du calcul : changer le taux d'un
   /// partenaire plus tard ne doit pas réécrire ce qui lui était dû avant.
   commissionPct   Float
@@ -605,4 +615,33 @@ model ReferralCommission {
 
   @@index([referralId, statut])
   @@map("referral_commissions")
+}
+
+/// Combien de personnes un lien de parrainage a amenées, par code et par jour.
+///
+/// Sans cette table, un partenariat est aveugle jusqu'à la première facture :
+/// un lien recopié de travers, un code désactivé ou une campagne que personne
+/// ne regarde produisent tous le même écran — zéro — et rien ne les distingue.
+/// Le compteur sépare « personne ne clique » de « on clique et personne ne
+/// s'inscrit », qui n'appellent pas la même correction.
+///
+/// Agrégé par jour plutôt qu'une ligne par visite : ce registre doit pouvoir
+/// tourner des années sans surveillance, et personne n'a besoin de savoir à
+/// quelle seconde un visiteur est passé. Aucune adresse IP, aucun identifiant
+/// de navigateur n'y est écrit — il n'y a rien ici qui désigne quelqu'un.
+model ReferralVisite {
+  code      String
+  /// Minuit UTC du jour concerné. Normalisé à l'écriture : deux visites du
+  /// même jour doivent tomber sur la même ligne, quel que soit le fuseau de
+  /// la machine qui les enregistre.
+  jour      DateTime
+  visiteurs Int      @default(0)
+
+  // Cascade, contrairement aux commissions : un compteur de visites n'est pas
+  // de l'argent dû. Supprimer un partenaire peut effacer ses visites, jamais
+  // l'historique de ce qui lui était dû.
+  referral Referral @relation(fields: [code], references: [code], onDelete: Cascade)
+
+  @@id([code, jour])
+  @@map("referral_visites")
 }
