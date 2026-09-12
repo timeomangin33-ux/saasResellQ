@@ -15,6 +15,7 @@
     "prisma": "node scripts/prisma.mjs",
     "db:push": "node scripts/prisma.mjs db push",
     "db:purge": "tsx scripts/purger-base.ts",
+    "stripe:evenements": "tsx scripts/stripe-evenements.ts",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx seed.ts",

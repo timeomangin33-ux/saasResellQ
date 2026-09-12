@@ -1,20 +1,37 @@
+/**
+ * Ce que chaque forfait donne, et uniquement ce qui s'exécute.
+ *
+ * Trois promesses ont ete retirees de ces listes, apres verification dans le
+ * code plutot que dans l'intention :
+ *
+ *  - les credits IA et les rapports. Toutes les fonctions IA passent par des
+ *    agents n8n et `N8N_WEBHOOK_BASE_URL` n'est configure nulle part : chaque
+ *    appel debitait des credits puis repondait « momentanement indisponible ».
+ *  - le multi-comptes Vinted. `lib/playwright-vinted.ts` fait
+ *    `chromium.launch()`, et le binaire Chromium n'existe pas sur l'hebergement
+ *    serverless : la connexion d'un compte ne peut pas aboutir en production.
+ *
+ * Le champ `credits` reste : le compteur interne s'en sert. Ce sont les
+ * *promesses de vente* qui disparaissent, pas la mecanique. Le jour ou ces
+ * fonctions repondent vraiment, on remet les lignes.
+ */
 export const PLAN_CONFIG = {
   FREE: {
     label: 'Découverte',
     credits: 0,
     price: 0,
-    features: ['Accès limité au tableau de bord', "Pas d'analyse IA"],
+    features: ['Prix demandés par catégorie et par marque', 'Ni veille ni alerte'],
   },
   STARTER: {
     label: 'Starter',
     credits: 250,
     price: 29,
     features: [
-      '250 crédits IA par mois',
-      'Analyses de marché essentielles',
+      'Prix demandés médians et fourchettes sur 15 catégories',
+      'Opportunités notées, gain estimé en euros',
       "Alertes de prix jusqu'à 5",
-      'Rapports hebdomadaires',
-      'Support par email',
+      "Veilles jusqu'à 20 articles",
+      'Support par e-mail',
     ],
   },
   PRO: {
@@ -22,12 +39,11 @@ export const PLAN_CONFIG = {
     credits: 2000,
     price: 75,
     features: [
-      '2 000 crédits IA par mois',
-      'Analyses avancées',
+      'Tout du forfait Starter',
+      'Tendances par catégorie, mesurées sur plusieurs jours',
       'Alertes illimitées',
-      'Rapports quotidiens',
-      'Support prioritaire',
       'Veilles jusqu\'à 250',
+      'Support prioritaire',
     ],
   },
   BUSINESS: {
@@ -35,12 +51,9 @@ export const PLAN_CONFIG = {
     credits: 6000,
     price: 149,
     features: [
-      '6 000 crédits IA par mois',
       'Tout du forfait Pro',
-      'Multi-comptes Vinted',
-      'Veilles illimitées',
       'Historique des prix et courbes par catégorie',
-      'Rapports mensuels',
+      'Veilles illimitées',
       'Support prioritaire',
     ],
   },
