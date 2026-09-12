@@ -52,11 +52,45 @@ production.
 | | quoi | quand |
 |---|---|---|
 | Votre PC | `npm run collector` | en continu, une cible après l'autre |
-| Vercel | `/api/cron/market-refresh` | toutes les heures, 50 s par passage |
+| GitHub Actions | `.github/workflows/collecte.yml` | toutes les 30 min, 240 s par passage |
+| Vercel | `/api/cron/market-refresh` | **une fois par jour**, 50 s par passage |
 
-Les deux écrivent dans la même base Neon. Ils ne se marchent pas dessus : une
+Les trois écrivent dans la même base Neon. Ils ne se marchent pas dessus : une
 cible est réservée par une écriture conditionnelle avant d'être traitée, donc
 un seul collecteur la prend.
+
+Cette ligne Vercel annonçait « toutes les heures ». C'était faux : `vercel.json`
+déclare un seul passage quotidien, et ne peut pas en déclarer davantage tant que
+le projet est sur Hobby (voir « Cron Vercel » plus bas). Lire ce tableau donnait
+donc à croire que la production collectait vingt-quatre fois plus qu'en réalité.
+
+### GitHub Actions, pour les jours où le PC est éteint
+
+C'est le seul des trois qui ne dépende ni de votre poste ni du plan Vercel. Le
+dépôt est public, donc les minutes Actions sont gratuites et illimitées.
+
+Il lui faut une seule chose : le secret `DATABASE_URL`, dans
+**Settings > Secrets and variables > Actions > New repository secret**, avec la
+même chaîne Neon que sur Vercel. Sans lui, le workflow s'arrête à sa première
+étape en disant précisément ce qui manque, plutôt que de mourir plus loin sur
+une erreur Prisma.
+
+Pour le déclencher à la main sans attendre l'heure : onglet **Actions**,
+« Collecte Vinted », **Run workflow**.
+
+Deux choses à savoir :
+
+- **Un tour où toutes les cibles échouent rend maintenant le code 1.** Sans ça,
+  une collecte intégralement bloquée s'affichait en vert avec zéro annonce, et
+  GitHub n'envoyait aucun avertissement. Un échec partiel, lui, reste vert :
+  une cible peut échouer pendant que les autres passent.
+- **Vinted peut refuser les adresses IP des machines GitHub.** Ce n'est pas
+  vérifiable autrement qu'en essayant : le premier run le dira, `blocked` en
+  clair dans le journal de chaque cible. Si c'est le cas, le poste local (ou
+  n'importe quelle machine sur une IP résidentielle) reste nécessaire.
+
+GitHub désactive les workflows planifiés d'un dépôt resté 60 jours sans aucune
+activité. Un commit suffit à les réarmer.
 
 ### Démarrage automatique sous Windows
 

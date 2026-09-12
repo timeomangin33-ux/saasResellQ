@@ -55,6 +55,19 @@ async function main() {
     )
   }
   await prisma.$disconnect()
+
+  // Un tour où *toutes* les cibles ont échoué rendait malgré tout le code 0.
+  // En local on le voit, puisqu'on lit la sortie ; lancé par un planificateur,
+  // ça donne une exécution verte qui n'a rien collecté — exactement la panne
+  // muette qu'on cherche à éviter. Un échec partiel, lui, reste normal : une
+  // cible peut échouer pendant que les autres passent.
+  if (bilan.cibles.length > 0 && bilan.echecs === bilan.cibles.length) {
+    console.error(
+      `\nAucune cible n'est passée : ${bilan.echecs} échec(s) sur ${bilan.cibles.length}. ` +
+        `La cause de chacune est indiquée ci-dessus.`,
+    )
+    process.exit(1)
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })

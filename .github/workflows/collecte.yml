@@ -1,0 +1,99 @@
+name: Collecte Vinted
+
+# La collecte tournait jusqu'ici sur un PC Windows allumé en permanence
+# (scripts/installer-demarrage-windows.ps1). Cette panne-là s'est déjà produite :
+# le poste s'éteint, la collecte s'arrête cinq jours, et rien ne le signale.
+#
+# Ce workflow est la même collecte, mais sur les machines de GitHub. Le dépôt
+# est public : les minutes Actions y sont gratuites et illimitées, donc ce
+# filet ne coûte rien.
+#
+# Il ne remplace pas le collecteur local, il le double. Les deux écrivent dans
+# la même base Neon et ne se marchent pas dessus : une cible est réservée par
+# une écriture conditionnelle avant d'être traitée, donc un seul collecteur la
+# prend (voir lib/vinted/collector.ts).
+#
+# Le cron Vercel, lui, ne peut pas jouer ce rôle : le plan Hobby refuse tout
+# déclenchement plus fréquent qu'une fois par jour, et refuse le déploiement
+# entier si on essaie (voir COLLECTEUR.md).
+
+on:
+  schedule:
+    # Toutes les 30 minutes. GitHub traite cette heure comme un souhait : sous
+    # charge, un déclenchement peut arriver avec dix minutes de retard, ou être
+    # sauté. Pour de la collecte de marché, c'est sans conséquence.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: "Durée du tour, en secondes"
+        required: false
+        default: '240'
+
+# Un seul tour à la fois. Les tours sont censés durer moins longtemps que
+# l'intervalle, mais une exécution lente ne doit pas se superposer à la
+# suivante. On ne coupe pas celui qui tourne : il est en train d'écrire.
+concurrency:
+  group: collecte-vinted
+  cancel-in-progress: false
+
+jobs:
+  tour:
+    runs-on: ubuntu-latest
+    # Le tour a son propre budget (240 s). Cette limite-ci n'existe que pour
+    # qu'une machine coincée ne tourne pas six heures.
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Sans ce garde-fou, l'absence de secret se manifeste tout en bas des
+      # journaux par une erreur Prisma qui ne dit pas ce qui manque.
+      - name: Vérifier que la base est configurée
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Le secret DATABASE_URL n'est pas posé. Settings > Secrets and variables > Actions > New repository secret, nom DATABASE_URL, valeur la même chaîne Neon que sur Vercel."
+            exit 1
+          fi
+          # Le secret peut exister et pointer ailleurs. C'est le cas au moment
+          # où ce workflow est écrit : « Prisma Migrate Deploy » échoue à chaque
+          # push depuis des dizaines de commits sur un P1001 vers un hôte
+          # Supabase, alors que la production tourne sur Neon. Un collecteur
+          # qui remplirait une base abandonnée serait pire qu'un collecteur
+          # arrêté : il aurait l'air de marcher.
+          #
+          # On n'affiche que le suffixe du domaine, jamais l'identifiant du
+          # projet ni les identifiants de connexion : les journaux d'un dépôt
+          # public sont lisibles par tout le monde.
+          node -e '
+            const suffixe = new URL(process.env.DATABASE_URL).hostname.split(".").slice(-2).join(".");
+            console.log("Fournisseur de base visé : " + suffixe);
+            if (suffixe !== "neon.tech") {
+              console.log("::warning::La production tourne sur Neon, et ce secret pointe vers " + suffixe + ". Mettez DATABASE_URL à jour dans Settings > Secrets and variables > Actions.");
+            }
+          '
+
+      - name: Installer
+        run: npm ci
+
+      # package.json déclare bien « prisma generate » dans son script de build,
+      # mais on ne construit pas le site ici : seul le client Prisma est requis.
+      - name: Générer le client Prisma
+        run: npx prisma generate
+
+      - name: Un tour de collecte
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Facultatif : seulement utile si la session anonyme se fait bloquer.
+          # Un secret absent devient une chaîne vide, que session.ts ignore.
+          VINTED_SESSION_COOKIE: ${{ secrets.VINTED_SESSION_COOKIE }}
+        # Le scoring IA est coupé par collect:once lui-même : il n'a rien à voir
+        # avec la collecte et n'ajouterait que des appels payants.
+        run: npm run collect:once -- ${{ github.event.inputs.budget || '240' }}
