@@ -38,6 +38,7 @@
     "parrainage:creer": "tsx scripts/creer-parrainage.ts",
     "prix:verifier": "tsx scripts/verifier-prix-public.ts",
     "parrainage:tester": "tsx scripts/tester-commission.ts",
+    "trends:status": "tsx scripts/etat-tendances.ts",
     "targets:seed": "tsx scripts/amorcer-cibles.ts",
     "collect:status": "tsx scripts/etat-collecte.ts",
     "deploy:prod": "npm run collect:pause && vercel pull --yes --environment=production && node scripts/completer-env.mjs && vercel build --prod && vercel deploy --prebuilt --prod && npm run collect:resume",
