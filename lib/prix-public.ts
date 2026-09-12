@@ -130,15 +130,18 @@ interface LigneMarque {
  * /prix/silver.
  *
  * La promesse est mémorisée, pas seulement son résultat : deux pages rendues en
- * même temps attendent alors le même calcul au lieu d'en lancer deux. La durée
- * est courte parce que ces pages se régénèrent chaque jour ; elle sert à tenir
- * le temps d'une construction, pas à faire du cache applicatif.
+ * même temps attendent alors le même calcul au lieu d'en lancer deux. Cinq
+ * minutes, c'est-à-dire un peu plus qu'une construction complète : à soixante
+ * secondes la mémoire expirait au milieu du build et le calcul repartait. Ce
+ * n'est pas du cache applicatif — ces pages se régénèrent chaque jour de toute
+ * façon.
  */
-const MEMOIRE_MS = 60_000
+const MEMOIRE_MS = 5 * 60_000
 let memoire: { promesse: Promise<StatistiquesMarque[]>; expire: number } | null = null
 
 export function oublierMarques() {
   memoire = null
+  memoireDetails = null
 }
 
 export async function marquesPubliables(): Promise<StatistiquesMarque[]> {
@@ -196,70 +199,155 @@ const ETATS_LISIBLES: Record<string, string> = {
 
 const ORDRE_ETATS = ['new', 'like_new', 'good', 'fair']
 
+/** Nombre de catégories montrées dans le tableau « Où on la trouve ». */
+const CATEGORIES_AFFICHEES = 6
+
+interface DetailMarque {
+  parEtat: { etat: string; annonces: number; prixMedian: number }[]
+  parCategorie: { categorie: string; annonces: number; prixMedian: number }[]
+  partAvecFavori: number | null
+  misAJourLe: Date | null
+}
+
+/**
+ * Le détail de toutes les marques, calculé en une fois.
+ *
+ * Chaque page marque faisait quatre requêtes filtrées sur `LOWER(brand)` : une
+ * expression qu'aucun index ne peut servir, donc quatre balayages complets de
+ * la table des annonces par page. Le build local les rend une par une et passe ;
+ * Vercel les rend en parallèle à travers un pool de trois connexions, et le
+ * déploiement s'est arrêté sur /prix/birkenstock, « an error occurred in the
+ * Server Components render ».
+ *
+ * Les mêmes chiffres s'obtiennent en regroupant sur LOWER(brand) : quatre
+ * balayages pour la construction entière au lieu de quatre cent quatre-vingts,
+ * et le découpage par marque se fait en mémoire. Les requêtes s'enchaînent
+ * plutôt que de partir ensemble, pour ne jamais demander au pool plus de
+ * connexions qu'il n'en a.
+ */
+let memoireDetails: { promesse: Promise<Map<string, DetailMarque>>; expire: number } | null = null
+
+function detailsMarques(): Promise<Map<string, DetailMarque>> {
+  if (memoireDetails && Date.now() < memoireDetails.expire) return memoireDetails.promesse
+
+  const promesse = calculerDetailsMarques()
+  memoireDetails = { promesse, expire: Date.now() + MEMOIRE_MS }
+  promesse.catch(() => {
+    if (memoireDetails?.promesse === promesse) memoireDetails = null
+  })
+  return promesse
+}
+
+async function calculerDetailsMarques(): Promise<Map<string, DetailMarque>> {
+  const etats = await prisma.$queryRaw<
+    { marque: string; condition: string; annonces: bigint; prix_median: number | null }[]
+  >`
+    SELECT LOWER(brand) AS marque,
+           condition,
+           COUNT(*) AS annonces,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
+    FROM products
+    WHERE ${FRAICHEUR} AND brand IS NOT NULL
+    GROUP BY LOWER(brand), condition
+  `
+
+  const categories = await prisma.$queryRaw<
+    { marque: string; category: string; annonces: bigint; prix_median: number | null }[]
+  >`
+    SELECT LOWER(brand) AS marque,
+           category,
+           COUNT(*) AS annonces,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
+    FROM products
+    WHERE ${FRAICHEUR} AND brand IS NOT NULL
+    GROUP BY LOWER(brand), category
+  `
+
+  const demande = await prisma.$queryRaw<
+    { marque: string; avec_favori: bigint; total: bigint; derniere: Date | null }[]
+  >`
+    SELECT LOWER(brand) AS marque,
+           COUNT(*) FILTER (WHERE "favouriteCount" > 0) AS avec_favori,
+           COUNT(*) FILTER (WHERE "favouriteCount" IS NOT NULL) AS total,
+           MAX("lastSeenAt") AS derniere
+    FROM products
+    WHERE ${FRAICHEUR} AND brand IS NOT NULL
+    GROUP BY LOWER(brand)
+  `
+
+  const details = new Map<string, DetailMarque>()
+  const obtenir = (marque: string) => {
+    let detail = details.get(marque)
+    if (!detail) {
+      detail = { parEtat: [], parCategorie: [], partAvecFavori: null, misAJourLe: null }
+      details.set(marque, detail)
+    }
+    return detail
+  }
+
+  for (const ligne of etats) {
+    if (!ligne.marque) continue
+    obtenir(ligne.marque).parEtat.push({
+      etat: ETATS_LISIBLES[ligne.condition] ?? ligne.condition,
+      annonces: Number(ligne.annonces),
+      prixMedian: arrondi(ligne.prix_median),
+    })
+  }
+
+  // Le tri suit l'ordre d'usure et non l'alphabet : l'intérêt du tableau est
+  // justement de lire l'écart entre le neuf et le satisfaisant.
+  const rangEtat = (etat: string) => {
+    const index = ORDRE_ETATS.findIndex((cle) => (ETATS_LISIBLES[cle] ?? cle) === etat)
+    return index === -1 ? ORDRE_ETATS.length : index
+  }
+
+  for (const ligne of categories) {
+    if (!ligne.marque) continue
+    obtenir(ligne.marque).parCategorie.push({
+      categorie: ligne.category,
+      annonces: Number(ligne.annonces),
+      prixMedian: arrondi(ligne.prix_median),
+    })
+  }
+
+  for (const ligne of demande) {
+    if (!ligne.marque) continue
+    const detail = obtenir(ligne.marque)
+    const total = Number(ligne.total ?? 0)
+    const avecFavori = Number(ligne.avec_favori ?? 0)
+    // Sans aucune annonce dont on connaisse les favoris, on ne prétend pas
+    // mesurer la demande : `null`, que la page affiche comme « pas encore
+    // mesuré » et non comme 0 %.
+    detail.partAvecFavori = total > 0 ? Math.round((avecFavori / total) * 100) : null
+    detail.misAJourLe = ligne.derniere ?? null
+  }
+
+  for (const detail of details.values()) {
+    detail.parEtat.sort((a, b) => rangEtat(a.etat) - rangEtat(b.etat))
+    detail.parCategorie.sort((a, b) => b.annonces - a.annonces)
+    detail.parCategorie = detail.parCategorie.slice(0, CATEGORIES_AFFICHEES)
+  }
+
+  return details
+}
+
 /** Le détail d'une marque, à partir de son slug. */
 export async function statistiquesMarque(slug: string): Promise<StatistiquesMarque | null> {
   const toutes = await marquesPubliables()
   const base = toutes.find((m) => m.slug === slug)
   if (!base) return null
 
-  const nom = base.marque
-
-  const [etats, categories, demande, derniere] = await Promise.all([
-    prisma.$queryRaw<{ condition: string; annonces: bigint; prix_median: number | null }[]>`
-      SELECT condition,
-             COUNT(*) AS annonces,
-             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
-      FROM products
-      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
-      GROUP BY condition
-    `,
-    prisma.$queryRaw<{ category: string; annonces: bigint; prix_median: number | null }[]>`
-      SELECT category,
-             COUNT(*) AS annonces,
-             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::float8 AS prix_median
-      FROM products
-      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
-      GROUP BY category
-      ORDER BY COUNT(*) DESC
-      LIMIT 6
-    `,
-    prisma.$queryRaw<{ avec_favori: bigint; total: bigint }[]>`
-      SELECT COUNT(*) FILTER (WHERE "favouriteCount" > 0) AS avec_favori,
-             COUNT(*) FILTER (WHERE "favouriteCount" IS NOT NULL) AS total
-      FROM products
-      WHERE ${FRAICHEUR} AND LOWER(brand) = LOWER(${nom})
-    `,
-    prisma.product.findFirst({
-      where: { status: 'active', brand: { equals: nom, mode: 'insensitive' }, lastSeenAt: { not: null } },
-      orderBy: { lastSeenAt: 'desc' },
-      select: { lastSeenAt: true },
-    }),
-  ])
-
-  const total = Number(demande[0]?.total ?? 0)
-  const avecFavori = Number(demande[0]?.avec_favori ?? 0)
+  const details = await detailsMarques()
+  // La clé est exactement ce que renvoie LOWER(brand) en base : pas de trim ici,
+  // sinon une marque saisie avec une espace finale ne se retrouve pas.
+  const detail = details.get(base.marque.toLowerCase())
 
   return {
     ...base,
-    parEtat: etats
-      .map((e) => ({
-        etat: ETATS_LISIBLES[e.condition] ?? e.condition,
-        cle: e.condition,
-        annonces: Number(e.annonces),
-        prixMedian: arrondi(e.prix_median),
-      }))
-      .sort((a, b) => ORDRE_ETATS.indexOf(a.cle) - ORDRE_ETATS.indexOf(b.cle))
-      .map(({ etat, annonces, prixMedian }) => ({ etat, annonces, prixMedian })),
-    parCategorie: categories.map((c) => ({
-      categorie: c.category,
-      annonces: Number(c.annonces),
-      prixMedian: arrondi(c.prix_median),
-    })),
-    // Sans aucune annonce dont on connaisse les favoris, on ne prétend pas
-    // mesurer la demande : `null`, que la page affiche comme « pas encore
-    // mesuré » et non comme 0 %.
-    partAvecFavori: total > 0 ? Math.round((avecFavori / total) * 100) : null,
-    misAJourLe: derniere?.lastSeenAt ?? null,
+    parEtat: detail?.parEtat ?? [],
+    parCategorie: detail?.parCategorie ?? [],
+    partAvecFavori: detail?.partAvecFavori ?? null,
+    misAJourLe: detail?.misAJourLe ?? null,
   }
 }
 
