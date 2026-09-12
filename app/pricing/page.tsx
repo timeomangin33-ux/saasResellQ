@@ -66,7 +66,7 @@ export default function PricingPage() {
   const planDescriptions = {
     Starter: 'Idéal pour démarrer proprement avec les bases de l’analyse.',
     Pro: 'Pour une activité sérieuse avec plus de volume et d’automatisation.',
-    Business: 'Pour suivre plusieurs comptes Vinted et un grand nombre de références.',
+    Business: 'Pour suivre un grand nombre de références et leur évolution dans le temps.',
   }
 
   const handleSubscribe = async (level: string) => {
@@ -166,7 +166,7 @@ export default function PricingPage() {
                   </span>
                 ))}
               </div>
-              <p className="mt-6 text-sm text-slate-400">Tous les forfaits donnent accès au marché du jour. Ce qui change d&apos;un forfait à l&apos;autre : le nombre de veilles et d&apos;alertes, la fréquence des rapports, et l&apos;accès à l&apos;historique des prix.</p>
+              <p className="mt-6 text-sm text-slate-400">Tous les forfaits donnent accès au marché du jour. Ce qui change d&apos;un forfait à l&apos;autre : le nombre de veilles et d&apos;alertes, et l&apos;accès à l&apos;historique des prix.</p>
             </div>
 
             <div className="rounded-[28px] border border-white/10 bg-[#0B1220] p-6">
@@ -277,7 +277,7 @@ export default function PricingPage() {
               },
               {
                 q: 'Y a-t-il une période d\'essai ?',
-                a: 'Il n\'y a pas d\'essai payant limité dans le temps. Le compte gratuit, sans carte bancaire, vous donne accès en lecture aux données du marché (top produits, catégories, tendances). Les veilles, alertes, analyses IA et rapports nécessitent un forfait.',
+                a: 'Il n\'y a pas d\'essai payant limité dans le temps. Le compte gratuit, sans carte bancaire, vous donne accès en lecture aux données du marché (top produits, catégories, tendances). Les veilles, les alertes et les opportunités notées nécessitent un forfait.',
               },
               {
                 q: 'Comment fonctionne le paiement ?',

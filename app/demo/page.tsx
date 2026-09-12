@@ -240,9 +240,9 @@ export default function DemoDashboardPage() {
                     { label: 'Deal Finder', href: '/deal-finder', meta: 'Meilleures affaires' },
                     { label: 'Opportunités', href: '/opportunities', meta: 'Produits sous-évalués' },
                     { label: 'Analyse marché', href: '/market-research', meta: 'Études rapides' },
-                    { label: 'Tendances', href: '/insights', meta: 'Évolutions & prédictions' },
-                    { label: 'Assistant IA', href: '/ai-agent', meta: 'Briefing intelligent' },
-                    { label: 'Rapports', href: '/reports', meta: 'Synthèses générées' },
+                    { label: 'Tendances', href: '/insights', meta: 'Évolution par catégorie' },
+                    { label: 'Veilles', href: '/watchlists', meta: 'Suivi d\'articles' },
+                    { label: 'Prix par marque', href: '/prix', meta: 'Médianes publiques' },
                   ].map(item => (
                     <div key={item.href} className="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/40 transition group cursor-not-allowed opacity-70">
                       <div>

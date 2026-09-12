@@ -61,7 +61,7 @@ export default function SignUpPage() {
       <div className="space-y-5 mb-6">
         <div className="panel p-4 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Compte gratuit, sans carte bancaire.</p>
-          <p className="mt-2">Vous accédez immédiatement aux données du marché en lecture : top produits, catégories et tendances. Les veilles, alertes, analyses IA et rapports nécessitent un forfait.</p>
+          <p className="mt-2">Vous accédez immédiatement aux données du marché en lecture : top produits, catégories et tendances. Les veilles, les alertes et les opportunités notées nécessitent un forfait.</p>
         </div>
 
         <div className="space-y-1.5">
