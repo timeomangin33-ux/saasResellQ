@@ -324,6 +324,18 @@ export default function DashboardPage() {
   )
   const assistantIADisponible = fonctions?.assistantIA === true
 
+  /**
+   * Proposer de connecter un compte Vinted n'a de sens que là où ça peut
+   * aboutir. Lire les annonces d'un membre demande sa session, obtenue en
+   * pilotant un navigateur — et il n'y a pas de Chromium sur une fonction
+   * serverless. L'invitation s'affichait pourtant à tout abonné, qui la
+   * suivait jusqu'à une erreur parlant de Chromium.
+   *
+   * Comme pour l'assistant : rien tant que la réponse n'est pas là, plutôt
+   * qu'une invitation affichée puis retirée sous les yeux.
+   */
+  const inviteCompteVinted = vintedStatus === 'not_connected' && fonctions?.comptesVinted === true
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <motion.div variants={pageStagger} initial="hidden" animate="show" className="space-y-5">
@@ -600,8 +612,8 @@ export default function DashboardPage() {
           second rideau, sur une carte compacte, plutôt qu'en tête d'affiche à
           côté de quatre tuiles vides.
         */}
-        <motion.div variants={item} className={cn('grid gap-4', vintedStatus === 'not_connected' && 'lg:grid-cols-2')}>
-          {vintedStatus === 'not_connected' && (
+        <motion.div variants={item} className={cn('grid gap-4', inviteCompteVinted && 'lg:grid-cols-2')}>
+          {inviteCompteVinted && (
             <SpotlightCard spotlightColor="rgba(16,185,129,0.16)">
               <GlassPanel accent="emerald" className="flex h-full flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">

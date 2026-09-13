@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { authorizeFeature } from '@/lib/access-control'
+import { navigateurDisponible } from '@/lib/integrations'
 import { getVintedAccountForUser, fetchAccountData, persistFetchedData, computeSummary } from '@/lib/vinted-connector'
 import { checkRateLimit } from '@/lib/rate-limit'
 
@@ -14,6 +15,16 @@ export async function POST(request: Request) {
   if ('response' in access) return access.response
 
   const user = access.user
+
+  // La synchronisation relit les annonces du membre en pilotant un navigateur
+  // muni de sa session. Sans Chromium, elle échouait au milieu, après avoir
+  // annoncé qu'elle commençait.
+  if (!navigateurDisponible()) {
+    return NextResponse.json(
+      { error: "La synchronisation d'un compte Vinted n'est pas disponible sur cet hébergement." },
+      { status: 503 },
+    )
+  }
 
   try {
     const account = await getVintedAccountForUser(user.id)

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, Layers3, LifeBuoy, Lock, Menu, Search, Settings, Sparkles, Target, UserRound, X, BadgeCheck } from 'lucide-react'
+import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, Layers3, LifeBuoy, Lock, Menu, Search, Settings, Sparkles, Tags, Target, UserRound, X, BadgeCheck } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { AuroraField } from '@/components/ui/aurora-field'
@@ -34,7 +34,14 @@ const explorerNav: NavItem[] = [
   { name: 'Accueil', href: '/dashboard', icon: Home },
   { name: 'Top Produits', href: '/top-products', icon: BarChart3 },
   { name: 'Top Catégories', href: '/categories', icon: Layers3 },
-  { name: 'Vinted', href: '/vinted-dashboard', icon: BarChart3 },
+  // Les prix par marque existaient, marchaient, et n'étaient atteignables
+  // depuis aucun écran : la page n'était liée que par ses propres pages de
+  // détail, où l'on ne pouvait arriver qu'en la connaissant déjà.
+  { name: 'Top Marques', href: '/brands', icon: Tags },
+  // Cette page montre *vos* ventes, pas le marché : elle n'a rien à afficher
+  // sans compte Vinted lié, et lier un compte demande un navigateur que
+  // l'hébergement serverless n'a pas. Même règle que « Comptes Vinted ».
+  { name: 'Vinted', href: '/vinted-dashboard', icon: BarChart3, requiert: 'comptesVinted' },
   { name: 'Explorer le marché', href: '/market-research', icon: Search, minPlan: 'STARTER' },
   { name: 'Opportunités', href: '/opportunities', icon: Target, minPlan: 'STARTER' },
   { name: 'Veilles', href: '/watchlists', icon: BellDot, minPlan: 'STARTER' },

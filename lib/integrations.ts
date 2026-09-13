@@ -43,12 +43,47 @@ export function etatDesIntegrations(): Integration[] {
     {
       cle: 'VINTED_COOKIE_SECRET',
       nom: 'Connexion d’un compte Vinted',
-      // La clé sert à chiffrer la session : trop courte, le chiffrement
-      // refuse de démarrer, et c'est le bon comportement.
-      configuree: (process.env.VINTED_COOKIE_SECRET || '').length >= 32,
+      // Deux conditions, et la seconde est celle qui manquait.
+      //
+      // La clé sert à chiffrer la session : trop courte, le chiffrement refuse
+      // de démarrer, et c'est le bon comportement. Mais elle fait partie des
+      // variables exigées au démarrage : en production elle est donc toujours
+      // posée, et ce test seul répondait « configurée » quoi qu'il arrive.
+      // Le menu affichait « Comptes Vinted » à tout abonné Business, pour une
+      // fonction qui ne peut pas aboutir.
+      //
+      // Ce qui bloque vraiment est ailleurs : lib/vinted-connector.ts pilote un
+      // navigateur (lib/playwright-vinted.ts, `chromium.launch()`), et il n'y a
+      // pas de Chromium sur une fonction serverless.
+      configuree: (process.env.VINTED_COOKIE_SECRET || '').length >= 32 && navigateurDisponible(),
       consequence: 'Connecter un compte Vinted échoue, y compris sur le forfait Business.',
     },
   ]
+}
+
+/**
+ * Un navigateur peut-il être lancé ici ?
+ *
+ * Toute la connexion d'un compte Vinted en dépend : lire les annonces d'un
+ * membre demande sa session, et cette session s'obtient en pilotant un vrai
+ * navigateur. Sur Vercel, le binaire n'existe pas — l'appel échoue au
+ * lancement, avec une erreur qui parle de Chromium à quelqu'un qui voulait
+ * voir ses ventes.
+ *
+ * Le poste de développement, lui, a Playwright installé : la fonction doit
+ * continuer d'y marcher, sinon on ne peut plus la reprendre. D'où un test sur
+ * l'hébergement plutôt qu'un retrait pur et simple du code.
+ */
+export function navigateurDisponible() {
+  // Échappatoire pour un hébergement qui embarque Chromium (un conteneur bâti
+  // depuis le Dockerfile du dépôt, par exemple) : sans elle, la fonction
+  // resterait masquée sur une machine parfaitement capable de la rendre.
+  const force = process.env.NAVIGATEUR_DISPONIBLE
+  if (force === 'true') return true
+  if (force === 'false') return false
+
+  // Posée par Vercel dans tous ses environnements.
+  return !process.env.VERCEL
 }
 
 export function integrationConfiguree(cle: string) {

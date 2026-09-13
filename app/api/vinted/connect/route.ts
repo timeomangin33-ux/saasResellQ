@@ -30,8 +30,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Sans la clé de chiffrement, la sauvegarde échoue de toute façon — mais
-    // avec un 500 et un message interne. Autant le dire clairement et tôt.
+    // Deux raisons de refuser ici, et la même réponse pour les deux : sans clé
+    // de chiffrement la sauvegarde échouerait, et sans navigateur la session
+    // enregistrée ne pourrait jamais être exploitée. Dans les deux cas un 500
+    // et un message interne, plus tard, à la place d'un refus clair tout de
+    // suite.
     if (!integrationConfiguree('VINTED_COOKIE_SECRET')) {
       return errorResponse(
         "La connexion de comptes Vinted est momentanément indisponible. Rien n'a été enregistré.",

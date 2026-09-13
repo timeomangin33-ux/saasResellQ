@@ -277,3 +277,29 @@ textarea:focus,
 select:focus {
   outline: none;
 }
+
+/*
+  Le pendant CSS de <MotionConfig reducedMotion="user"> (providers.tsx), pour
+  tout ce que Framer ne pilote pas : les classes `animate-*` de Tailwind, les
+  keyframes maison (shimmer, btn-shine) et le défilement.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /*
+    Sauf l'indicateur de chargement : c'est la seule chose à l'écran qui dise
+    qu'une requête est en cours. Figé, il devient un symbole muet, et l'on
+    croit l'application bloquée. On le ralentit au lieu de l'arrêter.
+  */
+  .animate-spin {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

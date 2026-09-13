@@ -12,9 +12,18 @@ export default function VintedConnectModal({ onClose, redirectTo = '/vinted-dash
   const [loading, setLoading] = useState(false)
   const [browserLoading, setBrowserLoading] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  /**
+   * L'échec s'annonçait par un `alert()` du navigateur : une boîte grise
+   * système posée au-dessus d'une interface soignée, qui masque le formulaire
+   * qu'elle commente et qu'il faut congédier avant de pouvoir corriger quoi
+   * que ce soit. Le message s'affiche maintenant dans le modal, à côté de ce
+   * qui a échoué.
+   */
+  const [erreur, setErreur] = useState<string | null>(null)
 
   async function submit() {
     setLoading(true)
+    setErreur(null)
     try {
       const res = await fetch('/api/vinted/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, profileUrl, cookieJar }) })
       const data = await res.json()
@@ -23,7 +32,7 @@ export default function VintedConnectModal({ onClose, redirectTo = '/vinted-dash
       onClose && onClose()
       window.location.href = redirectTo
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la connexion')
+      setErreur(err?.message || 'La connexion a échoué. Rien n’a été enregistré.')
     } finally {
       setLoading(false)
     }
@@ -31,6 +40,7 @@ export default function VintedConnectModal({ onClose, redirectTo = '/vinted-dash
 
   async function connectWithBrowser() {
     setBrowserLoading(true)
+    setErreur(null)
     try {
       const res = await fetch('/api/vinted/login/start', { method: 'POST' })
       const data = await res.json()
@@ -39,7 +49,7 @@ export default function VintedConnectModal({ onClose, redirectTo = '/vinted-dash
       onClose && onClose()
       window.location.href = redirectTo
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du login via navigateur')
+      setErreur(err?.message || 'L’ouverture du navigateur a échoué.')
     } finally {
       setBrowserLoading(false)
     }
@@ -78,6 +88,15 @@ export default function VintedConnectModal({ onClose, redirectTo = '/vinted-dash
                   <p className="mt-2 text-lg font-semibold">Cookies chiffrés avec votre clé secrète, sans stockage de mot de passe.</p>
                 </div>
               </div>
+
+              {erreur && (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-200"
+                >
+                  {erreur}
+                </div>
+              )}
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Button onClick={connectWithBrowser} className="btn-shine w-full sm:w-auto" disabled={browserLoading}>
