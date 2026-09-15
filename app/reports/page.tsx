@@ -1,6 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/app/dashboard-layout'
+import { FonctionEnCoursDeVerification, FonctionNonBranchee, useFonction } from '@/components/fonction-non-branchee'
 import { motion } from 'framer-motion'
 import { PageHeader } from '@/components/ui/page-header'
 import { Reveal } from '@/components/ui/reveal'
@@ -31,6 +32,11 @@ const REPORT_TYPES = [
 const TYPE_LABELS: Record<string, string> = { daily: 'Quotidien', weekly: 'Hebdomadaire', monthly: 'Mensuel' }
 
 export default function ReportsPage() {
+  // Le menu masque déjà cette entrée quand l'agent n'est pas branché ; un
+  // favori ou une adresse retapée mènent quand même ici, où l'on voyait un
+  // chargement puis un échec qui ressemblait à un incident passager.
+  const etatFonction = useFonction('assistantIA')
+
   const { data: session, status } = useSession()
   // Le forfait seul ne suffit pas : un abonnement PRO expiré garde
   // `subscriptionPlan = 'PRO'` et franchissait donc la porte plus bas, alors que
@@ -103,6 +109,13 @@ export default function ReportsPage() {
     } finally {
       setGenerating(false)
     }
+  }
+
+  // Placé après tous les hooks : React exige qu'ils soient appelés dans le
+  // même ordre à chaque rendu, donc avant tout retour conditionnel.
+  if (etatFonction === 'chargement') return <FonctionEnCoursDeVerification />
+  if (etatFonction === 'non-branchee') {
+    return <FonctionNonBranchee titre="Les rapports ne sont pas disponibles" detail="La génération de rapports passe par un agent d'analyse externe qui n'est pas configuré sur cette installation." />
   }
 
   return (

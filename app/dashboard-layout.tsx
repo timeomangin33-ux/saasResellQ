@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, Layers3, LifeBuoy, Lock, Menu, Search, Settings, Sparkles, Tags, Target, UserRound, X, BadgeCheck } from 'lucide-react'
+import { Activity, BarChart3, BellDot, Bot, ChevronRight, CircleHelp, Clock3, CreditCard, FileText, Home, Layers3, LifeBuoy, Lock, Menu, Search, Radar, Settings, Sparkles, Tags, Target, TrendingUp, UserRound, X, BadgeCheck } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { AuroraField } from '@/components/ui/aurora-field'
@@ -46,6 +46,10 @@ const explorerNav: NavItem[] = [
   { name: 'Opportunités', href: '/opportunities', icon: Target, minPlan: 'STARTER' },
   { name: 'Veilles', href: '/watchlists', icon: BellDot, minPlan: 'STARTER' },
   { name: 'Alertes', href: '/alertes', icon: BellDot, minPlan: 'STARTER' },
+  // Les recherches enregistrées se relisaient depuis une page que rien ne
+  // liait : on ne pouvait y arriver qu'en tapant l'adresse. Enregistrer une
+  // recherche qu'on ne peut pas retrouver n'a pas de sens.
+  { name: 'Vos recherches', href: '/historique', icon: Clock3, minPlan: 'STARTER' },
 ]
 
 /**
@@ -63,7 +67,6 @@ const PLAN_REQUIRED_ROUTES = [
   '/reports',
   '/historique',
   '/product-analyzer',
-  '/deal-finder',
   '/dashboard/accounts',
   '/dashboard/automation',
   '/dashboard/bot',
@@ -77,7 +80,18 @@ const toolsNav: NavItem[] = [
   // service n'est pas branché, plutôt que d'être offertes et refusées.
   { name: 'Assistant IA', href: '/ai-agent', icon: Bot, minPlan: 'STARTER', requiert: 'assistantIA' },
   { name: 'Rapports', href: '/reports', icon: FileText, minPlan: 'STARTER', requiert: 'assistantIA' },
+  // Ces deux-là dépendent du même agent et n'étaient dans aucune liste : elles
+  // restaient introuvables même une fois le service branché, alors qu'elles
+  // marcheraient. Sous le même test, les quatre pages d'analyse apparaissent
+  // et disparaissent ensemble.
+  { name: 'Tendances', href: '/insights', icon: TrendingUp, minPlan: 'STARTER', requiert: 'assistantIA' },
+  { name: "Analyse d'annonce", href: '/product-analyzer', icon: Sparkles, minPlan: 'STARTER', requiert: 'assistantIA' },
   { name: 'Comptes Vinted', href: '/dashboard/accounts', icon: Layers3, minPlan: 'BUSINESS', requiert: 'comptesVinted' },
+  // Ces deux-là marchent — elles lisent la base et lancent le vrai collecteur,
+  // sans agent externe — et n'étaient liées de nulle part. Deux fonctions
+  // payantes que personne ne pouvait atteindre.
+  { name: 'Annonces en direct', href: '/dashboard/bot', icon: Radar, minPlan: 'PRO' },
+  { name: 'Automation', href: '/dashboard/automation', icon: Activity, minPlan: 'PRO' },
 ]
 
 const accountNav: NavItem[] = [

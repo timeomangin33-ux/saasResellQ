@@ -1,6 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/app/dashboard-layout'
+import { FonctionEnCoursDeVerification, FonctionNonBranchee, useFonction } from '@/components/fonction-non-branchee'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, RotateCcw, Sparkles, Bot, User } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
@@ -33,6 +34,11 @@ function newId() {
 }
 
 export default function AIAgentPage() {
+  // Le menu masque déjà cette entrée quand l'agent n'est pas branché ; un
+  // favori ou une adresse retapée mènent quand même ici, où l'on voyait un
+  // chargement puis un échec qui ressemblait à un incident passager.
+  const etatFonction = useFonction('assistantIA')
+
   const [conversations, setConversations] = useState<Conversation[]>([
     {
       id: '0',
@@ -148,6 +154,13 @@ export default function AIAgentPage() {
     setConversations(prev => [...prev, conversation])
     setActiveConversationId(id)
     setInput('')
+  }
+
+  // Placé après tous les hooks : React exige qu'ils soient appelés dans le
+  // même ordre à chaque rendu, donc avant tout retour conditionnel.
+  if (etatFonction === 'chargement') return <FonctionEnCoursDeVerification />
+  if (etatFonction === 'non-branchee') {
+    return <FonctionNonBranchee titre="L'assistant n'est pas disponible" detail="L'assistant passe par un agent conversationnel externe qui n'est pas configuré sur cette installation." />
   }
 
   return (

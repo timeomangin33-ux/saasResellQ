@@ -1,6 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/app/dashboard-layout'
+import { FonctionEnCoursDeVerification, FonctionNonBranchee, useFonction } from '@/components/fonction-non-branchee'
 import { motion } from 'framer-motion'
 import { PageHeader } from '@/components/ui/page-header'
 import { SpotlightCard } from '@/components/ui/spotlight-card'
@@ -61,6 +62,11 @@ function normalizeTrends(value: unknown): Trend[] {
 const PERIODS = [{ value: '7d', label: '7 jours' }, { value: '30d', label: '30 jours' }, { value: '90d', label: '3 mois' }]
 
 export default function InsightsPage() {
+  // Le menu masque déjà cette entrée quand l'agent n'est pas branché ; un
+  // favori ou une adresse retapée mènent quand même ici, où l'on voyait un
+  // chargement puis un échec qui ressemblait à un incident passager.
+  const etatFonction = useFonction('assistantIA')
+
   const [trends, setTrends] = useState<Trend[]>([])
   const [trendsError, setTrendsError] = useState<string | null>(null)
   const [report, setReport] = useState<Report | null>(null)
@@ -113,6 +119,13 @@ export default function InsightsPage() {
     const id = window.setTimeout(() => { void fetchTrends(period) }, 0)
     return () => window.clearTimeout(id)
   }, [period, fetchTrends])
+
+  // Placé après tous les hooks : React exige qu'ils soient appelés dans le
+  // même ordre à chaque rendu, donc avant tout retour conditionnel.
+  if (etatFonction === 'chargement') return <FonctionEnCoursDeVerification />
+  if (etatFonction === 'non-branchee') {
+    return <FonctionNonBranchee titre="Les tendances et les rapports ne sont pas disponibles" detail="Cette page appelle un agent d'analyse externe qui n'est pas configuré sur cette installation. Tant qu'il ne l'est pas, ni les tendances ni les rapports ne peuvent être produits." />
+  }
 
   return (
     <DashboardLayout>

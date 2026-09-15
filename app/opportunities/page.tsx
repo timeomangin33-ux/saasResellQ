@@ -68,6 +68,17 @@ export default function OpportunitiesPage() {
   const [cat, setCat] = useState('Toutes')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState<string | null>(null)
+  /**
+   * « Analyser » appelle /api/ai/product-analyzer, qui passe par un agent n8n.
+   * Sans N8N_WEBHOOK_BASE_URL, le bouton débitait des crédits puis affichait
+   * son propre échec dans la ligne — sur la page des opportunités, c'est-à-dire
+   * devant un abonné venu chercher exactement ça.
+   *
+   * Le menu masque déjà l'Assistant et les Rapports sur ce test ; ce bouton,
+   * enfoui dans un tableau, y avait échappé. Rien tant que la réponse n'est pas
+   * là, pour ne pas montrer puis retirer.
+   */
+  const [assistantIA, setAssistantIA] = useState(false)
   const [analysis, setAnalysis] = useState<Record<string, string>>({})
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -142,6 +153,15 @@ export default function OpportunitiesPage() {
       setAnalysis(p => ({ ...p, [opp.id]: err instanceof Error ? err.message : 'Analyse indisponible.' }))
     } finally { setAnalyzing(null) }
   }
+
+  useEffect(() => {
+    let actif = true
+    fetch('/api/integrations')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (actif) setAssistantIA(d?.fonctions?.assistantIA === true) })
+      .catch(() => undefined)
+    return () => { actif = false }
+  }, [])
 
   useEffect(() => {
     if (!cat) return
@@ -291,10 +311,12 @@ export default function OpportunitiesPage() {
                       </td>
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => analyze(opp)} disabled={analyzing === opp.id}
-                            className="text-xs px-2.5 py-1 rounded-lg border border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground transition disabled:opacity-50">
-                            {analyzing === opp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Analyser'}
-                          </button>
+                          {assistantIA && (
+                            <button onClick={() => analyze(opp)} disabled={analyzing === opp.id}
+                              className="text-xs px-2.5 py-1 rounded-lg border border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground transition disabled:opacity-50">
+                              {analyzing === opp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Analyser'}
+                            </button>
+                          )}
                           {opp.url && (
                             <a href={opp.url} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-border hover:bg-muted/50 transition text-muted-foreground hover:text-foreground">

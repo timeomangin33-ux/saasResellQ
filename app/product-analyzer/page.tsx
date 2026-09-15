@@ -1,6 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/app/dashboard-layout'
+import { FonctionEnCoursDeVerification, FonctionNonBranchee, useFonction } from '@/components/fonction-non-branchee'
 import { useSession } from 'next-auth/react'
 import { normalizePlan } from '@/lib/plans'
 import { PlanGate } from '@/components/plan-gate'
@@ -36,6 +37,11 @@ interface Analysis {
 }
 
 export default function ProductAnalyzerPage() {
+  // Le menu masque déjà cette entrée quand l'agent n'est pas branché ; un
+  // favori ou une adresse retapée mènent quand même ici, où l'on voyait un
+  // chargement puis un échec qui ressemblait à un incident passager.
+  const etatFonction = useFonction('assistantIA')
+
   const { data: session, status } = useSession()
   const planKey = normalizePlan(session?.user?.subscriptionPlan)
   const [form, setForm] = useState({ title: '', brand: '', category: '', price: '' })
@@ -79,12 +85,19 @@ export default function ProductAnalyzerPage() {
     }
   }
 
+  // Placé après tous les hooks : React exige qu'ils soient appelés dans le
+  // même ordre à chaque rendu, donc avant tout retour conditionnel.
+  if (etatFonction === 'chargement') return <FonctionEnCoursDeVerification />
+  if (etatFonction === 'non-branchee') {
+    return <FonctionNonBranchee titre="L'analyse d'annonce n'est pas disponible" detail="Analyser une annonce passe par un agent d'analyse externe qui n'est pas configuré sur cette installation. Les opportunités, elles, restent calculées à partir des relevés de prix." />
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-4xl mx-auto space-y-8">
           <PageHeader
-            title="Product Analyzer"
+            title="Analyse d’annonce"
             kicker="Analyse IA"
             icon={Zap}
             description="Estimation IA à partir des informations que vous saisissez — rentabilité, demande, concurrence"
