@@ -94,6 +94,14 @@ jobs:
           # Facultatif : seulement utile si la session anonyme se fait bloquer.
           # Un secret absent devient une chaîne vide, que session.ts ignore.
           VINTED_SESSION_COOKIE: ${{ secrets.VINTED_SESSION_COOKIE }}
+          # Passé par l'environnement, jamais interpolé dans la commande.
+          # `${{ ... }}` est remplacé par GitHub *avant* que le shell existe :
+          # une valeur contenant un point-virgule deviendrait une seconde
+          # commande. Déclencher ce workflow demande un droit d'écriture sur le
+          # dépôt, donc personne d'extérieur ne peut s'en servir — mais un
+          # champ libre recopié tel quel dans un shell n'a aucune raison de
+          # rester là.
+          BUDGET: ${{ github.event.inputs.budget || '240' }}
         # Le scoring IA est coupé par collect:once lui-même : il n'a rien à voir
         # avec la collecte et n'ajouterait que des appels payants.
-        run: npm run collect:once -- ${{ github.event.inputs.budget || '240' }}
+        run: npm run collect:once -- "$BUDGET"
